@@ -10,15 +10,15 @@ indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.json, *.vue]
+indent_size = 2
+
 [*.rs]
 max_line_length = 100
 
 [*.md]
 insert_final_newline = false
 trim_trailing_whitespace = false
-
-[*.vue]
-indent_size = 2
 
 [Makefile]
 indent_style = tab
