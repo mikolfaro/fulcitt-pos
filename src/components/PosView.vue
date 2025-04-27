@@ -69,25 +69,32 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import Database from '@tauri-apps/plugin-sql';
+import { ref, computed, onMounted } from 'vue';
 
-// --- Reactive Data ---
-const availableProducts = ref([
-        { id: 1, name: 'Espresso', price: 1.50, category: 'Hot Drinks' },
-        { id: 2, name: 'Cappuccino', price: 2.80, category: 'Hot Drinks' },
-        { id: 3, name: 'Latte', price: 3.20, category: 'Hot Drinks' },
-        { id: 10, name: 'Orange Juice', price: 4.00, category: 'Cold Drinks' },
-        { id: 11, name: 'Iced Tea', price: 3.50, category: 'Cold Drinks' },
-        // Food
-        { id: 20, name: 'Croissant', price: 1.80, category: 'Pastries' },
-        { id: 21, name: 'Muffin', price: 2.50, category: 'Pastries' },
-        { id: 30, name: 'Ham & Cheese Sandwich', price: 5.50, category: 'Sandwiches' },
-        { id: 31, name: 'Veggie Wrap', price: 6.00, category: 'Sandwiches' },
-]);
+const DB_CONNECTION_STRING = "sqlite:app.db";
 
+const availableProducts = ref([]);
 const cartItems = ref([]);
+const dbInstance = ref(null);
+const isLoading = ref(true);
+const loadingError = ref('');
 
-// --- Computed Properties ---
+onMounted(async () => {
+  loadingError.value = '';
+  try {
+    console.log(`Attempting to load database: ${DB_CONNECTION_STRING}`);
+    dbInstance.value = await Database.load(DB_CONNECTION_STRING);
+    console.log("Database loaded successfully.");
+    await fetchProducts(); // Fetch products after DB is loaded
+  } catch (err) {
+    console.error("Database initialization/loading failed:", err);
+    loadingError.value = `Failed to load database: ${err.message || err}`;
+  } finally {
+    isLoading.value = false;
+  }
+});
+
 const cartSubtotal = computed(() => {
   return cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
 });
@@ -99,6 +106,25 @@ const cartTotal = computed(() => {
 
 
 // --- Methods ---
+const fetchProducts = async () => {
+  if (!dbInstance.value) {
+    console.error("Cannot fetch products, DB instance is not available.");
+    loadingError.value = "Database connection not available.";
+    return;
+  }
+
+  try {
+    console.log("Fetching products from DB...");
+    // Fetch products - ensure column names match your CREATE TABLE statement
+    const products = await dbInstance.value.select("SELECT id, name, price, category FROM products ORDER BY category, name");
+    availableProducts.value = products; // Update the reactive ref
+    console.log(`Workspaceed ${products.length} products.`);
+  } catch (err) {
+    console.error("Error fetching products:", err);
+    loadingError.value = `Failed to fetch products: ${err.message || err}`;
+  }
+};
+
 const addToCart = (product) => {
   const existingItem = cartItems.value.find(item => item.id === product.id);
   if (existingItem) {
@@ -106,12 +132,10 @@ const addToCart = (product) => {
   } else {
     cartItems.value.push({ ...product, quantity: 1 });
   }
-  console.log('Cart:', cartItems.value); // For debugging
 };
 
 const incrementQuantity = (item) => {
   item.quantity++;
-   console.log('Cart:', cartItems.value); // For debugging
 };
 
 const decrementQuantity = (item) => {
@@ -121,29 +145,25 @@ const decrementQuantity = (item) => {
     // If quantity is 1, remove the item
     removeFromCart(item);
   }
-   console.log('Cart:', cartItems.value); // For debugging
 };
 
 const removeFromCart = (itemToRemove) => {
   cartItems.value = cartItems.value.filter(item => item.id !== itemToRemove.id);
-   console.log('Cart:', cartItems.value); // For debugging
 };
 
 const clearCart = () => {
-    cartItems.value = [];
-    console.log('Cart cleared');
+  cartItems.value = [];
 }
 
 const processPayment = () => {
-    // Placeholder for payment processing logic
-    // This will eventually trigger invoice printing etc.
-    if (cartItems.value.length === 0) {
-        alert("Cart is empty!");
-        return;
-    }
-    alert(`Processing payment for $${cartTotal.value.toFixed(2)}`);
-    // TODO: Implement actual payment logic and post-payment actions (printing, history)
-    // clearCart(); // Optionally clear cart after successful payment
+  if (cartItems.value.length === 0) {
+    alert("Cart is empty!");
+    return;
+  }
+
+  alert(`Processing payment for $${cartTotal.value.toFixed(2)}`);
+  // TODO: Implement actual payment logic and post-payment actions (printing, history)
+  // clearCart(); // Optionally clear cart after successful payment
 };
 
 const groupedProducts = computed(() => {
