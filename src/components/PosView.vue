@@ -1,5 +1,12 @@
 <template>
-  <div class="flex h-screen p-4 space-x-4 bg-base-200">
+  <div v-if="isLoading" class="flex justify-center items-center h-full p-10">
+    <div class="flex flex-col items-center space-y-2">
+      <span class="loading loading-spinner loading-lg"></span>
+      <p class="text-lg">Loading Database & Products...</p>
+      <p v-if="loadingError" class="text-error text-sm">{{ loadingError }}</p>
+    </div>
+  </div>
+  <div v-else class="flex h-screen p-4 space-x-4 bg-base-200">
     <div class="w-3/5 bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
       <h2 class="text-xl font-bold mb-4">Products</h2>
       <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
@@ -72,7 +79,7 @@
 import Database from '@tauri-apps/plugin-sql';
 import { ref, computed, onMounted } from 'vue';
 
-const DB_CONNECTION_STRING = "sqlite:app.db";
+const DB_CONNECTION_STRING = "sqlite:./app.db";
 
 const availableProducts = ref([]);
 const cartItems = ref([]);
