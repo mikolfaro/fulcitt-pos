@@ -255,7 +255,7 @@ const fetchExistingProducts = async () => {
   loadingError.value = '';
   try {
     const products = await dbInstance.value.select(
-      "SELECT id, name, price, category FROM products ORDER BY category, name"
+      "SELECT id, name, price, category FROM products ORDER BY name"
     );
     existingProducts.value = products;
   } catch (err) {
