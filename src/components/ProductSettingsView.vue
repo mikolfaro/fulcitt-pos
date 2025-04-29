@@ -24,17 +24,65 @@
             </thead>
             <tbody>
               <tr v-for="product in existingProducts" :key="product.id" class="hover">
-                <td>{{ product.name }}</td>
-                <td>{{ product.category }}</td>
-                <td class="text-right">${{ product.price.toFixed(2) }}</td>
-                <td>
-                  <button
-                    class="btn btn-xs btn-outline btn-info"
-                    @click="openEdit(product)"
-                  >
-                    Edit
-                  </button>
-                </td>
+                <template v-if="productToEdit.id == product.id">
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="e.g., Espresso"
+                      class="input input-bordered w-full"
+                      form="editProduct"
+                      v-model.trim="productToEdit.name"
+                      required
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="e.g., Hot Drinks"
+                      class="input input-bordered w-full"
+                      form="editProduct"
+                      v-model.trim="productToEdit.category"
+                      required
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="e.g., 2.50"
+                      class="input input-bordered w-full"
+                      form="editProduct"
+                      v-model.number="productToEdit.price"
+                      required
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="submit"
+                      class="btn btn-xs btn-outline btn-primary mr-4"
+                      form="editProduct"
+                      :disabled="isUpdating"
+                    >
+                      <span v-if="isUpdating" class="loading loading-spinner loading-xs"></span>
+                      {{ isUpdating ? 'Saving...' : 'Save' }}
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline btn-info" @click="closeEdit()">Cancel</button>
+                  </td>
+                </template>
+                <template v-else>
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.category }}</td>
+                  <td class="text-right">${{ product.price.toFixed(2) }}</td>
+                  <td>
+                    <button
+                      class="btn btn-xs btn-outline btn-info"
+                      @click="openEdit(product)"
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </template>
               </tr>
               <tr>
                 <td>
@@ -91,6 +139,7 @@
             </tbody>
           </table>
           <form id="addProduct" @submit.prevent="addProduct" ref="addProductFormRef"></form>
+          <form id="editProduct" @submit.prevent="updateProduct"></form>
         </div>
       </div>
     </div>
@@ -106,6 +155,7 @@ const DB_CONNECTION_STRING = "sqlite:./app.db";
 const dbInstance = ref<Database | null>(null);
 
 const isAdding = ref(false);
+const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
 const loadingError = ref('');
 
@@ -118,7 +168,19 @@ const newProduct = reactive({
   category: '',
 });
 
+const productToEdit = reactive({
+    id: null,
+    name: '',
+    price: null,
+    category: '',
+});
+
 const feedback = reactive({
+  message: '',
+  isError: false,
+});
+
+const editFeedback = reactive({
   message: '',
   isError: false,
 });
@@ -203,4 +265,67 @@ const fetchExistingProducts = async () => {
     isLoadingProducts.value = false;
   }
 };
+
+const setEditFeedback = (msg: string, error = false, duration = 4000) => {
+  editFeedback.message = msg;
+  editFeedback.isError = error;
+  if (!error) {
+    setTimeout(() => {
+      if (editFeedback.message === msg) { // Clear only if message hasn't changed
+        editFeedback.message = '';
+      }
+    }, duration);
+  }
+};
+
+const resetEditForm = () => {
+    Object.assign(productToEdit, { id: null, name: '', price: null, category: '' });
+    editFeedback.message = '';
+};
+
+const openEdit = (product: Product) => {
+  resetEditForm();
+  Object.assign(productToEdit, product);
+}
+
+const closeEdit = () => {
+  resetEditForm();
+  Object.assign(productToEdit, { id: null, name: '', category: '', price: null })
+};
+
+const updateProduct = async () => {
+  if (!dbInstance.value || !productToEdit.id) {
+    setEditFeedback("Database connection not ready or product ID missing.", true);
+    return;
+  }
+
+  if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
+    setEditFeedback("Please fill in all fields correctly (Price >= 0).", true);
+    return;
+  }
+
+  isUpdating.value = true;
+  editFeedback.message = '';
+
+  try {
+    console.log(`Updating product ID ${productToEdit.id}`);
+    await dbInstance.value.execute(
+      "UPDATE products SET name = $1, price = $2, category = $3 WHERE id = $4",
+      [productToEdit.name, productToEdit.price, productToEdit.category, productToEdit.id]
+    );
+    setEditFeedback("Product updated successfully!", false);
+    await fetchExistingProducts(); // Refresh the list
+    closeEdit();
+
+  } catch (err) {
+    console.error(`Error updating product ID ${productToEdit.id}:`, err);
+    if (err.message?.toLowerCase().includes('unique constraint failed')) {
+      setEditFeedback(`Error: Another product likely exists with the name "${productToEdit.name}".`, true);
+    } else {
+      setEditFeedback(`Error updating product: ${err.message || err}`, true);
+    }
+  } finally {
+    isUpdating.value = false;
+  }
+}
 </script>
