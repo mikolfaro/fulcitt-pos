@@ -4,12 +4,13 @@
 
     <div role="tablist" class="tabs tabs-lifted mb-[-1px]">
       <router-link
-        to="/settings/products"
+        v-for="r in subRoutes"
         role="tab"
         class="tab [--tab-border-color:oklch(var(--bc)/0.2)]"
         active-class="tab-active"
+        :to="r.to"
       >
-        Products
+        {{ r.name }}
       </router-link>
       <a role="tab" class="tab [--tab-border-color:oklch(var(--bc)/0.2)] flex-grow !border-b"></a>
     </div>
@@ -26,6 +27,10 @@
   </div>
 </template>
 <script lang="ts" setup>
+const subRoutes = [
+  { name: "Products", to: "/settings/products" },
+  { name: "Print", to: "/settings/print" },
+]
 </script>
 
 <style>
