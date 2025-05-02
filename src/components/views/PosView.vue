@@ -78,11 +78,12 @@
 <script setup lang="ts">
 import Database from '@tauri-apps/plugin-sql';
 import { ref, computed, onMounted } from 'vue';
+import { CartItem, Product } from '../../lib';
 
 const DB_CONNECTION_STRING = "sqlite:./app.db";
 
-const availableProducts = ref([]);
-const cartItems = ref([]);
+const availableProducts = ref<Product[]>([]);
+const cartItems = ref<CartItem[]>([]);
 const dbInstance = ref<Database>(null);
 const isLoading = ref(true);
 const loadingError = ref('');
@@ -132,7 +133,7 @@ const fetchProducts = async () => {
   }
 };
 
-const addToCart = (product) => {
+const addToCart = (product: Product) => {
   const existingItem = cartItems.value.find(item => item.id === product.id);
   if (existingItem) {
     existingItem.quantity++;
@@ -141,11 +142,11 @@ const addToCart = (product) => {
   }
 };
 
-const incrementQuantity = (item) => {
+const incrementQuantity = (item: CartItem) => {
   item.quantity++;
 };
 
-const decrementQuantity = (item) => {
+const decrementQuantity = (item: CartItem) => {
   if (item.quantity > 1) {
     item.quantity--;
   } else {
@@ -154,7 +155,7 @@ const decrementQuantity = (item) => {
   }
 };
 
-const removeFromCart = (itemToRemove) => {
+const removeFromCart = (itemToRemove: CartItem) => {
   cartItems.value = cartItems.value.filter(item => item.id !== itemToRemove.id);
 };
 
@@ -174,7 +175,7 @@ const processPayment = () => {
 };
 
 const groupedProducts = computed(() => {
-  return availableProducts.value.reduce((groups, product) => {
+  return availableProducts.value.reduce((groups, product: Product) => {
     const category = product.category || 'Uncategorized'; // Default category if none provided
     if (!groups[category]) {
       groups[category] = [];
