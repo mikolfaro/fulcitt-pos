@@ -1,11 +1,11 @@
 import "./style.css"
 
 import { createApp } from "vue";
-import { createMemoryHistory, createRouter, RouteRecord } from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 import App from "./App.vue";
-import PosView from "./components/PosView.vue";
-import SettingsView from "./components/SettingsView.vue";
-import ProductSettingsView from "./components/ProductSettingsView.vue";
+import PosView from "./components/views/PosView.vue";
+import SettingsView from "./components/views/SettingsView.vue";
+import ProductSettingsView from "./components/views/settings/ProductsView.vue";
 
 const routes = [
   {
