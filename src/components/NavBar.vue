@@ -12,10 +12,6 @@
   </div>
 </template>
 
-<script setup>
-import { RouterLink, useRouter } from 'vue-router';
+<script setup lang="ts">
+import { RouterLink } from 'vue-router';
 </script>
-
-<style scoped>
-/* Add any specific navbar styles if needed */
-</style>

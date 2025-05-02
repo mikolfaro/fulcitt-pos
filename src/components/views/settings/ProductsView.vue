@@ -224,7 +224,7 @@ const addProduct = async () => {
   feedback.message = ''; // Clear previous feedback before trying
 
   try {
-    const result = await dbInstance.value.execute(
+    await dbInstance.value.execute(
       "INSERT INTO products (name, price, category) VALUES ($1, $2, $3)",
       [newProduct.name, newProduct.price, newProduct.category]
     );

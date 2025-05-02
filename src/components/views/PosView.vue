@@ -75,7 +75,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import Database from '@tauri-apps/plugin-sql';
 import { ref, computed, onMounted } from 'vue';
 
@@ -83,7 +83,7 @@ const DB_CONNECTION_STRING = "sqlite:./app.db";
 
 const availableProducts = ref([]);
 const cartItems = ref([]);
-const dbInstance = ref(null);
+const dbInstance = ref<Database>(null);
 const isLoading = ref(true);
 const loadingError = ref('');
 
