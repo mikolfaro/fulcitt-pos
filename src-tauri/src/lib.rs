@@ -1,26 +1,13 @@
-use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
+
+use models::*;
+mod models;
 
 type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
-}
-
-#[derive(Deserialize)]
-struct UnsavedProduct {
-    name: String,
-    category: String,
-    price: f64,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct Product {
-    id: i64,
-    name: String,
-    category: String,
-    price: f64,
 }
 
 #[tauri::command]
@@ -120,6 +107,11 @@ async fn setup_db(app: &App) -> Db {
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
 
     db
+}
+
+#[tauri::command]
+async fn add_sale(sql: State<_>, items: Vec<CartItem>) -> Result<i64, String> {
+    return Ok(0)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

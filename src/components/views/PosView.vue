@@ -68,7 +68,7 @@
           <span>Total:</span>
           <span>${{ cartTotal.toFixed(2) }}</span>
         </div>
-        <button class="btn btn-success w-full" @click="processPayment">Process Payment</button>
+        <button class="btn btn-success w-full" @click.prevent="processPayment">Process Payment</button>
          <button class="btn btn-outline btn-error w-full mt-2" @click="clearCart">Clear Cart</button>
       </div>
     </div>
@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
 import { ref, computed, onMounted } from 'vue';
 import { CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
@@ -87,6 +88,7 @@ const loadingError = ref('');
 
 onMounted(async () => {
   loadingError.value = '';
+
   try {
     await fetchProducts();
   } catch (err) {
@@ -147,15 +149,18 @@ const clearCart = () => {
   cartItems.value = [];
 }
 
-const processPayment = () => {
+const processPayment = async () => {
   if (cartItems.value.length === 0) {
     alert("Cart is empty!");
     return;
   }
 
-  alert(`Processing payment for $${cartTotal.value.toFixed(2)}`);
-  // TODO: Implement actual payment logic and post-payment actions (printing, history)
-  // clearCart(); // Optionally clear cart after successful payment
+  try {
+    await invoke('add_sale', { items: cartItems.value })
+    clearCart()
+  } catch (err) {
+    console.error("Error processing payment:", err);
+  }
 };
 
 const groupedProducts = computed(() => {
