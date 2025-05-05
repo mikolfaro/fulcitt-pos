@@ -6,10 +6,7 @@
         <div v-if="isLoadingProducts" class="text-center">
           <span class="loading loading-dots loading-md"></span> Loading products...
         </div>
-        <div v-else-if="existingProducts.length === 0 && !loadingError" class="text-base-content/70">
-          No products found in the database.
-        </div>
-        <div v-else-if="loadingError" class="text-error">
+        <div v-if="loadingError" class="text-error">
           Error loading products: {{ loadingError }}
         </div>
         <div v-else class="overflow-x-auto">
@@ -122,7 +119,7 @@
                     type="submit"
                     class="btn btn-xs btn-outline btn-primary"
                     form="addProduct"
-                    :disabled="isAdding || !dbInstance"
+                    :disabled="isAdding"
                   >
                     <span v-if="isAdding" class="loading loading-spinner loading-xs"></span>
                     {{ isAdding ? 'Adding...' : 'Add' }}
@@ -148,8 +145,8 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue"
-import Database from "@tauri-apps/plugin-sql";
 import { Product } from "../lib";
+import { createProduct, listProducts } from "../../../repositories";
 
 const isAdding = ref(false);
 const isUpdating = ref(false);
@@ -205,24 +202,16 @@ const setFeedback = (msg: string, error = false, duration = 4000) => {
 };
 
 const addProduct = async () => {
-  if (!dbInstance.value) {
-    setFeedback("Database connection not ready. Please wait.", true);
-    return;
-  }
-  // Basic validation (HTML5 'required' handles empty fields)
   if (newProduct.price === null || newProduct.price < 0) {
       setFeedback("Price must be zero or greater.", true);
       return;
   }
 
   isAdding.value = true;
-  feedback.message = ''; // Clear previous feedback before trying
+  feedback.message = '';
 
   try {
-    await dbInstance.value.execute(
-      "INSERT INTO products (name, price, category) VALUES ($1, $2, $3)",
-      [newProduct.name, newProduct.price, newProduct.category]
-    );
+    await createProduct(newProduct);
     setFeedback(`Product "${newProduct.name}" added successfully!`, false);
     await fetchExistingProducts();
 
@@ -241,17 +230,10 @@ const addProduct = async () => {
 };
 
 const fetchExistingProducts = async () => {
-  if (!dbInstance.value) {
-    loadingError.value = "Database connection not ready.";
-    isLoadingProducts.value = false;
-    return;
-  }
   isLoadingProducts.value = true;
   loadingError.value = '';
   try {
-    const products = await dbInstance.value.select(
-      "SELECT id, name, price, category FROM products ORDER BY name"
-    );
+    const products = await listProducts();
     existingProducts.value = products;
   } catch (err) {
     loadingError.value = `Failed to fetch products: ${err.message || err}`;

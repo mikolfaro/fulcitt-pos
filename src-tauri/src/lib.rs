@@ -1,10 +1,17 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
 type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState { db: Db }
+
+#[derive(Deserialize)]
+struct UnsavedProduct {
+    name: String,
+    category: String,
+    price: f64
+}
 
 #[derive(Serialize)]
 struct Product {
@@ -22,6 +29,22 @@ async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, S
         .await.map_err(|e| e.to_string())?;
 
     return Ok(products)
+}
+
+#[tauri::command]
+async fn create_product(product: UnsavedProduct, app_state: State<'_, AppState>) -> Result<(), String> {
+    sqlx::query(r#"
+        INSERT INTO products(name, price, category)
+        VALUES (?, ?, ?)
+    "#)
+        .bind(product.name)
+        .bind(product.price)
+        .bind(product.category)
+        .execute(&app_state.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 async fn setup_db(app: &App) -> Db {
@@ -50,7 +73,10 @@ async fn setup_db(app: &App) -> Db {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![list_products])
+        .invoke_handler(tauri::generate_handler![
+            list_products,
+            create_product
+        ])
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(&app).await;
