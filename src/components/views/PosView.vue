@@ -76,16 +76,12 @@
 </template>
 
 <script setup lang="ts">
-import Database from '@tauri-apps/plugin-sql';
 import { ref, computed, onMounted } from 'vue';
 import { CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
 
-const DB_CONNECTION_STRING = "sqlite:./app.db";
-
 const availableProducts = ref<Product[]>([]);
 const cartItems = ref<CartItem[]>([]);
-const dbInstance = ref<Database>(null);
 const isLoading = ref(true);
 const loadingError = ref('');
 
