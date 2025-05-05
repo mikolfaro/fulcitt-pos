@@ -4,45 +4,92 @@ use tauri::{App, Manager, State};
 
 type Db = SqlitePool;
 #[derive(Clone)]
-struct AppState { db: Db }
+struct AppState {
+    db: Db,
+}
 
 #[derive(Deserialize)]
 struct UnsavedProduct {
     name: String,
     category: String,
-    price: f64
+    price: f64,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Product {
     id: i64,
     name: String,
     category: String,
-    price: f64
+    price: f64,
 }
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, String> {
-    let products = sqlx::query_as!(Product, r#"
+    let products = sqlx::query_as!(
+        Product,
+        r#"
         SELECT * FROM products
-    "#).fetch_all(&app_state.db)
-        .await.map_err(|e| e.to_string())?;
+    "#
+    )
+    .fetch_all(&app_state.db)
+    .await
+    .map_err(|e| e.to_string())?;
 
-    return Ok(products)
+    Ok(products)
 }
 
 #[tauri::command]
-async fn create_product(product: UnsavedProduct, app_state: State<'_, AppState>) -> Result<(), String> {
-    sqlx::query(r#"
+async fn create_product(
+    product: UnsavedProduct,
+    app_state: State<'_, AppState>,
+) -> Result<(), String> {
+    sqlx::query(
+        r#"
         INSERT INTO products(name, price, category)
         VALUES (?, ?, ?)
-    "#)
-        .bind(product.name)
-        .bind(product.price)
-        .bind(product.category)
-        .execute(&app_state.db)
-        .await
-        .map_err(|e| e.to_string())?;
+    "#,
+    )
+    .bind(product.name)
+    .bind(product.price)
+    .bind(product.category)
+    .execute(&app_state.db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_product(product: Product, app_state: State<'_, AppState>) -> Result<(), String> {
+    sqlx::query(
+        r#"
+        UPDATE products
+        SET name = ?, price = ?, category = ?
+        WHERE id = ?
+    "#,
+    )
+    .bind(product.name)
+    .bind(product.price)
+    .bind(product.category)
+    .bind(product.id)
+    .execute(&app_state.db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Result<(), String> {
+    sqlx::query(
+        r#"
+        DELETE FROM products WHERE id = ?
+    "#,
+    )
+    .bind(product.id)
+    .execute(&app_state.db)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -55,9 +102,15 @@ async fn setup_db(app: &App) -> Db {
 
     path.push("app.db");
 
-    Sqlite::create_database(format!("sqlite:{}", path.to_str().expect("Path should be something")).as_str())
-        .await
-        .expect("Failed to create database");
+    Sqlite::create_database(
+        format!(
+            "sqlite:{}",
+            path.to_str().expect("Path should be something")
+        )
+        .as_str(),
+    )
+    .await
+    .expect("Failed to create database");
 
     let db = SqlitePoolOptions::new()
         .connect(path.to_str().unwrap())
@@ -75,7 +128,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             list_products,
-            create_product
+            create_product,
+            update_product,
+            delete_product
         ])
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
