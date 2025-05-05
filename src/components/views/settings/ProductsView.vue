@@ -6,10 +6,7 @@
         <div v-if="isLoadingProducts" class="text-center">
           <span class="loading loading-dots loading-md"></span> Loading products...
         </div>
-        <div v-else-if="existingProducts.length === 0 && !loadingError" class="text-base-content/70">
-          No products found in the database.
-        </div>
-        <div v-else-if="loadingError" class="text-error">
+        <div v-if="loadingError" class="text-error">
           Error loading products: {{ loadingError }}
         </div>
         <div v-else class="overflow-x-auto">
@@ -74,12 +71,19 @@
                   <td>{{ product.name }}</td>
                   <td>{{ product.category }}</td>
                   <td class="text-right">${{ product.price.toFixed(2) }}</td>
-                  <td>
+                  <td class="flex justify-between">
                     <button
                       class="btn btn-xs btn-outline btn-info"
                       @click="openEdit(product)"
                     >
                       Edit
+                    </button>
+
+                    <button
+                      class="btn btn-xs btn-outline btn-error"
+                      @click.prevent="doDeleteProduct(product)"
+                    >
+                      Delete
                     </button>
                   </td>
                 </template>
@@ -122,7 +126,7 @@
                     type="submit"
                     class="btn btn-xs btn-outline btn-primary"
                     form="addProduct"
-                    :disabled="isAdding || !dbInstance"
+                    :disabled="isAdding"
                   >
                     <span v-if="isAdding" class="loading loading-spinner loading-xs"></span>
                     {{ isAdding ? 'Adding...' : 'Add' }}
@@ -139,7 +143,7 @@
             </tbody>
           </table>
           <form id="addProduct" @submit.prevent="addProduct" ref="addProductFormRef"></form>
-          <form id="editProduct" @submit.prevent="updateProduct"></form>
+          <form id="editProduct" @submit.prevent="doUpdateProduct"></form>
         </div>
       </div>
     </div>
@@ -148,11 +152,8 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue"
-import Database from "@tauri-apps/plugin-sql";
 import { Product } from "../lib";
-
-const DB_CONNECTION_STRING = "sqlite:./app.db";
-const dbInstance = ref<Database | null>(null);
+import { createProduct, deleteProduct, listProducts, updateProduct } from "../../../repositories";
 
 const isAdding = ref(false);
 const isUpdating = ref(false);
@@ -188,11 +189,9 @@ const editFeedback = reactive({
 onMounted(async () => {
   feedback.message = ''; // Clear any previous messages
   try {
-    dbInstance.value = await Database.load(DB_CONNECTION_STRING);
     await fetchExistingProducts();
   } catch (err) {
     console.error("ProductManagement: Failed to load database:", err);
-    setFeedback(`Error connecting to database: ${err.message || err}`, true, 10000); // Show longer
   }
 });
 
@@ -210,24 +209,16 @@ const setFeedback = (msg: string, error = false, duration = 4000) => {
 };
 
 const addProduct = async () => {
-  if (!dbInstance.value) {
-    setFeedback("Database connection not ready. Please wait.", true);
-    return;
-  }
-  // Basic validation (HTML5 'required' handles empty fields)
   if (newProduct.price === null || newProduct.price < 0) {
       setFeedback("Price must be zero or greater.", true);
       return;
   }
 
   isAdding.value = true;
-  feedback.message = ''; // Clear previous feedback before trying
+  feedback.message = '';
 
   try {
-    await dbInstance.value.execute(
-      "INSERT INTO products (name, price, category) VALUES ($1, $2, $3)",
-      [newProduct.name, newProduct.price, newProduct.category]
-    );
+    await createProduct(newProduct);
     setFeedback(`Product "${newProduct.name}" added successfully!`, false);
     await fetchExistingProducts();
 
@@ -246,17 +237,10 @@ const addProduct = async () => {
 };
 
 const fetchExistingProducts = async () => {
-  if (!dbInstance.value) {
-    loadingError.value = "Database connection not ready.";
-    isLoadingProducts.value = false;
-    return;
-  }
   isLoadingProducts.value = true;
   loadingError.value = '';
   try {
-    const products = await dbInstance.value.select(
-      "SELECT id, name, price, category FROM products ORDER BY name"
-    );
+    const products = await listProducts();
     existingProducts.value = products;
   } catch (err) {
     loadingError.value = `Failed to fetch products: ${err.message || err}`;
@@ -293,12 +277,7 @@ const closeEdit = () => {
   Object.assign(productToEdit, { id: null, name: '', category: '', price: null })
 };
 
-const updateProduct = async () => {
-  if (!dbInstance.value || !productToEdit.id) {
-    setEditFeedback("Database connection not ready or product ID missing.", true);
-    return;
-  }
-
+const doUpdateProduct = async () => {
   if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
     setEditFeedback("Please fill in all fields correctly (Price >= 0).", true);
     return;
@@ -308,13 +287,9 @@ const updateProduct = async () => {
   editFeedback.message = '';
 
   try {
-    console.log(`Updating product ID ${productToEdit.id}`);
-    await dbInstance.value.execute(
-      "UPDATE products SET name = $1, price = $2, category = $3 WHERE id = $4",
-      [productToEdit.name, productToEdit.price, productToEdit.category, productToEdit.id]
-    );
+    await updateProduct(productToEdit);
     setEditFeedback("Product updated successfully!", false);
-    await fetchExistingProducts(); // Refresh the list
+    await fetchExistingProducts();
     closeEdit();
 
   } catch (err) {
@@ -326,6 +301,22 @@ const updateProduct = async () => {
     }
   } finally {
     isUpdating.value = false;
+  }
+}
+
+const doDeleteProduct = async (productToDelete: Product) => {
+  editFeedback.message = '';
+  try {
+    await deleteProduct(productToDelete)
+    setEditFeedback("Product deleted successfully!", false);
+    await fetchExistingProducts();
+  } catch (err) {
+    console.error(`Error deleting product ID ${productToEdit.id}:`, err);
+    if (err.message?.toLowerCase().includes('unique constraint failed')) {
+      setEditFeedback(`Error: Another product likely exists with the name "${productToEdit.name}".`, true);
+    } else {
+      setEditFeedback(`Error deleting product: ${err.message || err}`, true);
+    }
   }
 }
 </script>
