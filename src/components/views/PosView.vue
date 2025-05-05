@@ -79,6 +79,7 @@
 import Database from '@tauri-apps/plugin-sql';
 import { ref, computed, onMounted } from 'vue';
 import { CartItem, Product } from '../../lib';
+import { listProducts } from '../../repositories';
 
 const DB_CONNECTION_STRING = "sqlite:./app.db";
 
@@ -91,10 +92,7 @@ const loadingError = ref('');
 onMounted(async () => {
   loadingError.value = '';
   try {
-    console.log(`Attempting to load database: ${DB_CONNECTION_STRING}`);
-    dbInstance.value = await Database.load(DB_CONNECTION_STRING);
-    console.log("Database loaded successfully.");
-    await fetchProducts(); // Fetch products after DB is loaded
+    await fetchProducts();
   } catch (err) {
     console.error("Database initialization/loading failed:", err);
     loadingError.value = `Failed to load database: ${err.message || err}`;
@@ -115,18 +113,8 @@ const cartTotal = computed(() => {
 
 // --- Methods ---
 const fetchProducts = async () => {
-  if (!dbInstance.value) {
-    console.error("Cannot fetch products, DB instance is not available.");
-    loadingError.value = "Database connection not available.";
-    return;
-  }
-
   try {
-    console.log("Fetching products from DB...");
-    // Fetch products - ensure column names match your CREATE TABLE statement
-    const products = await dbInstance.value.select("SELECT id, name, price, category FROM products ORDER BY category, name");
-    availableProducts.value = products; // Update the reactive ref
-    console.log(`Workspaceed ${products.length} products.`);
+    availableProducts.value = await listProducts();
   } catch (err) {
     console.error("Error fetching products:", err);
     loadingError.value = `Failed to fetch products: ${err.message || err}`;

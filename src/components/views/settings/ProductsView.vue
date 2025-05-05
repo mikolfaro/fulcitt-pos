@@ -151,9 +151,6 @@ import { onMounted, reactive, ref } from "vue"
 import Database from "@tauri-apps/plugin-sql";
 import { Product } from "../lib";
 
-const DB_CONNECTION_STRING = "sqlite:./app.db";
-const dbInstance = ref<Database | null>(null);
-
 const isAdding = ref(false);
 const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
@@ -188,11 +185,9 @@ const editFeedback = reactive({
 onMounted(async () => {
   feedback.message = ''; // Clear any previous messages
   try {
-    dbInstance.value = await Database.load(DB_CONNECTION_STRING);
     await fetchExistingProducts();
   } catch (err) {
     console.error("ProductManagement: Failed to load database:", err);
-    setFeedback(`Error connecting to database: ${err.message || err}`, true, 10000); // Show longer
   }
 });
 
