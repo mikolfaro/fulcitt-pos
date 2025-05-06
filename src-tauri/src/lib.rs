@@ -1,3 +1,8 @@
+use escpos::{
+    driver::ConsoleDriver,
+    printer::Printer,
+    utils::{DebugMode, Protocol},
+};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
@@ -8,6 +13,7 @@ type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
+    driver: ConsoleDriver
 }
 
 #[tauri::command]
@@ -88,49 +94,59 @@ async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Resul
     }
 
     let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
-    let total_amount: f64 = items.iter().map(|item| item.price * item.quantity as f64).sum();
+    let total_amount: f64 = items
+        .iter()
+        .map(|item| item.price * item.quantity as f64)
+        .sum();
 
     let mut tx = app_state.db.begin().await.map_err(|e| e.to_string())?;
     let sale_id: i64 = sqlx::query_scalar(
         r#"
         INSERT INTO sales (sale_time, total_amount) VALUES (?, ?) RETURNING id;
-        "#)
-        .bind(sale_time)
-        .bind(total_amount)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+        "#,
+    )
+    .bind(sale_time)
+    .bind(total_amount)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
 
     for item in items {
         let quantity = item.quantity;
         let price_at_sale = item.price;
 
         if quantity <= 0 {
-            return Err(format!("Invalid quantity {} for product {}", quantity, item.product_id));
+            return Err(format!(
+                "Invalid quantity {} for product {}",
+                quantity, item.product_id
+            ));
         }
         if price_at_sale < 0.0 {
-            return Err(format!("Invalid price {} for product {}", price_at_sale, item.product_id));
+            return Err(format!(
+                "Invalid price {} for product {}",
+                price_at_sale, item.product_id
+            ));
         }
 
         sqlx::query(
             r#"
             INSERT INTO sale_items (sale_id, product_id, product_name, quantity, price_at_sale)
             VALUES (?, ?, ?, ?, ?)
-            "#
+            "#,
         )
-            .bind(sale_id)
-            .bind(item.product_id)
-            .bind(item.name)
-            .bind(quantity)
-            .bind(price_at_sale)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        .bind(sale_id)
+        .bind(item.product_id)
+        .bind(item.name)
+        .bind(quantity)
+        .bind(price_at_sale)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
     }
 
     tx.commit().await.map_err(|e| e.to_string())?;
 
-    return Ok(sale_id)
+    Ok(sale_id)
 }
 
 async fn setup_db(app: &App) -> Db {
@@ -161,8 +177,33 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
+#[tauri::command]
+async fn test_print_raw_file(app_state: State<'_, AppState>, device_path: String, text_to_print: String) -> Result<(), String> {
+    println!(
+        "Attempting to print '{}' to device '{}'",
+        text_to_print, device_path
+    );
+
+    println!("");
+    Printer::new(app_state.driver.clone(), Protocol::default(), None)
+        .debug_mode(Some(DebugMode::Hex))
+        .init()
+        .map_err(|_| "Failed to initialize printer")?
+        .writeln(&text_to_print)
+        .map_err(|_| "Failed to write ln")?
+        .feed()
+        .map_err(|_| "Failed to feed")?
+        .print_cut()
+        .map_err(|_| "Failed to cut")?;
+    println!("");
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    env_logger::init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -170,12 +211,15 @@ pub fn run() {
             create_product,
             update_product,
             delete_product,
-            add_sale
+            add_sale,
+            test_print_raw_file,
         ])
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
-                let db = setup_db(&app).await;
-                app.manage(AppState { db });
+                let db = setup_db(app).await;
+                let driver = ConsoleDriver::open(true);
+
+                app.manage(AppState { db, driver });
             });
 
             Ok(())

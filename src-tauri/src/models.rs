@@ -20,5 +20,5 @@ pub(crate) struct CartItem {
     pub product_id: i64,
     pub name: String,
     pub price: f64,
-    pub quantity: i64
+    pub quantity: i64,
 }
