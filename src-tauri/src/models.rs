@@ -2,21 +2,23 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub(crate) struct UnsavedProduct {
-    name: String,
-    category: String,
-    price: f64,
+    pub name: String,
+    pub category: String,
+    pub price: f64,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct Product {
-    id: i64,
-    name: String,
-    category: String,
-    price: f64,
+    pub id: i64,
+    pub name: String,
+    pub category: String,
+    pub price: f64,
 }
 
+#[derive(Deserialize, Serialize)]
 pub(crate) struct CartItem {
-    name: String,
-    price: String,
-    quantity: String
+    pub product_id: i64,
+    pub name: String,
+    pub price: f64,
+    pub quantity: i64
 }

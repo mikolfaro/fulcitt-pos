@@ -81,6 +81,58 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Res
     Ok(())
 }
 
+#[tauri::command]
+async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Result<i64, String> {
+    if items.is_empty() {
+        return Err("Cannot add a sale with no items.".to_string());
+    }
+
+    let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
+    let total_amount: f64 = items.iter().map(|item| item.price * item.quantity as f64).sum();
+
+    let mut tx = app_state.db.begin().await.map_err(|e| e.to_string())?;
+    let sale_id: i64 = sqlx::query_scalar(
+        r#"
+        INSERT INTO sales (sale_time, total_amount) VALUES (?, ?) RETURNING id;
+        "#)
+        .bind(sale_time)
+        .bind(total_amount)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for item in items {
+        let quantity = item.quantity;
+        let price_at_sale = item.price;
+
+        if quantity <= 0 {
+            return Err(format!("Invalid quantity {} for product {}", quantity, item.product_id));
+        }
+        if price_at_sale < 0.0 {
+            return Err(format!("Invalid price {} for product {}", price_at_sale, item.product_id));
+        }
+
+        sqlx::query(
+            r#"
+            INSERT INTO sale_items (sale_id, product_id, product_name, quantity, price_at_sale)
+            VALUES (?, ?, ?, ?, ?)
+            "#
+        )
+            .bind(sale_id)
+            .bind(item.product_id)
+            .bind(item.name)
+            .bind(quantity)
+            .bind(price_at_sale)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    return Ok(sale_id)
+}
+
 async fn setup_db(app: &App) -> Db {
     let mut path = app.path().app_data_dir().expect("Failed to get data_dir");
     if let Err(err) = std::fs::create_dir_all(path.clone()) {
@@ -109,11 +161,6 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-#[tauri::command]
-async fn add_sale(sql: State<_>, items: Vec<CartItem>) -> Result<i64, String> {
-    return Ok(0)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -122,7 +169,8 @@ pub fn run() {
             list_products,
             create_product,
             update_product,
-            delete_product
+            delete_product,
+            add_sale
         ])
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
