@@ -6,7 +6,7 @@
       <p v-if="loadingError" class="text-error text-sm">{{ loadingError }}</p>
     </div>
   </div>
-  <div v-else class="flex h-screen p-4 space-x-4 bg-base-200">
+  <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
     <div class="w-3/5 bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
       <h2 class="text-xl font-bold mb-4">Products</h2>
       <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">

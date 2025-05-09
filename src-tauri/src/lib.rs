@@ -7,6 +7,7 @@ use escpos::{
     utils::{DebugMode, Protocol},
 };
 use printing::print_tickets;
+use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
@@ -165,6 +166,60 @@ async fn process_sale(
     Ok(sale_id)
 }
 
+#[derive(Debug, sqlx::FromRow, Serialize)]
+struct ItemSale {
+    product_id: i64,
+    product_name: String,
+    total_quantity_sold: i64,
+    total_value_sold: f64
+}
+
+#[tauri::command]
+async fn get_sales_recap(
+    app_state: State<'_, AppState>
+) -> Result<Vec<ItemSale>, String> {
+    let item_sales = sqlx::query_as::<_, ItemSale>(
+        r#"
+            SELECT product_id,
+                product_name,
+                SUM(quantity) AS total_quantity_sold,
+                SUM(quantity * price_at_sale) AS total_value_sold
+            FROM sale_items
+            GROUP BY product_id;
+        "#
+    )
+        .fetch_all(&app_state.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(item_sales)
+}
+
+#[tauri::command]
+async fn test_print_raw_file(
+    printer_state: State<'_, PrinterState>,
+    text_to_print: String,
+) -> Result<(), String> {
+    println!("Attempting to print '{}'", text_to_print);
+
+    let mut printer = printer_state.lock().unwrap();
+
+    println!();
+    printer
+        .debug_mode(Some(DebugMode::Hex))
+        .init()
+        .map_err(|_| "Failed to initialize printer")?
+        .writeln(&text_to_print)
+        .map_err(|_| "Failed to write ln")?
+        .feed()
+        .map_err(|_| "Failed to feed")?
+        .print_cut()
+        .map_err(|_| "Failed to cut")?;
+    println!();
+
+    Ok(())
+}
+
 async fn setup_db(app: &App) -> Db {
     let mut path = app.path().app_data_dir().expect("Failed to get data_dir");
     if let Err(err) = std::fs::create_dir_all(path.clone()) {
@@ -193,31 +248,6 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-#[tauri::command]
-async fn test_print_raw_file(
-    printer_state: State<'_, PrinterState>,
-    text_to_print: String,
-) -> Result<(), String> {
-    println!("Attempting to print '{}'", text_to_print);
-
-    let mut printer = printer_state.lock().unwrap();
-
-    println!();
-    printer
-        .debug_mode(Some(DebugMode::Hex))
-        .init()
-        .map_err(|_| "Failed to initialize printer")?
-        .writeln(&text_to_print)
-        .map_err(|_| "Failed to write ln")?
-        .feed()
-        .map_err(|_| "Failed to feed")?
-        .print_cut()
-        .map_err(|_| "Failed to cut")?;
-    println!();
-
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     env_logger::init();
@@ -230,6 +260,7 @@ pub fn run() {
             update_product,
             delete_product,
             process_sale,
+            get_sales_recap,
             test_print_raw_file,
         ])
         .setup(|app| {
