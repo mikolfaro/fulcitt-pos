@@ -1,11 +1,12 @@
 use std::sync::{Arc, Mutex};
 
 use escpos::{
-    driver::{ConsoleDriver, Driver},
+    driver::ConsoleDriver,
     printer::Printer,
     printer_options::PrinterOptions,
     utils::{DebugMode, Protocol},
 };
+use printing::print_tickets;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
@@ -159,7 +160,7 @@ async fn process_sale(
     let mut printer = printer_state.lock().unwrap();
     printer.init().map_err(|e| e.to_string())?;
 
-    // print_tickets(sale_id, &items, printer_state);
+    print_tickets(&mut *printer, sale_id, &items)?;
 
     Ok(sale_id)
 }

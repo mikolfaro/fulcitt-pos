@@ -4,9 +4,9 @@ use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use crate::CartItem;
 
 pub(crate) fn print_tickets<D>(
+    printer: &mut Printer<D>,
     sale_id: i64,
     items: &[CartItem],
-    mut printer: Printer<D>,
 ) -> Result<(), String>
 where
     D: Driver,
