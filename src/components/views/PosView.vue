@@ -159,7 +159,7 @@ const processPayment = async () => {
     const items = cartItems.value.map((item) => {
       return { ...item, product_id: item.id }
     })
-    await invoke('add_sale', { items })
+    await invoke('process_sale', { items })
     clearCart()
   } catch (err) {
     console.error("Error processing payment:", err);

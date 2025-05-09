@@ -1,20 +1,26 @@
+use std::sync::{Arc, Mutex};
+
 use escpos::{
-    driver::ConsoleDriver,
+    driver::{ConsoleDriver, Driver},
     printer::Printer,
+    printer_options::PrinterOptions,
     utils::{DebugMode, Protocol},
 };
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
 use models::*;
+
 mod models;
+mod printing;
 
 type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
-    driver: ConsoleDriver
 }
+
+type PrinterState = Arc<Mutex<Printer<ConsoleDriver>>>;
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, String> {
@@ -88,7 +94,11 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Res
 }
 
 #[tauri::command]
-async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Result<i64, String> {
+async fn process_sale(
+    app_state: State<'_, AppState>,
+    printer_state: State<'_, PrinterState>,
+    items: Vec<CartItem>,
+) -> Result<i64, String> {
     if items.is_empty() {
         return Err("Cannot add a sale with no items.".to_string());
     }
@@ -111,7 +121,7 @@ async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Resul
     .await
     .map_err(|e| e.to_string())?;
 
-    for item in items {
+    for item in &items {
         let quantity = item.quantity;
         let price_at_sale = item.price;
 
@@ -136,7 +146,7 @@ async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Resul
         )
         .bind(sale_id)
         .bind(item.product_id)
-        .bind(item.name)
+        .bind(&item.name)
         .bind(quantity)
         .bind(price_at_sale)
         .execute(&mut *tx)
@@ -145,6 +155,11 @@ async fn add_sale(app_state: State<'_, AppState>, items: Vec<CartItem>) -> Resul
     }
 
     tx.commit().await.map_err(|e| e.to_string())?;
+
+    let mut printer = printer_state.lock().unwrap();
+    printer.init().map_err(|e| e.to_string())?;
+
+    // print_tickets(sale_id, &items, printer_state);
 
     Ok(sale_id)
 }
@@ -178,14 +193,16 @@ async fn setup_db(app: &App) -> Db {
 }
 
 #[tauri::command]
-async fn test_print_raw_file(app_state: State<'_, AppState>, device_path: String, text_to_print: String) -> Result<(), String> {
-    println!(
-        "Attempting to print '{}' to device '{}'",
-        text_to_print, device_path
-    );
+async fn test_print_raw_file(
+    printer_state: State<'_, PrinterState>,
+    text_to_print: String,
+) -> Result<(), String> {
+    println!("Attempting to print '{}'", text_to_print);
 
-    println!("");
-    Printer::new(app_state.driver.clone(), Protocol::default(), None)
+    let mut printer = printer_state.lock().unwrap();
+
+    println!();
+    printer
         .debug_mode(Some(DebugMode::Hex))
         .init()
         .map_err(|_| "Failed to initialize printer")?
@@ -195,7 +212,7 @@ async fn test_print_raw_file(app_state: State<'_, AppState>, device_path: String
         .map_err(|_| "Failed to feed")?
         .print_cut()
         .map_err(|_| "Failed to cut")?;
-    println!("");
+    println!();
 
     Ok(())
 }
@@ -211,15 +228,19 @@ pub fn run() {
             create_product,
             update_product,
             delete_product,
-            add_sale,
+            process_sale,
             test_print_raw_file,
         ])
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
-                let driver = ConsoleDriver::open(true);
+                app.manage(AppState { db });
 
-                app.manage(AppState { db, driver });
+                let driver = ConsoleDriver::open(true);
+                let printer =
+                    Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
+                let printer_state = Arc::new(Mutex::new(printer));
+                app.manage(printer_state);
             });
 
             Ok(())
