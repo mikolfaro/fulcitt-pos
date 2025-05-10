@@ -42,12 +42,12 @@ const error = ref<string>('')
 
 const salesData = ref<ItemSale[]>([]);
 
-const formatCurrency = (value) => {
+const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
 };
 
 onMounted(async function () {
-  const data = await invoke('get_sales_recap');
+  const data = await invoke<ItemSale[]>('get_sales_recap');
   salesData.value = data.sort(function (a, b) {
     if (a < b) {
       return -1;

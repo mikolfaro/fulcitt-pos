@@ -91,7 +91,7 @@ onMounted(async () => {
 
   try {
     await fetchProducts();
-  } catch (err) {
+  } catch (err: any) {
     console.error("Database initialization/loading failed:", err);
     loadingError.value = `Failed to load database: ${err.message || err}`;
   } finally {
@@ -113,7 +113,7 @@ const cartTotal = computed(() => {
 const fetchProducts = async () => {
   try {
     availableProducts.value = await listProducts();
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error fetching products:", err);
     loadingError.value = `Failed to fetch products: ${err.message || err}`;
   }
@@ -166,8 +166,8 @@ const processPayment = async () => {
   }
 };
 
-const groupedProducts = computed(() => {
-  return availableProducts.value.reduce((groups, product: Product) => {
+const groupedProducts = computed<Record<string, Product[]>>(() => {
+  return availableProducts.value.reduce((groups: Record<string, Product[]>, product: Product) => {
     const category = product.category || 'Uncategorized'; // Default category if none provided
     if (!groups[category]) {
       groups[category] = [];
