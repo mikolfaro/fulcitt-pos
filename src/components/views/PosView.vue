@@ -68,10 +68,7 @@
           <span>Total:</span>
           <span>${{ cartTotal.toFixed(2) }}</span>
         </div>
-        <router-view>
-          <RouterLink to="/checkout" class="btn btn-success w-full">Process Payment</RouterLink>
-        </router-view>
-        <button class="btn btn-outline btn-error w-full mt-2" @click="clearCart">Clear Cart</button>
+        <router-view></router-view>
       </div>
     </div>
   </div>

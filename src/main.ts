@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import App from "./App.vue";
 import PosView from "./components/views/PosView.vue";
 import CheckoutView from "./components/views/pos/CheckoutView.vue";
+import PaymentView from "./components/views/pos/PaymentView.vue";
 import ReportView from "./components/views/ReportView.vue";
 import SettingsView from "./components/views/SettingsView.vue";
 import PrintView from "./components/views/settings/PrintView.vue";
@@ -15,10 +16,10 @@ const routes = [
     path: '/',
     component: PosView,
     children: [
-      { path: '' },
+      { path: '', component: CheckoutView },
       {
         path: 'checkout',
-        component: CheckoutView
+        component: PaymentView
       }
     ]
   },
