@@ -64,7 +64,7 @@
           <span>Subtotal:</span>
           <span>${{ cartSubtotal.toFixed(2) }}</span>
         </div>
-         <div class="flex justify-between font-bold text-lg mb-4">
+         <div class="flex justify-between font-bold text-lg mb-2">
           <span>Total:</span>
           <span>${{ cartTotal.toFixed(2) }}</span>
         </div>
