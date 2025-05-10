@@ -152,7 +152,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue"
-import { Product } from "../lib";
+import { Product, UnsavedProduct } from "../../../lib";
 import { createProduct, deleteProduct, listProducts, updateProduct } from "../../../repositories";
 
 const isAdding = ref(false);
@@ -163,18 +163,18 @@ const loadingError = ref('');
 const addProductFormRef = ref(null);
 const existingProducts = ref<Product[]>([]);
 
-const newProduct = reactive({
-  name: '',
-  price: null,
-  category: '',
-});
+const newProduct = reactive<{
+  name: string,
+  price: number | null,
+  category: string
+}>({ name: '', category: '', price: null})
 
-const productToEdit = reactive({
-    id: null,
-    name: '',
-    price: null,
-    category: '',
-});
+const productToEdit = reactive<{
+  id: number | null,
+  name: string,
+  price: number | null,
+  category: string
+}>({ id: null, name: '', category: '', price: null });
 
 const feedback = reactive({
   message: '',
@@ -218,14 +218,15 @@ const addProduct = async () => {
   feedback.message = '';
 
   try {
-    await createProduct(newProduct);
+    const product = newProduct as UnsavedProduct;
+    await createProduct(product);
     setFeedback(`Product "${newProduct.name}" added successfully!`, false);
     await fetchExistingProducts();
 
     newProduct.name = '';
     newProduct.price = null;
     newProduct.category = '';
-  } catch (err) {
+  } catch (err: any) {
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
         setFeedback(`Error: A product with the name "${newProduct.name}" already exists.`, true);
     } else {
@@ -242,7 +243,7 @@ const fetchExistingProducts = async () => {
   try {
     const products = await listProducts();
     existingProducts.value = products;
-  } catch (err) {
+  } catch (err: any) {
     loadingError.value = `Failed to fetch products: ${err.message || err}`;
     existingProducts.value = []; // Clear list on error
   } finally {
@@ -282,17 +283,18 @@ const doUpdateProduct = async () => {
     setEditFeedback("Please fill in all fields correctly (Price >= 0).", true);
     return;
   }
+  const product = productToEdit as Product;
 
   isUpdating.value = true;
   editFeedback.message = '';
 
   try {
-    await updateProduct(productToEdit);
+    await updateProduct(product);
     setEditFeedback("Product updated successfully!", false);
     await fetchExistingProducts();
     closeEdit();
 
-  } catch (err) {
+  } catch (err: any) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
       setEditFeedback(`Error: Another product likely exists with the name "${productToEdit.name}".`, true);
@@ -310,12 +312,12 @@ const doDeleteProduct = async (productToDelete: Product) => {
     await deleteProduct(productToDelete)
     setEditFeedback("Product deleted successfully!", false);
     await fetchExistingProducts();
-  } catch (err) {
-    console.error(`Error deleting product ID ${productToEdit.id}:`, err);
+  } catch (err: any) {
+    console.error(`Error deleting product ID ${productToDelete.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      setEditFeedback(`Error: Another product likely exists with the name "${productToEdit.name}".`, true);
+      setEditFeedback(`Error: Another product likely exists with the name "${productToDelete.name}".`, true);
     } else {
-      setEditFeedback(`Error deleting product: ${err.message || err}`, true);
+      setEditFeedback(`Error deleting product: ${err?.message || err}`, true);
     }
   }
 }

@@ -1,11 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Product } from "./lib";
+import { Product, UnsavedProduct } from "./lib";
 
 export async function listProducts(): Promise<Product[]> {
   return await invoke("list_products")
 }
 
-export async function createProduct(product: Product): Promise<void> {
+export async function createProduct(product: UnsavedProduct): Promise<void> {
   return await invoke("create_product", { product })
 }
 
