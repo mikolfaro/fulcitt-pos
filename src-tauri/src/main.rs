@@ -1,6 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-fn main() {
-    fulcitt_pos_lib::run()
+use std::error::Error;
+
+
+fn main() -> Result<(), Box<dyn Error>> {
+    dotenvy::dotenv()?;
+
+    fulcitt_pos_lib::run();
+
+    Ok(())
 }
