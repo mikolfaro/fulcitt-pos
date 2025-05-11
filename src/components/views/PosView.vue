@@ -14,9 +14,10 @@
         <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div
             v-for="product in productsInCategory"
+            :aria-disabled="cart.isLocked"
             :key="product.id"
             class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-            @click="addToCart(product)"
+            @click="!cart.isLocked && addToCart(product)"
           >
             <div class="card-body items-center text-center p-3">
               <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
@@ -40,10 +41,10 @@
               <th></th> </tr>
           </thead>
           <tbody>
-            <tr v-if="cartItems.length === 0">
+            <tr v-if="cart.items.length === 0">
               <td colspan="5" class="text-center">Cart is empty</td>
             </tr>
-            <tr v-for="item in cartItems" :key="item.id">
+            <tr v-for="item in cart.items" :key="item.id">
               <td>{{ item.name }}</td>
               <td>
                 <button class="btn btn-xs btn-ghost" @click="decrementQuantity(item)">-</button>
@@ -62,11 +63,11 @@
       <div class="mt-auto pt-4 border-t border-base-300">
         <div class="flex justify-between font-bold text-lg mb-2">
           <span>Subtotal:</span>
-          <span>${{ cartSubtotal.toFixed(2) }}</span>
+          <span>${{ cart.subTotal.toFixed(2) }}</span>
         </div>
          <div class="flex justify-between font-bold text-lg mb-2">
           <span>Total:</span>
-          <span>${{ cartTotal.toFixed(2) }}</span>
+          <span>${{ cart.total.toFixed(2) }}</span>
         </div>
         <router-view></router-view>
       </div>
@@ -79,9 +80,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { ref, computed, onMounted } from 'vue';
 import { CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
+import { useCartStore } from '../../stores/cart';
 
 const availableProducts = ref<Product[]>([]);
-const cartItems = ref<CartItem[]>([]);
+const cart = useCartStore();
 const isLoading = ref(true);
 const loadingError = ref('');
 
@@ -98,16 +100,6 @@ onMounted(async () => {
   }
 });
 
-const cartSubtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
-});
-
-// Add tax/discount logic here later if needed
-const cartTotal = computed(() => {
-  return cartSubtotal.value; // For now, total is the same as subtotal
-});
-
-
 // --- Methods ---
 const fetchProducts = async () => {
   try {
@@ -119,34 +111,20 @@ const fetchProducts = async () => {
 };
 
 const addToCart = (product: Product) => {
-  const existingItem = cartItems.value.find(item => item.id === product.id);
-  if (existingItem) {
-    existingItem.quantity++;
-  } else {
-    cartItems.value.push({ ...product, quantity: 1 });
-  }
+  cart.addItem(product, 1);
 };
 
 const incrementQuantity = (item: CartItem) => {
-  item.quantity++;
+  cart.addItem(item, 1)
 };
 
 const decrementQuantity = (item: CartItem) => {
-  if (item.quantity > 1) {
-    item.quantity--;
-  } else {
-    // If quantity is 1, remove the item
-    removeFromCart(item);
-  }
+  cart.removeItem(item, 1)
 };
 
 const removeFromCart = (itemToRemove: CartItem) => {
-  cartItems.value = cartItems.value.filter(item => item.id !== itemToRemove.id);
+  cart.removeItem(itemToRemove)
 };
-
-const clearCart = () => {
-  cartItems.value = [];
-}
 
 const processPayment = async () => {
   if (cartItems.value.length === 0) {
@@ -159,7 +137,7 @@ const processPayment = async () => {
       return { ...item, product_id: item.id }
     })
     await invoke('process_sale', { items })
-    clearCart()
+    cart.clear()
   } catch (err) {
     console.error("Error processing payment:", err);
   }
