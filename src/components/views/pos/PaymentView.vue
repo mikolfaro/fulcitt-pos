@@ -4,18 +4,18 @@
     <span>${{ amount.toFixed(2) }}</span>
   </div>
   <div
-    v-if="amount >= total"
+    v-if="amount >= cart.total"
     class="flex justify-between font-bold text-lg mb-4"
   >
     <span>Change:</span>
-    <span>${{ (amount - total).toFixed(2) }}</span>
+    <span>${{ (amount - cart.total).toFixed(2) }}</span>
   </div>
   <div
     v-else
     class="flex justify-between font-bold text-lg mb-4"
   >
     <span>Due:</span>
-    <span class="text-error">${{ (total - amount).toFixed(2) }}</span>
+    <span class="text-error">${{ (cart.total - amount).toFixed(2) }}</span>
   </div>
 
   <div class="grid grid-cols-3 gap-2">
@@ -35,7 +35,7 @@
   <button class="btn btn-success w-full" @click="processPayment">Process payment</button>
   <button
     class="btn btn-outline btn-error w-full mt-2"
-    @click="cancelPayment">
+    @click="cancelPayment"
   >
     Cancel
   </button>
@@ -43,8 +43,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useCartStore } from '../../../stores/cart';
+import { invoke } from '@tauri-apps/api/core';
+import { useRouter } from 'vue-router';
 
-const total = 300
+const router = useRouter()
+const cart = useCartStore()
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
 const typedAmount = ref<string>('')
 const amount = ref<number>(0);
@@ -70,9 +74,26 @@ function undoType() {
   }
 }
 
-function processPayment() {
-  emit('payment-processed', amount.value, Math.max(0, amount.value - total));
-}
+async function processPayment() {
+  if (cart.items.length === 0) {
+    alert("Cart is empty!");
+    return;
+  }
+
+  try {
+    const items = cart.items.map((item) => {
+      return { ...item, product_id: item.id }
+    })
+    await invoke('process_sale', { items })
+
+    cart.clear()
+    cart.unlock()
+
+    router.push("/")
+  } catch (err) {
+    console.error("Error processing payment:", err);
+  }
+};
 
 function cancelPayment() {
   emit('payment-cancelled');
