@@ -2,13 +2,13 @@ use chrono::Local;
 use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
 
-use crate::CartItem;
+use crate::{CartItem, CommandResult};
 
 pub(crate) fn print_tickets<D>(
     printer: &mut Printer<D>,
     sale_id: i64,
     items: &[CartItem],
-) -> Result<(), String>
+) -> CommandResult<()>
 where
     D: Driver,
 {
@@ -18,22 +18,26 @@ where
 
     for item in items {
         for i in 0..item.quantity {
-            info!("Printing ticket for product{} ({} of {})", item.name, i + 1, item.quantity);
+            info!(
+                "Printing ticket for product{} ({} of {})",
+                item.name,
+                i + 1,
+                item.quantity
+            );
 
             printer
                 // Header
-                .justify(JustifyMode::CENTER)
-                .and_then(|p| p.size(2, 3))
-                .and_then(|p| p.writeln("PICKUP TICKET"))
-                .and_then(|p| p.feed())
-                .and_then(|p| p.reset_size())
-                .and_then(|p| p.writeln(&format!("#{} - {}", sale_id, sale_time_str)))
+                .justify(JustifyMode::CENTER)?
+                .size(2, 3)?
+                .writeln("PICKUP TICKET")?
+                .feed()?
+                .reset_size()?
+                .writeln(&format!("#{} - {}", sale_id, sale_time_str))?
                 // Body
-                .and_then(|p| p.justify(JustifyMode::CENTER))
-                .and_then(|p| p.writeln(&item.name.to_string()))
-                .and_then(|p| p.feed())
-                .and_then(|p| p.cut())
-                .map_err(|e| e.to_string())?;
+                .justify(JustifyMode::CENTER)?
+                .writeln(&item.name.to_string())?
+                .feed()?
+                .cut()?;
         }
     }
 

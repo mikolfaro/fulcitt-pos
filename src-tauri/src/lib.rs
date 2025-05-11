@@ -12,8 +12,10 @@ use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, Manager, State};
 
+use errors::*;
 use models::*;
 
+mod errors;
 mod models;
 mod printing;
 
@@ -26,7 +28,7 @@ struct AppState {
 type PrinterState = Arc<Mutex<Printer<ConsoleDriver>>>;
 
 #[tauri::command]
-async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, String> {
+async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
     let products = sqlx::query_as!(
         Product,
         r#"
@@ -34,8 +36,7 @@ async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, S
     "#
     )
     .fetch_all(&app_state.db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     Ok(products)
 }
@@ -44,7 +45,7 @@ async fn list_products(app_state: State<'_, AppState>) -> Result<Vec<Product>, S
 async fn create_product(
     product: UnsavedProduct,
     app_state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     sqlx::query(
         r#"
         INSERT INTO products(name, price, category)
@@ -55,14 +56,13 @@ async fn create_product(
     .bind(product.price)
     .bind(product.category)
     .execute(&app_state.db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     Ok(())
 }
 
 #[tauri::command]
-async fn update_product(product: Product, app_state: State<'_, AppState>) -> Result<(), String> {
+async fn update_product(product: Product, app_state: State<'_, AppState>) -> CommandResult<()> {
     sqlx::query(
         r#"
         UPDATE products
@@ -75,14 +75,13 @@ async fn update_product(product: Product, app_state: State<'_, AppState>) -> Res
     .bind(product.category)
     .bind(product.id)
     .execute(&app_state.db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     Ok(())
 }
 
 #[tauri::command]
-async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Result<(), String> {
+async fn delete_product(product: Product, app_state: State<'_, AppState>) -> CommandResult<()> {
     sqlx::query(
         r#"
         DELETE FROM products WHERE id = ?
@@ -90,8 +89,7 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Res
     )
     .bind(product.id)
     .execute(&app_state.db)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     Ok(())
 }
@@ -101,9 +99,9 @@ async fn process_sale(
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     items: Vec<CartItem>,
-) -> Result<i64, String> {
+) -> CommandResult<i64> {
     if items.is_empty() {
-        return Err("Cannot add a sale with no items.".to_string());
+        return Err(CommandError::Input("Cannot add a sale with no items.".to_string()));
     }
 
     let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
@@ -112,7 +110,7 @@ async fn process_sale(
         .map(|item| item.price * item.quantity as f64)
         .sum();
 
-    let mut tx = app_state.db.begin().await.map_err(|e| e.to_string())?;
+    let mut tx = app_state.db.begin().await?;
     let sale_id: i64 = sqlx::query_scalar(
         r#"
         INSERT INTO sales (sale_time, total_amount) VALUES (?, ?) RETURNING id;
@@ -121,24 +119,23 @@ async fn process_sale(
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
     for item in &items {
         let quantity = item.quantity;
         let price_at_sale = item.price;
 
         if quantity <= 0 {
-            return Err(format!(
+            return Err(CommandError::Input(format!(
                 "Invalid quantity {} for product {}",
                 quantity, item.product_id
-            ));
+            )));
         }
         if price_at_sale < 0.0 {
-            return Err(format!(
+            return Err(CommandError::Input(format!(
                 "Invalid price {} for product {}",
                 price_at_sale, item.product_id
-            ));
+            )));
         }
 
         sqlx::query(
@@ -153,18 +150,17 @@ async fn process_sale(
         .bind(quantity)
         .bind(price_at_sale)
         .execute(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+        .await?;
     }
 
-    tx.commit().await.map_err(|e| e.to_string())?;
+    tx.commit().await?;
 
     info!("Created new sale {}", sale_id);
 
-    let mut printer = printer_state.lock().unwrap();
+    let mut printer = printer_state.lock()?;
     printer
         .debug_mode(Some(DebugMode::Dec))
-        .init().map_err(|e| e.to_string())?;
+        .init()?;
 
     print_tickets(&mut *printer, sale_id, &items)?;
 
@@ -176,13 +172,11 @@ struct ItemSale {
     product_id: i64,
     product_name: String,
     total_quantity_sold: i64,
-    total_value_sold: f64
+    total_value_sold: f64,
 }
 
 #[tauri::command]
-async fn get_sales_recap(
-    app_state: State<'_, AppState>
-) -> Result<Vec<ItemSale>, String> {
+async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<ItemSale>> {
     let item_sales = sqlx::query_as::<_, ItemSale>(
         r#"
             SELECT product_id,
@@ -191,11 +185,10 @@ async fn get_sales_recap(
                 SUM(quantity * price_at_sale) AS total_value_sold
             FROM sale_items
             GROUP BY product_id;
-        "#
+        "#,
     )
-        .fetch_all(&app_state.db)
-        .await
-        .map_err(|e| e.to_string())?;
+    .fetch_all(&app_state.db)
+    .await?;
 
     Ok(item_sales)
 }
@@ -204,22 +197,18 @@ async fn get_sales_recap(
 async fn test_print_raw_file(
     printer_state: State<'_, PrinterState>,
     text_to_print: String,
-) -> Result<(), String> {
-    println!("Attempting to print '{}'", text_to_print);
+) -> CommandResult<()> {
+    info!("Attempting to print '{}'", text_to_print);
 
-    let mut printer = printer_state.lock().unwrap();
+    let mut printer = printer_state.lock()?;
 
     println!();
     printer
         .debug_mode(Some(DebugMode::Dec))
-        .init()
-        .map_err(|_| "Failed to initialize printer")?
-        .writeln(&text_to_print)
-        .map_err(|_| "Failed to write ln")?
-        .feed()
-        .map_err(|_| "Failed to feed")?
-        .print_cut()
-        .map_err(|_| "Failed to cut")?;
+        .init()?
+        .writeln(&text_to_print)?
+        .feed()?
+        .print_cut()?;
     println!();
 
     Ok(())
