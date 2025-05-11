@@ -3,10 +3,13 @@
     <NavBar />
     <main class="flex-grow overflow-auto">
       <RouterView />
+
+      <MessageDisplay/>
     </main>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import NavBar from './components/NavBar.vue';
+import MessageDisplay from './components/MessageDisplay.vue';
+import NavBar from './components/NavBar.vue';
 </script>

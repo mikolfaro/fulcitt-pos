@@ -6,9 +6,6 @@
         <div v-if="isLoadingProducts" class="text-center">
           <span class="loading loading-dots loading-md"></span> Loading products...
         </div>
-        <div v-if="loadingError" class="text-error">
-          Error loading products: {{ loadingError }}
-        </div>
         <div v-else class="overflow-x-auto">
           <table class="table table-zebra w-full">
             <thead>
@@ -133,13 +130,6 @@
                   </button>
                 </td>
               </tr>
-              <tr>
-                <td colspan="4">
-                  <p v-if="feedback.message" :class="['mt-4 text-sm', feedback.isError ? 'text-error' : 'text-success']">
-                    {{ feedback.message }}
-                  </p>
-                </td>
-              </tr>
             </tbody>
           </table>
           <form id="addProduct" @submit.prevent="addProduct" ref="addProductFormRef"></form>
@@ -152,13 +142,14 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue"
-import { Product, UnsavedProduct } from "../../../lib";
+import { AppMessage, Product, UnsavedProduct } from "../../../lib";
 import { createProduct, deleteProduct, listProducts, updateProduct } from "../../../repositories";
+import { useMessagesStore } from "../../../stores/messagesStore";
 
+const messages = useMessagesStore()
 const isAdding = ref(false);
 const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
-const loadingError = ref('');
 
 const addProductFormRef = ref(null);
 const existingProducts = ref<Product[]>([]);
@@ -176,51 +167,26 @@ const productToEdit = reactive<{
   category: string
 }>({ id: null, name: '', category: '', price: null });
 
-const feedback = reactive({
-  message: '',
-  isError: false,
-});
-
-const editFeedback = reactive({
-  message: '',
-  isError: false,
-});
-
 onMounted(async () => {
-  feedback.message = ''; // Clear any previous messages
   try {
     await fetchExistingProducts();
   } catch (err) {
-    console.error("ProductManagement: Failed to load database:", err);
+    messages.addMessage(err as AppMessage)
   }
 });
 
-const setFeedback = (msg: string, error = false, duration = 4000) => {
-    feedback.message = msg;
-    feedback.isError = error;
-    // Automatically clear non-error messages
-    if (!error) {
-        setTimeout(() => {
-            if (feedback.message === msg) { // Clear only if message hasn't changed
-                 feedback.message = '';
-            }
-        }, duration);
-    }
-};
-
 const addProduct = async () => {
   if (newProduct.price === null || newProduct.price < 0) {
-      setFeedback("Price must be zero or greater.", true);
-      return;
+    messages.addInputError("Price must be zero or greater.");
+    return;
   }
 
   isAdding.value = true;
-  feedback.message = '';
 
   try {
     const product = newProduct as UnsavedProduct;
     await createProduct(product);
-    setFeedback(`Product "${newProduct.name}" added successfully!`, false);
+    messages.addSuccess(`Product "${newProduct.name}" added successfully!`);
     await fetchExistingProducts();
 
     newProduct.name = '';
@@ -228,9 +194,11 @@ const addProduct = async () => {
     newProduct.category = '';
   } catch (err: any) {
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-        setFeedback(`Error: A product with the name "${newProduct.name}" already exists.`, true);
+      messages.addInputError(
+        `Error: A product with the name "${newProduct.name}" already exists.`
+      );
     } else {
-        setFeedback(`Error adding product: ${err.message || err}`, true);
+      messages.addMessage(err as AppMessage)
     }
   } finally {
     isAdding.value = false;
@@ -239,33 +207,19 @@ const addProduct = async () => {
 
 const fetchExistingProducts = async () => {
   isLoadingProducts.value = true;
-  loadingError.value = '';
   try {
     const products = await listProducts();
     existingProducts.value = products;
   } catch (err: any) {
-    loadingError.value = `Failed to fetch products: ${err.message || err}`;
-    existingProducts.value = []; // Clear list on error
+    messages.addMessage({ type: 'DataLoading', message: `Failed to fetch products: ${err.message || err}`});
+    existingProducts.value = [];
   } finally {
     isLoadingProducts.value = false;
   }
 };
 
-const setEditFeedback = (msg: string, error = false, duration = 4000) => {
-  editFeedback.message = msg;
-  editFeedback.isError = error;
-  if (!error) {
-    setTimeout(() => {
-      if (editFeedback.message === msg) { // Clear only if message hasn't changed
-        editFeedback.message = '';
-      }
-    }, duration);
-  }
-};
-
 const resetEditForm = () => {
     Object.assign(productToEdit, { id: null, name: '', price: null, category: '' });
-    editFeedback.message = '';
 };
 
 const openEdit = (product: Product) => {
@@ -280,26 +234,25 @@ const closeEdit = () => {
 
 const doUpdateProduct = async () => {
   if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
-    setEditFeedback("Please fill in all fields correctly (Price >= 0).", true);
+    messages.addInputError("Please fill in all fields correctly (Price >= 0).")
     return;
   }
   const product = productToEdit as Product;
 
   isUpdating.value = true;
-  editFeedback.message = '';
 
   try {
     await updateProduct(product);
-    setEditFeedback("Product updated successfully!", false);
+    messages.addSuccess("Product updated successfully!");
     await fetchExistingProducts();
     closeEdit();
 
   } catch (err: any) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      setEditFeedback(`Error: Another product likely exists with the name "${productToEdit.name}".`, true);
+      messages.addInputError(`Error: Another product likely exists with the name "${productToEdit.name}".`);
     } else {
-      setEditFeedback(`Error updating product: ${err.message || err}`, true);
+      messages.addMessage(err as AppMessage)
     }
   } finally {
     isUpdating.value = false;
@@ -307,17 +260,16 @@ const doUpdateProduct = async () => {
 }
 
 const doDeleteProduct = async (productToDelete: Product) => {
-  editFeedback.message = '';
   try {
     await deleteProduct(productToDelete)
-    setEditFeedback("Product deleted successfully!", false);
+    messages.addSuccess("Product deleted successfully!");
     await fetchExistingProducts();
   } catch (err: any) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      setEditFeedback(`Error: Another product likely exists with the name "${productToDelete.name}".`, true);
+      messages.addInputError(`Error: Another product likely exists with the name "${productToDelete.name}".`);
     } else {
-      setEditFeedback(`Error deleting product: ${err?.message || err}`, true);
+      messages.addMessage(err as AppMessage);
     }
   }
 }

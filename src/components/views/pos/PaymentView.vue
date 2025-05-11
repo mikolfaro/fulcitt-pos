@@ -32,7 +32,7 @@
     <a class="btn" @click="undoType()"><-</a>
   </div>
 
-  <button class="btn btn-success w-full" @click="processPayment">Process payment</button>
+  <button class="btn btn-success w-full mt-4" @click="processPayment">Process payment</button>
   <button
     class="btn btn-outline btn-error w-full mt-2"
     @click="cancelPayment"
@@ -43,20 +43,18 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useCartStore } from '../../../stores/cart';
-import { invoke } from '@tauri-apps/api/core';
 import { useRouter } from 'vue-router';
+import { invoke } from '@tauri-apps/api/core';
+import { useCartStore } from '../../../stores/cartStore';
+import { useMessagesStore } from '../../../stores/messagesStore';
+import { AppMessage } from '../../../lib';
 
 const router = useRouter()
+const messages = useMessagesStore()
 const cart = useCartStore()
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
 const typedAmount = ref<string>('')
 const amount = ref<number>(0);
-
-const emit = defineEmits<{
-  (e: 'payment-cancelled', amountPaid: number, change: number): void
-  (e: 'payment-cancelled'): void
-}>()
 
 function type(digit: number | string) {
   typedAmount.value += digit.toString()
@@ -66,7 +64,6 @@ function type(digit: number | string) {
 function undoType() {
   if (typedAmount.value.length > 1) {
     typedAmount.value = typedAmount.value.slice(0, -1)
-    console.log(typedAmount.value)
     amount.value = parseFloat(typedAmount.value)
   } else {
     typedAmount.value = ''
@@ -76,7 +73,7 @@ function undoType() {
 
 async function processPayment() {
   if (cart.items.length === 0) {
-    alert("Cart is empty!");
+    messages.addInputError('Cart is empty')
     return;
   }
 
@@ -91,11 +88,14 @@ async function processPayment() {
 
     router.push("/")
   } catch (err) {
-    console.error("Error processing payment:", err);
+    messages.addMessage(err as AppMessage)
   }
 };
 
 function cancelPayment() {
-  emit('payment-cancelled');
+  cart.clear()
+  cart.unlock()
+
+  router.push("/")
 }
 </script>
