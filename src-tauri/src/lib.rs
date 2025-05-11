@@ -6,6 +6,7 @@ use escpos::{
     printer_options::PrinterOptions,
     utils::{DebugMode, Protocol},
 };
+use log::info;
 use printing::print_tickets;
 use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
@@ -158,8 +159,12 @@ async fn process_sale(
 
     tx.commit().await.map_err(|e| e.to_string())?;
 
+    info!("Created new sale {}", sale_id);
+
     let mut printer = printer_state.lock().unwrap();
-    printer.init().map_err(|e| e.to_string())?;
+    printer
+        .debug_mode(Some(DebugMode::Dec))
+        .init().map_err(|e| e.to_string())?;
 
     print_tickets(&mut *printer, sale_id, &items)?;
 
@@ -206,7 +211,7 @@ async fn test_print_raw_file(
 
     println!();
     printer
-        .debug_mode(Some(DebugMode::Hex))
+        .debug_mode(Some(DebugMode::Dec))
         .init()
         .map_err(|_| "Failed to initialize printer")?
         .writeln(&text_to_print)

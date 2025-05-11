@@ -1,5 +1,6 @@
 use chrono::Local;
 use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
+use log::info;
 
 use crate::CartItem;
 
@@ -11,12 +12,14 @@ pub(crate) fn print_tickets<D>(
 where
     D: Driver,
 {
+    info!("Printing tickets for sale {}", sale_id);
+
     let sale_time_str = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    println!("Printing");
-
     for item in items {
-        for _ in 0..item.quantity {
+        for i in 0..item.quantity {
+            info!("Printing ticket for product{} ({} of {})", item.name, i + 1, item.quantity);
+
             printer
                 // Header
                 .justify(JustifyMode::CENTER)
@@ -34,7 +37,7 @@ where
         }
     }
 
-    println!("Completed print");
+    info!("Completed print for sale {}", sale_id);
 
     Ok(())
 }

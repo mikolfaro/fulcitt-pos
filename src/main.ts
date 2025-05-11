@@ -2,40 +2,15 @@ import "./style.css"
 
 import { createApp } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
+import { createPinia } from "pinia";
+
 import App from "./App.vue";
-import PosView from "./components/views/PosView.vue";
-import ReportView from "./components/views/ReportView.vue";
-import SettingsView from "./components/views/SettingsView.vue";
-import PrintView from "./components/views/settings/PrintView.vue";
-import ProductSettingsView from "./components/views/settings/ProductsView.vue";
+import routes from "./routes"
 
-const routes = [
-  {
-    path: '/',
-    component: PosView
-  },
-  {
-    path: '/report',
-    component: ReportView
-  },
-  {
-    path: '/settings',
-    component: SettingsView,
-    children: [
-      {
-        path: 'products',
-        component: ProductSettingsView,
-      },
-      {
-        path: 'print',
-        component: PrintView,
-      }
-    ]
-  }
-];
-
+const pinia = createPinia()
 const router = createRouter({ history: createMemoryHistory(), routes })
 
 createApp(App)
+  .use(pinia)
   .use(router)
   .mount("#app")
