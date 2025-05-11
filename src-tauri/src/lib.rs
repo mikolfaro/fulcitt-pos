@@ -101,7 +101,7 @@ async fn process_sale(
     items: Vec<CartItem>,
 ) -> CommandResult<i64> {
     if items.is_empty() {
-        return Err(CommandError::Input("Cannot add a sale with no items.".to_string()));
+        return Err(CommandError::InvalidInput("Cannot add a sale with no items.".to_string()));
     }
 
     let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
@@ -126,13 +126,13 @@ async fn process_sale(
         let price_at_sale = item.price;
 
         if quantity <= 0 {
-            return Err(CommandError::Input(format!(
+            return Err(CommandError::InvalidInput(format!(
                 "Invalid quantity {} for product {}",
                 quantity, item.product_id
             )));
         }
         if price_at_sale < 0.0 {
-            return Err(CommandError::Input(format!(
+            return Err(CommandError::InvalidInput(format!(
                 "Invalid price {} for product {}",
                 price_at_sale, item.product_id
             )));

@@ -1,13 +1,13 @@
 use serde::Serialize;
 
 #[derive(thiserror::Error, Debug, Serialize)]
-#[serde(tag = "type", content = "error")]
+#[serde(tag = "type", content = "message")]
 pub(crate) enum CommandError {
     #[error("Database error {0}")]
     Database(String),
 
     #[error("Input error {0}")]
-    Input(String),
+    InvalidInput(String),
 
     #[error("Concurrency resource access error")]
     MutexPoison,

@@ -80,7 +80,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { ref, computed, onMounted } from 'vue';
 import { CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
-import { useCartStore } from '../../stores/cart';
+import { useCartStore } from '../../stores/cartStore';
 
 const availableProducts = ref<Product[]>([]);
 const cart = useCartStore();

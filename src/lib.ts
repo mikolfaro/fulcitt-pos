@@ -12,3 +12,8 @@ export interface CartItem {
   price: number,
   quantity: number
 }
+
+export interface AppMessage {
+  type: string,
+  message: string
+}
