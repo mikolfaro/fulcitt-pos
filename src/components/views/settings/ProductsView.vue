@@ -177,7 +177,7 @@ onMounted(async () => {
 
 const addProduct = async () => {
   if (newProduct.price === null || newProduct.price < 0) {
-    messages.addInputError("Price must be zero or greater.");
+    messages.addInvalidInput("Price must be zero or greater.");
     return;
   }
 
@@ -194,7 +194,7 @@ const addProduct = async () => {
     newProduct.category = '';
   } catch (err: any) {
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInputError(
+      messages.addInvalidInput(
         `Error: A product with the name "${newProduct.name}" already exists.`
       );
     } else {
@@ -234,7 +234,7 @@ const closeEdit = () => {
 
 const doUpdateProduct = async () => {
   if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
-    messages.addInputError("Please fill in all fields correctly (Price >= 0).")
+    messages.addInvalidInput("Please fill in all fields correctly (Price >= 0).")
     return;
   }
   const product = productToEdit as Product;
@@ -250,7 +250,7 @@ const doUpdateProduct = async () => {
   } catch (err: any) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInputError(`Error: Another product likely exists with the name "${productToEdit.name}".`);
+      messages.addInvalidInput(`Error: Another product likely exists with the name "${productToEdit.name}".`);
     } else {
       messages.addMessage(err as AppMessage)
     }
@@ -267,7 +267,7 @@ const doDeleteProduct = async (productToDelete: Product) => {
   } catch (err: any) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInputError(`Error: Another product likely exists with the name "${productToDelete.name}".`);
+      messages.addInvalidInput(`Error: Another product likely exists with the name "${productToDelete.name}".`);
     } else {
       messages.addMessage(err as AppMessage);
     }

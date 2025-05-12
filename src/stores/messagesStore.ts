@@ -9,8 +9,8 @@ export const useMessagesStore = defineStore('messages', {
     addMessage(error: AppMessage) {
       this.messages.push(error)
     },
-    addInputError(message: string) {
-      this.messages.push({ type: 'InputValue', message })
+    addInvalidInput(message: string) {
+      this.messages.push({ type: 'InvalidInput', message })
     },
     addSuccess(message: string) {
       this.messages.push({ type: 'Success', message })

@@ -73,7 +73,7 @@ function undoType() {
 
 async function processPayment() {
   if (cart.items.length === 0) {
-    messages.addInputError('Cart is empty')
+    messages.addInvalidInput('Cart is empty')
     return;
   }
 

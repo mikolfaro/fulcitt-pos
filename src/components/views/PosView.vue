@@ -7,24 +7,29 @@
     </div>
   </div>
   <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
-    <div class="w-3/5 bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
-      <h2 class="text-xl font-bold mb-4">Products</h2>
-      <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
-        <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
-        <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          <div
-            v-for="product in productsInCategory"
-            :aria-disabled="cart.isLocked"
-            :key="product.id"
-            class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-            @click="!cart.isLocked && addToCart(product)"
-          >
-            <div class="card-body items-center text-center p-3">
-              <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
-              <p class="text-md font-semibold mt-1">${{ product.price.toFixed(2) }}</p>
+    <div class="w-3/5 flex flex-col gap-4">
+      <div class="flex-grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Products</h2>
+        <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
+          <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div
+              v-for="product in productsInCategory"
+              :aria-disabled="cart.isLocked"
+              :key="product.id"
+              class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
+              @click="!cart.isLocked && addToCart(product)"
+            >
+              <div class="card-body items-center text-center p-3">
+                <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
+                <p class="text-md font-semibold mt-1">${{ product.price.toFixed(2) }}</p>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+      <div>
+        <a class="btn btn-info" @click="printLastSale()">Print last sale tickets</a>
       </div>
     </div>
 
@@ -78,12 +83,14 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
 import { ref, computed, onMounted } from 'vue';
-import { CartItem, Product } from '../../lib';
+import { AppMessage, CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
 import { useCartStore } from '../../stores/cartStore';
+import { useMessagesStore } from '../../stores/messagesStore';
 
 const availableProducts = ref<Product[]>([]);
 const cart = useCartStore();
+const messages = useMessagesStore()
 const isLoading = ref(true);
 const loadingError = ref('');
 
@@ -126,22 +133,13 @@ const removeFromCart = (itemToRemove: CartItem) => {
   cart.removeItem(itemToRemove)
 };
 
-const processPayment = async () => {
-  if (cartItems.value.length === 0) {
-    alert("Cart is empty!");
-    return;
-  }
-
+const printLastSale = async () => {
   try {
-    const items = cartItems.value.map((item) => {
-      return { ...item, product_id: item.id }
-    })
-    await invoke('process_sale', { items })
-    cart.clear()
+    await invoke('print_last_sale')
   } catch (err) {
-    console.error("Error processing payment:", err);
+    messages.addMessage(err as AppMessage)
   }
-};
+}
 
 const groupedProducts = computed<Record<string, Product[]>>(() => {
   return availableProducts.value.reduce((groups: Record<string, Product[]>, product: Product) => {
