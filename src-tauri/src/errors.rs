@@ -18,7 +18,7 @@ pub(crate) enum CommandError {
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;
 
-impl <D> From<std::sync::PoisonError<D>> for CommandError {
+impl<D> From<std::sync::PoisonError<D>> for CommandError {
     fn from(err: std::sync::PoisonError<D>) -> Self {
         log::error!("Mutex poisoning error occurred {:?}", err);
 

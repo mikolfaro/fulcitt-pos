@@ -101,7 +101,9 @@ async fn process_sale(
     items: Vec<CartItem>,
 ) -> CommandResult<i64> {
     if items.is_empty() {
-        return Err(CommandError::InvalidInput("Cannot add a sale with no items.".to_string()));
+        return Err(CommandError::InvalidInput(
+            "Cannot add a sale with no items.".to_string(),
+        ));
     }
 
     let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
@@ -158,9 +160,7 @@ async fn process_sale(
     info!("Created new sale {}", sale_id);
 
     let mut printer = printer_state.lock()?;
-    printer
-        .debug_mode(Some(DebugMode::Dec))
-        .init()?;
+    printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     print_tickets(&mut *printer, sale_id, &items)?;
 
@@ -244,9 +244,8 @@ async fn setup_db(app: &App) -> Db {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    env_logger::init();
-
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             list_products,
