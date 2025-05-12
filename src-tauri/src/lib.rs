@@ -50,15 +50,18 @@ async fn create_product(
 ) -> CommandResult<()> {
     sqlx::query(
         r#"
-        INSERT INTO products(name, price, category)
-        VALUES (?, ?, ?)
+        INSERT INTO products(name, price, category, is_deleted)
+        VALUES ($1, $2, $3, 0)
+        ON CONFLICT(name) DO UPDATE SET price = $2, category = $3, is_deleted = 0
     "#,
     )
-    .bind(product.name)
-    .bind(product.price)
-    .bind(product.category)
+    .bind(&product.name)
+    .bind(&product.price)
+    .bind(&product.category)
     .execute(&app_state.db)
     .await?;
+
+    info!("Product {} created", product.name);
 
     Ok(())
 }
