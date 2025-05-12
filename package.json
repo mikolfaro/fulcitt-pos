@@ -8,6 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "sqlx": "cd src-tauri && sqlx",
+    "sqlx:make_migration": "cd src-tauri && sqlx migrate add",
     "tauri": "tauri",
     "cargo": "cd src-tauri && cargo",
     "lint": "eslint --ext .js,.ts,.vue src/",

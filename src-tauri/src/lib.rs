@@ -32,7 +32,9 @@ async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Prod
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT * FROM products
+        SELECT *
+        FROM products
+        WHERE is_deleted = 0
     "#
     )
     .fetch_all(&app_state.db)
@@ -48,15 +50,18 @@ async fn create_product(
 ) -> CommandResult<()> {
     sqlx::query(
         r#"
-        INSERT INTO products(name, price, category)
-        VALUES (?, ?, ?)
+        INSERT INTO products(name, price, category, is_deleted)
+        VALUES ($1, $2, $3, 0)
+        ON CONFLICT(name) DO UPDATE SET price = $2, category = $3, is_deleted = 0
     "#,
     )
-    .bind(product.name)
-    .bind(product.price)
-    .bind(product.category)
+    .bind(&product.name)
+    .bind(&product.price)
+    .bind(&product.category)
     .execute(&app_state.db)
     .await?;
+
+    info!("Product {} created", product.name);
 
     Ok(())
 }
@@ -84,7 +89,9 @@ async fn update_product(product: Product, app_state: State<'_, AppState>) -> Com
 async fn delete_product(product: Product, app_state: State<'_, AppState>) -> CommandResult<()> {
     sqlx::query(
         r#"
-        DELETE FROM products WHERE id = ?
+        UPDATE products
+        SET is_deleted = 1
+        WHERE id = ?
     "#,
     )
     .bind(product.id)

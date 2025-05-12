@@ -13,6 +13,7 @@ pub(crate) struct Product {
     pub name: String,
     pub category: String,
     pub price: f64,
+    pub is_deleted: bool,
 }
 
 #[derive(Deserialize, Serialize)]
