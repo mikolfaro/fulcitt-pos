@@ -32,7 +32,9 @@ async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Prod
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT * FROM products
+        SELECT *
+        FROM products
+        WHERE is_deleted = 0
     "#
     )
     .fetch_all(&app_state.db)
@@ -84,7 +86,9 @@ async fn update_product(product: Product, app_state: State<'_, AppState>) -> Com
 async fn delete_product(product: Product, app_state: State<'_, AppState>) -> CommandResult<()> {
     sqlx::query(
         r#"
-        DELETE FROM products WHERE id = ?
+        UPDATE products
+        SET is_deleted = 1
+        WHERE id = ?
     "#,
     )
     .bind(product.id)

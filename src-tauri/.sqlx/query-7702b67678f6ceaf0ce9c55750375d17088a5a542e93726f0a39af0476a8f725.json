@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT * FROM products\n    ",
+  "query": "\n        SELECT *\n        FROM products\n        WHERE is_deleted = 0\n    ",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "category",
         "ordinal": 3,
         "type_info": "Text"
+      },
+      {
+        "name": "is_deleted",
+        "ordinal": 4,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "aaf65a4968d1b013cb0992c8b50836dfdd77952a67f67315d5e70be13c2856e3"
+  "hash": "7702b67678f6ceaf0ce9c55750375d17088a5a542e93726f0a39af0476a8f725"
 }
