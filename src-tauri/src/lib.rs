@@ -56,7 +56,7 @@ async fn create_product(
     "#,
     )
     .bind(&product.name)
-    .bind(&product.price)
+    .bind(product.price)
     .bind(&product.category)
     .execute(&app_state.db)
     .await?;
@@ -201,6 +201,46 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<It
 }
 
 #[tauri::command]
+async fn print_last_sale(
+    app_state: State<'_, AppState>,
+    printer_state: State<'_, PrinterState>,
+) -> CommandResult<()> {
+    let last_sale = sqlx::query!(
+        r#"
+        SELECT id
+        FROM sales
+        ORDER BY id DESC
+        LIMIT 1 "#
+    )
+    .fetch_optional(&app_state.db)
+    .await?
+    .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
+
+    let last_sale_id = last_sale.id;
+    info!("Reprinting tickets of sale {}", last_sale_id);
+
+    let items = sqlx::query_as!(
+        CartItem,
+        r#"
+        SELECT product_id,
+            product_name AS name,
+            quantity,
+            price_at_sale AS price
+        FROM sale_items
+        WHERE sale_id = ?
+    "#,
+        last_sale_id
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    let mut printer = printer_state.lock()?;
+    print_tickets(&mut *printer, last_sale_id, &items)?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn test_print_raw_file(
     printer_state: State<'_, PrinterState>,
     text_to_print: String,
@@ -261,6 +301,7 @@ pub fn run() {
             delete_product,
             process_sale,
             get_sales_recap,
+            print_last_sale,
             test_print_raw_file,
         ])
         .setup(|app| {
