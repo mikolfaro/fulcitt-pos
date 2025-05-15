@@ -3,8 +3,9 @@ import CheckoutView from "./components/views/pos/CheckoutView.vue";
 import PaymentView from "./components/views/pos/PaymentView.vue";
 import ReportView from "./components/views/ReportView.vue";
 import SettingsView from "./components/views/SettingsView.vue";
-import PrintView from "./components/views/settings/PrintView.vue";
+import PrinterView from "./components/views/settings/PrinterView.vue";
 import ProductSettingsView from "./components/views/settings/ProductsView.vue";
+import LayoutView from "./components/views/settings/LayoutView.vue";
 
 export default [
   {
@@ -31,8 +32,12 @@ export default [
         component: ProductSettingsView,
       },
       {
-        path: 'print',
-        component: PrintView,
+        path: 'layout',
+        component: LayoutView,
+      },
+      {
+        path: 'printer',
+        component: PrinterView,
       }
     ]
   }
