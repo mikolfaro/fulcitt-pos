@@ -37,7 +37,7 @@ where
                 .justify(JustifyMode::CENTER)?
                 .writeln(&item.name.to_string())?
                 .feed()?
-                .cut()?;
+                .print_cut()?;
         }
     }
 
