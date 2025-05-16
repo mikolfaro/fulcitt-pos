@@ -3,18 +3,35 @@ use std::fmt::Debug;
 use chrono::Local;
 use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{CartItem, CommandResult};
 
 #[derive(Serialize, Deserialize, Debug)]
+enum FontSize {
+    Small,
+    Normal,
+    Large,
+}
+#[derive(Serialize, Deserialize, Debug)]
+enum Justify {
+    Left,
+    Center,
+    Righth,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SectionLayout {
-    enabled: bool
+    enabled: bool,
+    font_size: FontSize,
+    justify: Justify,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct HeaderLayout {
     enabled: bool,
+    font_size: FontSize,
+    justify: Justify,
     content: String,
 }
 
@@ -22,7 +39,7 @@ pub(crate) struct HeaderLayout {
 pub(crate) struct PrintingLayout {
     header: HeaderLayout,
     body: SectionLayout,
-    footer: SectionLayout
+    footer: SectionLayout,
 }
 
 pub(crate) fn print_tickets<D>(
@@ -90,7 +107,7 @@ where
 fn print_body<D>(
     printer: &mut Printer<D>,
     _layout: &SectionLayout,
-    item: &CartItem
+    item: &CartItem,
 ) -> CommandResult<()>
 where
     D: Driver,
@@ -103,22 +120,32 @@ where
     Ok(())
 }
 
-fn print_footer<D>(
-    _printer: &mut Printer<D>,
-    _layout: &SectionLayout,
-) -> CommandResult<()>
+fn print_footer<D>(_printer: &mut Printer<D>, _layout: &SectionLayout) -> CommandResult<()>
 where
-    D: Driver {
-
+    D: Driver,
+{
     Ok(())
 }
 
 impl Default for PrintingLayout {
     fn default() -> Self {
         Self {
-            header: HeaderLayout { enabled: false, content: "".into() },
-            body: SectionLayout{ enabled: true },
-            footer: SectionLayout{ enabled: false },
+            header: HeaderLayout {
+                enabled: false,
+                content: "".into(),
+                font_size: FontSize::Normal,
+                justify: Justify::Center,
+            },
+            body: SectionLayout {
+                enabled: true,
+                font_size: FontSize::Normal,
+                justify: Justify::Center,
+            },
+            footer: SectionLayout {
+                enabled: false,
+                font_size: FontSize::Normal,
+                justify: Justify::Center,
+            },
         }
     }
 }

@@ -69,6 +69,11 @@ import { ref } from 'vue';
 
 interface SectionSettings {
   enabled: boolean
+  // fontType: 'A' | 'B' | 'C'
+  fontSize: 'small' | 'normal' | 'large'
+  justify: 'left' | 'center' | 'right'
+  // bold: boolean
+  // underline: 'none' | 'single' | 'double'
 }
 
 interface Layout {
@@ -80,10 +85,20 @@ interface Layout {
 const layout = ref<Layout>({
   header: {
     enabled: false,
-    content: ''
+    content: '',
+    fontSize: 'normal',
+    justify: 'left'
   },
-  body:{ enabled: true },
-  footer: { enabled: false },
+  body:{
+    enabled: true,
+    fontSize: 'normal',
+    justify: 'left'
+  },
+  footer: {
+    enabled: false,
+    fontSize: 'normal',
+    justify: 'left'
+  },
 })
 
 const saveLayout = async function () {

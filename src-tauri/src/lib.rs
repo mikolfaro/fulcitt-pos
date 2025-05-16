@@ -250,10 +250,7 @@ async fn get_print_layout() -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn save_print_layout(
-    layout: PrintingLayout,
-    app: AppHandle
-) -> CommandResult<()> {
+async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
     info!("Saving updated layout {:?}", layout);
 
     let store = app.get_store("store.json").unwrap();
@@ -346,7 +343,6 @@ pub fn run() {
                 let db = setup_db(app).await;
                 app.manage(AppState { db });
             });
-
 
             Ok(())
         })
