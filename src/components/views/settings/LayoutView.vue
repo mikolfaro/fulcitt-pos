@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
 import { ref } from 'vue';
 
 interface SectionSettings {
@@ -85,7 +86,13 @@ const layout = ref<Layout>({
   footer: { enabled: false },
 })
 
-const saveLayout = function () {
+const saveLayout = async function () {
+  try {
+    await invoke('save_print_layout', { layout: layout.value })
+  } catch (err) {
+    console.error(err)
+  }
+
   console.log(`New layout ${JSON.stringify(layout.value)}`)
 }
 </script>
