@@ -1,33 +1,33 @@
 use std::fmt::Debug;
 
 use chrono::Local;
-use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
+use escpos::{driver::Driver, printer::Printer};
 use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{CartItem, CommandResult};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum FontSize {
     Small,
     Normal,
     Large,
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum Justify {
     Left,
     Center,
-    Righth,
+    Right,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct SectionLayout {
     enabled: bool,
     font_size: FontSize,
     justify: Justify,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub(crate) struct HeaderLayout {
     enabled: bool,
     font_size: FontSize,
@@ -35,7 +35,7 @@ pub(crate) struct HeaderLayout {
     content: String,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub(crate) struct PrintingLayout {
     header: HeaderLayout,
     body: SectionLayout,
@@ -71,7 +71,7 @@ where
             }
 
             if layout.footer.enabled {
-                print_footer(printer, &layout.footer)?;
+                print_footer(printer, &layout.footer, sale_id)?;
             }
 
             printer.print_cut()?;
@@ -85,7 +85,46 @@ where
 
 fn print_header<D>(
     printer: &mut Printer<D>,
-    _layout: &HeaderLayout,
+    layout: &HeaderLayout,
+    _sale_id: i64,
+) -> CommandResult<()>
+where
+    D: Driver,
+{
+    let section_layout: SectionLayout = layout.clone().into();
+
+    with_layout(printer, &section_layout, |p| {
+        p
+            .writeln("PICKUP TICKET")?;
+
+        Ok(())
+    })?
+        .feed()?;
+
+    Ok(())
+}
+
+fn print_body<D>(
+    printer: &mut Printer<D>,
+    layout: &SectionLayout,
+    item: &CartItem,
+) -> CommandResult<()>
+where
+    D: Driver,
+{
+    with_layout(printer, layout, |p| {
+        p.writeln(&item.name.to_string())?;
+
+        Ok(())
+    })?
+        .feed()?;
+
+    Ok(())
+}
+
+fn print_footer<D>(
+    printer: &mut Printer<D>,
+    layout: &SectionLayout,
     sale_id: i64,
 ) -> CommandResult<()>
 where
@@ -93,38 +132,34 @@ where
 {
     let sale_time_str = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    printer
-        .justify(JustifyMode::CENTER)?
-        .size(2, 3)?
-        .writeln("PICKUP TICKET")?
-        .feed()?
-        .reset_size()?
-        .writeln(&format!("#{} - {}", sale_id, sale_time_str))?;
+    with_layout(printer, layout, |p | {
+        p.writeln(&format!("#{} - {}", sale_id, sale_time_str))?;
 
-    Ok(())
-}
-
-fn print_body<D>(
-    printer: &mut Printer<D>,
-    _layout: &SectionLayout,
-    item: &CartItem,
-) -> CommandResult<()>
-where
-    D: Driver,
-{
-    printer
-        .justify(JustifyMode::CENTER)?
-        .writeln(&item.name.to_string())?
+        Ok(())
+    })?
         .feed()?;
 
     Ok(())
 }
 
-fn print_footer<D>(_printer: &mut Printer<D>, _layout: &SectionLayout) -> CommandResult<()>
+fn with_layout<'a, D, F>(
+    printer: &'a mut Printer<D>,
+    _layout: &'a SectionLayout,
+    func: F
+) -> CommandResult<&'a mut Printer<D>>
 where
     D: Driver,
+    F: FnOnce(&mut Printer<D>) -> CommandResult<()>
 {
-    Ok(())
+    // TODO: set font size
+    // TODO: set alignement
+
+    func(printer)?;
+
+    printer
+        .reset_size()?;
+
+    Ok(printer)
 }
 
 impl Default for PrintingLayout {
@@ -146,6 +181,16 @@ impl Default for PrintingLayout {
                 font_size: FontSize::Normal,
                 justify: Justify::Center,
             },
+        }
+    }
+}
+
+impl Into<SectionLayout> for HeaderLayout {
+    fn into(self) -> SectionLayout {
+        SectionLayout {
+            enabled: self.enabled,
+            font_size: self.font_size,
+            justify: self.justify
         }
     }
 }

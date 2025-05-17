@@ -12,7 +12,10 @@
         />
         <h3>Print header</h3>
       </label>
-      <div v-if="layout.header.enabled">
+      <div
+        v-if="layout.header.enabled"
+        class="grid grid-cols-3"
+      >
         <fieldset class="fieldset">
           <label class="label">Content</label>
           <input
@@ -22,6 +25,9 @@
             @change="(e: Event) => layout.header.content = (e?.currentTarget as HTMLInputElement | null)?.value as string"
           />
         </fieldset>
+
+        <div></div>
+        <div></div>
 
         <fieldset class="fieldset">
           <label for="header-font-size" class="label">
@@ -39,7 +45,20 @@
           </select>
         </fieldset>
 
-        <fieldset>
+        <fieldset class="fieldset">
+          <label for="header-justify" class="label">
+            Justify
+          </label>
+          <select
+            id="header-justify"
+            class="select"
+            :value="layout.header.justify"
+            @change="(e: Event) => layout.header.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
+          >
+            <option value="Left">Left</option>
+            <option value="Center">Center</option>
+            <option value="Right">Right</option>
+          </select>
         </fieldset>
       </div>
     </div>
@@ -54,13 +73,16 @@
         />
         <h3>Print body</h3>
       </label>
-      <div v-if="layout.body.enabled">
+      <div
+        v-if="layout.body.enabled"
+        class="grid grid-cols-3"
+      >
         <fieldset class="fieldset">
-          <label for="header-body-size" class="label">
+          <label for="body-font-size" class="label">
             Font size
           </label>
           <select
-            id="header-body-size"
+            id="body-font-size"
             class="select"
             :value="layout.body.font_size"
             @change="(e: Event) => layout.body.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
@@ -68,6 +90,22 @@
             <option value="Small">Small</option>
             <option value="Normal">Normal</option>
             <option value="Large">Large</option>
+          </select>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <label for="body-justify" class="label">
+            Justify
+          </label>
+          <select
+            id="body-justify"
+            class="select"
+            :value="layout.body.justify"
+            @change="(e: Event) => layout.body.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
+          >
+            <option value="Left">Left</option>
+            <option value="Center">Center</option>
+            <option value="Right">Right</option>
           </select>
         </fieldset>
       </div>
@@ -83,13 +121,16 @@
         />
         <h3>Print footer</h3>
       </label>
-      <div v-if="layout.footer.enabled">
+      <div
+        v-if="layout.footer.enabled"
+        class="grid grid-cols-3"
+      >
         <fieldset class="fieldset">
-          <label for="header-footer-size" class="label">
+          <label for="footer-font-size" class="label">
             Font size
           </label>
           <select
-            id="header-foouter-size"
+            id="footer-font-size"
             class="select"
             :value="layout.footer.font_size"
             @change="(e: Event) => layout.footer.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
@@ -97,6 +138,22 @@
             <option value="Small">Small</option>
             <option value="Normal">Normal</option>
             <option value="Large">Large</option>
+          </select>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <label for="footer-justify" class="label">
+            Justify
+          </label>
+          <select
+            id="footer-justify"
+            class="select"
+            :value="layout.footer.justify"
+            @change="(e: Event) => layout.footer.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
+          >
+            <option value="Left">Left</option>
+            <option value="Center">Center</option>
+            <option value="Right">Right</option>
           </select>
         </fieldset>
       </div>
@@ -119,14 +176,15 @@ import { AppMessage } from '../../../lib';
 const messages = useMessagesStore();
 
 type FontSize = 'Small' | 'Normal' | 'Large'
+type Justify = 'Left' | 'Center' | 'Right'
 
 interface SectionSettings {
   enabled: boolean
   // fontType: 'A' | 'B' | 'C'
   font_size: FontSize
-  justify: 'Left' | 'Center' | 'Right'
+  justify: Justify
   // bold: boolean
-  // underline: 'none' | 'single' | 'double'
+  // underline: 'None' | 'Single' | 'Double'
 }
 
 interface Layout {
