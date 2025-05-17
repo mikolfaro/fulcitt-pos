@@ -104,6 +104,7 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 
 #[tauri::command]
 async fn process_sale(
+    app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     items: Vec<CartItem>,
@@ -170,7 +171,13 @@ async fn process_sale(
     let mut printer = printer_state.lock()?;
     printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
-    let layout = PrintingLayout::default();
+    let store = app.get_store("store.json").unwrap();
+    let some_store = store.get("ticket-layout");
+    let layout = if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store)?
+    } else {
+        PrintingLayout::default()
+    };
 
     print_tickets(&mut *printer, &layout, sale_id, &items)?;
 
@@ -245,17 +252,32 @@ async fn print_last_sale(
 }
 
 #[tauri::command]
-async fn get_print_layout() -> CommandResult<()> {
-    Ok(())
+async fn get_print_layout(
+    app: AppHandle
+) -> CommandResult<PrintingLayout> {
+    let store = app
+        .get_store("store.json")
+        .ok_or(CommandError::LoadSettings)?;
+
+    let some_store = store.get("ticket-layout");
+
+    if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store)
+            .map_err(Into::<CommandError>::into)
+    } else {
+        Ok(PrintingLayout::default())
+    }
 }
 
 #[tauri::command]
 async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
     info!("Saving updated layout {:?}", layout);
 
-    let store = app.get_store("store.json").unwrap();
+    let store = app.get_store("store.json")
+        .ok_or(CommandError::StoreSettings)?;
 
-    let layout_value = serde_json::to_value(layout)?;
+    let layout_value = serde_json::to_value(layout)
+        .or(Err(CommandError::StoreSettings))?;
     store.set("ticket-layout", layout_value);
 
     Ok(())

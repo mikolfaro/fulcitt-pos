@@ -17,6 +17,12 @@ pub(crate) enum CommandError {
 
     #[error("Printer error {0}")]
     Printer(String),
+
+    #[error("Failed to load settings")]
+    LoadSettings,
+
+    #[error("Failed to save settings")]
+    StoreSettings,
 }
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;

@@ -22,6 +22,25 @@
             @change="(e: Event) => layout.header.content = (e?.currentTarget as HTMLInputElement | null)?.value as string"
           />
         </fieldset>
+
+        <fieldset class="fieldset">
+          <label for="header-font-size" class="label">
+            Font size
+          </label>
+          <select
+            id="header-font-size"
+            class="select"
+            :value="layout.header.font_size"
+            @change="(e: Event) => layout.header.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
+          >
+            <option value="Small">Small</option>
+            <option value="Normal">Normal</option>
+            <option value="Large">Large</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+        </fieldset>
       </div>
     </div>
 
@@ -36,7 +55,21 @@
         <h3>Print body</h3>
       </label>
       <div v-if="layout.body.enabled">
-        Body more settings
+        <fieldset class="fieldset">
+          <label for="header-body-size" class="label">
+            Font size
+          </label>
+          <select
+            id="header-body-size"
+            class="select"
+            :value="layout.body.font_size"
+            @change="(e: Event) => layout.body.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
+          >
+            <option value="Small">Small</option>
+            <option value="Normal">Normal</option>
+            <option value="Large">Large</option>
+          </select>
+        </fieldset>
       </div>
     </div>
 
@@ -51,7 +84,21 @@
         <h3>Print footer</h3>
       </label>
       <div v-if="layout.footer.enabled">
-        Footer more settings
+        <fieldset class="fieldset">
+          <label for="header-footer-size" class="label">
+            Font size
+          </label>
+          <select
+            id="header-foouter-size"
+            class="select"
+            :value="layout.footer.font_size"
+            @change="(e: Event) => layout.footer.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
+          >
+            <option value="Small">Small</option>
+            <option value="Normal">Normal</option>
+            <option value="Large">Large</option>
+          </select>
+        </fieldset>
       </div>
     </div>
 
@@ -65,13 +112,19 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { useMessagesStore } from '../../../stores/messagesStore';
+import { AppMessage } from '../../../lib';
+
+const messages = useMessagesStore();
+
+type FontSize = 'Small' | 'Normal' | 'Large'
 
 interface SectionSettings {
   enabled: boolean
   // fontType: 'A' | 'B' | 'C'
-  fontSize: 'small' | 'normal' | 'large'
-  justify: 'left' | 'center' | 'right'
+  font_size: FontSize
+  justify: 'Left' | 'Center' | 'Right'
   // bold: boolean
   // underline: 'none' | 'single' | 'double'
 }
@@ -86,28 +139,36 @@ const layout = ref<Layout>({
   header: {
     enabled: false,
     content: '',
-    fontSize: 'normal',
-    justify: 'left'
+    font_size: 'Normal',
+    justify: 'Left'
   },
   body:{
     enabled: true,
-    fontSize: 'normal',
-    justify: 'left'
+    font_size: 'Normal',
+    justify: 'Left'
   },
   footer: {
     enabled: false,
-    fontSize: 'normal',
-    justify: 'left'
+    font_size: 'Normal',
+    justify: 'Left'
   },
 })
 
 const saveLayout = async function () {
   try {
     await invoke('save_print_layout', { layout: layout.value })
+    messages.addSuccess("Layout saved")
   } catch (err) {
-    console.error(err)
+    messages.addMessage(err as AppMessage)
   }
-
-  console.log(`New layout ${JSON.stringify(layout.value)}`)
 }
+
+onMounted(async function () {
+  try {
+    const loadedLayout = await invoke('get_print_layout')
+    layout.value = loadedLayout as Layout
+  } catch (err) {
+    messages.addMessage(err as AppMessage)
+  }
+})
 </script>
