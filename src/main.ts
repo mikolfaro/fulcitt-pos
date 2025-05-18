@@ -3,7 +3,7 @@ import "./style.css"
 import { createApp } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { createPinia } from "pinia";
-import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
+import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
 
 import App from "./App.vue";
 import routes from "./routes"
@@ -13,9 +13,12 @@ function forwardConsole(
   logger: (message: string) => Promise<void>
 ) {
   const original = console[fnName];
-  console[fnName] = (message) => {
-    original(message);
-    logger(message);
+  console[fnName] = (...args) => {
+    original(...args)
+
+    const message = args.shift()
+    const otherArgs = args.map(a => JSON.stringify(a)).join(' ')
+    logger(`${message}, ${otherArgs}`)
   };
 }
 
