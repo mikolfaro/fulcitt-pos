@@ -21,14 +21,18 @@
       </table>
     </div>
     <div v-if="loading" class="loading">Loading data...</div>
-    <div v-else-if="error" class="text-error">{{ error }}</div>
-    <div v-else-if="salesData.length === 0" class="alert alert-warning">No sales data available.</div>
+    <div v-if="salesData.length === 0" class="alert alert-warning">No sales data available.</div>
+
+    <div class="pt-4">
+      <button class="btn btn-error" @click="clearHistory()">Clear sales history</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { ref, onMounted } from 'vue';
+import { useMessagesStore } from '../../stores/messagesStore';
 
 interface ItemSale {
   product_id: number,
@@ -37,28 +41,41 @@ interface ItemSale {
   total_value_sold: number
 }
 
+const messages = useMessagesStore()
 const loading = ref<boolean>(true)
-const error = ref<string>('')
-
-const salesData = ref<ItemSale[]>([]);
+const salesData = ref<ItemSale[]>([])
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-};
+}
+
+const clearHistory = async () => {
+  try {
+    await invoke('clear_sales_data')
+
+    salesData.value = []
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
+}
 
 onMounted(async function () {
-  const data = await invoke<ItemSale[]>('get_sales_recap');
-  salesData.value = data.sort(function (a, b) {
-    if (a < b) {
-      return -1;
-    } else if (a > b) {
-      return 1;
-    } else {
-      return 0;
-    }
-  })
+  try {
+    const data = await invoke<ItemSale[]>('get_sales_recap');
+    salesData.value = data.sort(function (a, b) {
+      if (a < b) {
+        return -1;
+      } else if (a > b) {
+        return 1;
+      } else {
+        return 0;
+      }
+    })
 
-  loading.value = false
-});
+    loading.value = false
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
+})
 
 </script>

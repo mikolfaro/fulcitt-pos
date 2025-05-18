@@ -216,6 +216,29 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<It
 }
 
 #[tauri::command]
+async fn clear_sales_data(
+    app_state: State<'_, AppState>
+) -> CommandResult<()> {
+    info!("Clearing sales data");
+
+    let mut tx = app_state.db.begin().await?;
+
+    sqlx::query!("DELETE FROM sale_items")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!("DELETE FROM sales")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!("DELETE FROM products WHERE is_deleted = 1")
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn print_last_sale(
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
@@ -400,6 +423,7 @@ pub fn run() {
             create_product,
             update_product,
             delete_product,
+            clear_sales_data,
             process_sale,
             get_sales_recap,
             print_last_sale,
