@@ -1,6 +1,8 @@
 <template>
   <div class="p-4 md:p-6">
-    <h1 class="text-2xl font-bold mb-4">Settings</h1>
+    <h1 class="text-2xl font-bold mb-4">
+      {{ t('settings.title') }}
+    </h1>
 
     <div role="tablist" class="tabs tabs-lifted mb-[-1px]">
       <router-link
@@ -27,10 +29,14 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n()
+
 const subRoutes = [
-  { name: "Products", to: "/settings/products" },
-  { name: "Layout", to: "/settings/layout" },
-  { name: "Printer", to: "/settings/printer" },
+  { name: t('settings.products.menu_title'), to: "/settings/products" },
+  { name: t('settings.layout.menu_title'), to: "/settings/layout" },
+  { name: t('settings.printer.menu_title'), to: "/settings/printer" },
 ]
 </script>
 

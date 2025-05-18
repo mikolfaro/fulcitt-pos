@@ -46,6 +46,28 @@
     }
   },
   "settings": {
-    "menu_title": "Impostazioni"
+    "menu_title": "Impostazioni",
+    "layout": { "menu_title": "Layout" },
+    "printer": { "menu_title": "Stampante" },
+    "products": {
+      "actions": "",
+      "add_product_button": "Aggiungi",
+      "cancel_edit_button": "Annulla",
+      "category": "Categoria",
+      "category_example": "Griglia",
+      "delete_product_button": "Elimina",
+      "edit_product_button": "Modifica",
+      "menu_title": "Prodotti",
+      "messages": {
+        "loading_existing_products": "Caricamento prodotti esistenti..."
+      },
+      "price": "Prezzo",
+      "price_example": "4,00 €",
+      "product_name": "Nome",
+      "product_name_example": "Salamella",
+      "save_product_button": "Salva",
+      "title": "Prodotti"
+    },
+    "title": "Impostazioni"
   }
 }
