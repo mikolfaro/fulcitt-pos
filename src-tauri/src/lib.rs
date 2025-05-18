@@ -369,10 +369,18 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-fn setup_printer() -> Printer<FileDriver> {
-    let path = Path::new("../orders.txt");
-    let driver = FileDriver::open(path).unwrap();
-    Printer::new(driver, Protocol::default(), None)
+fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
+    app
+        .get_store("store.json")
+        .and_then(|store| store.get("printer-device"))
+        .and_then(|device_path| {
+            let path = device_path.to_string();
+            let path = Path::new(&path);
+            FileDriver::open(path).ok()
+        })
+        .and_then(|driver| {
+            Some(Printer::new(driver, Protocol::default(), None))
+        })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -395,10 +403,10 @@ pub fn run() {
             test_print_raw_file,
         ])
         .setup(|app| {
-            let printer = setup_printer();
-            app.manage(Arc::new(Mutex::new(printer)));
-
             app.store("store.json")?;
+
+            let printer = setup_printer(app);
+            app.manage(Arc::new(Mutex::new(printer)));
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
