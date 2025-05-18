@@ -28,7 +28,7 @@ struct AppState {
     db: Db,
 }
 
-type PrinterState = Arc<Mutex<Printer<FileDriver>>>;
+type PrinterState = Arc<Mutex<Option<Printer<FileDriver>>>>;
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
@@ -170,7 +170,10 @@ async fn process_sale(
 
     info!("Created new sale {}", sale_id);
 
-    let mut printer = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock()?;
+    let printer = mutex_guard
+        .as_mut()
+        .ok_or_else(|| { CommandError::PrinterNotConfigured })?;
     printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     let store = app.get_store("store.json").unwrap();
@@ -181,7 +184,7 @@ async fn process_sale(
         PrintingLayout::default()
     };
 
-    print_tickets(&mut *printer, &layout, sale_id, &items)?;
+    print_tickets(printer, &layout, sale_id, &items)?;
 
     Ok(sale_id)
 }
@@ -246,9 +249,12 @@ async fn print_last_sale(
     .fetch_all(&app_state.db)
     .await?;
 
-    let mut printer = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock()?;
+    let printer = mutex_guard
+        .as_mut()
+        .ok_or_else(|| { CommandError::PrinterNotConfigured })?;
     let layout = PrintingLayout::default();
-    print_tickets(&mut *printer, &layout, last_sale_id, &items)?;
+    print_tickets(printer, &layout, last_sale_id, &items)?;
 
     Ok(())
 }
@@ -300,7 +306,7 @@ async fn save_printer_device(
     let driver = FileDriver::open(path)?;
     let new_printer = Printer::new(driver, Protocol::default(), None);
     let mut mutex_guard = printer_state.lock()?;
-    *mutex_guard = new_printer;
+    *mutex_guard = Some(new_printer);
 
     Ok(())
 }

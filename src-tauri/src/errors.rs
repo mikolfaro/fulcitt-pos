@@ -18,6 +18,9 @@ pub(crate) enum CommandError {
     #[error("Invalid printer device")]
     InvalidPrinterDevice,
 
+    #[error("Printer not configured")]
+    PrinterNotConfigured,
+
     #[error("Concurrency resource access error")]
     MutexPoison,
 
