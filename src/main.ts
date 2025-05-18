@@ -1,6 +1,7 @@
 import "./style.css"
 
 import { createApp } from "vue";
+import { createI18n } from "vue-i18n";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { createPinia } from "pinia";
 import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
@@ -28,10 +29,14 @@ forwardConsole('info', info);
 forwardConsole('warn', warn);
 forwardConsole('error', error);
 
+const i18n = createI18n({
+
+})
 const pinia = createPinia()
 const router = createRouter({ history: createMemoryHistory(), routes })
 
 createApp(App)
+  .use(i18n)
   .use(pinia)
   .use(router)
   .mount("#app")
