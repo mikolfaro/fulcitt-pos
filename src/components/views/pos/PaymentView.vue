@@ -1,21 +1,21 @@
 <template>
   <div class="flex justify-between font-bold text-lg mb-2">
-    <span>Payed:</span>
-    <span>${{ amount.toFixed(2) }}</span>
+    <span>{{ t('pos.recap.amount_payed') }}</span>
+    <span>{{ formatCurrency(amount) }}</span>
   </div>
   <div
     v-if="amount >= cart.total"
     class="flex justify-between font-bold text-lg mb-4"
   >
-    <span>Change:</span>
-    <span>${{ (amount - cart.total).toFixed(2) }}</span>
+    <span>{{ t('pos.recap.change') }}</span>
+    <span>{{ formatCurrency(amount - cart.total) }}</span>
   </div>
   <div
     v-else
     class="flex justify-between font-bold text-lg mb-4"
   >
-    <span>Due:</span>
-    <span class="text-error">${{ (cart.total - amount).toFixed(2) }}</span>
+    <span>{{ t('pos.recap.amount_due') }}</span>
+    <span class="text-error">{{ formatCurrency(cart.total - amount) }}</span>
   </div>
 
   <div class="grid grid-cols-3 gap-2">
@@ -32,12 +32,14 @@
     <a class="btn" @click="undoType()"><-</a>
   </div>
 
-  <button class="btn btn-success w-full mt-4" @click="processPayment">Process payment</button>
+  <button class="btn btn-success w-full mt-4" @click="processPayment">
+    {{ t('pos.process_payment_button') }}
+  </button>
   <button
     class="btn btn-outline btn-error w-full mt-2"
     @click="cancelPayment"
   >
-    Cancel
+    {{ t('pos.cancel_payment_button') }}
   </button>
 </template>
 
@@ -48,13 +50,19 @@ import { invoke } from '@tauri-apps/api/core';
 import { useCartStore } from '../../../stores/cartStore';
 import { useMessagesStore } from '../../../stores/messagesStore';
 import { AppMessage } from '../../../lib';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter()
+const { t } = useI18n()
 const messages = useMessagesStore()
 const cart = useCartStore()
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
 const typedAmount = ref<string>('')
 const amount = ref<number>(0);
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+}
 
 function type(digit: number | string) {
   typedAmount.value += digit.toString()

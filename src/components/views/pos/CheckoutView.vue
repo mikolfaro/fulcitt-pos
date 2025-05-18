@@ -1,7 +1,10 @@
 <template>
   <div class="mt-2">
-    <button class="btn btn-success w-full" @click="startPayment()">Payment</button>
-    <button class="btn btn-outline btn-error w-full mt-2" @click="cart.clear()">Clear Cart</button>
+    <button class="btn btn-success w-full" @click="startPayment()">
+      {{ t("pos.start_payment_button") }}
+    </button>
+    <button class="btn btn-outline btn-error w-full mt-2" @click="cart.clear()">
+      {{ t('pos.clear_cart_button') }}</button>
   </div>
 </template>
 
@@ -9,7 +12,9 @@
 import { useRouter } from 'vue-router';
 import { useCartStore } from '../../../stores/cartStore';
 import { useMessagesStore } from '../../../stores/messagesStore';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n()
 const router = useRouter()
 const cart = useCartStore()
 const messages = useMessagesStore()

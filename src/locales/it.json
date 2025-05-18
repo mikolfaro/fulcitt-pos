@@ -1,0 +1,40 @@
+{
+  "app": {
+    "title": "POS Fulcitt"
+  },
+  "pos": {
+    "menu_title": "POS",
+    "messages": {
+      "empty_cart": "Nessun prodotto",
+      "loading_products": "Caricamento prodotti..."
+    },
+    "products": {
+      "title": "Prodotti"
+    },
+    "cart": {
+      "product_name": "Prodotto",
+      "unit_price": "Prezzo",
+      "quantity": "Q.tà",
+      "title": "Ordine attuale",
+      "total_price": "Totale"
+    },
+    "cancel_payment_button": "Annulla pagamento",
+    "clear_cart_button": "Cancella ordine",
+    "process_payment_button": "Completa pagamento",
+    "recap": {
+      "amount_due": "Dovuto",
+      "amount_payed": "Pagato",
+      "change": "Resto",
+      "subtotal": "Subtotale",
+      "total": "Totale"
+    },
+    "reprint_tickets_button": "Ristampa ultima vendita",
+    "start_payment_button": "Pagamento"
+  },
+  "reports": {
+    "menu_title": "Report"
+  },
+  "settings": {
+    "menu_title": "Impostazioni"
+  }
+}
