@@ -283,14 +283,24 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn save_printer_device(app: AppHandle, device_path: String) -> CommandResult<()> {
+async fn save_printer_device(
+    app: AppHandle,
+    printer_state: State<'_, PrinterState>,
+    device_path: String
+) -> CommandResult<()> {
     info!("Saving printer device {:?}", device_path);
 
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    store.set("printer-device", device_path);
+    store.set("printer-device", device_path.clone());
+
+    let path = Path::new(&device_path);
+    let driver = FileDriver::open(path)?;
+    let new_printer = Printer::new(driver, Protocol::default(), None);
+    let mut mutex_guard = printer_state.lock()?;
+    *mutex_guard = new_printer;
 
     Ok(())
 }
