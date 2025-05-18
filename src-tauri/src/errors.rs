@@ -6,6 +6,9 @@ pub(crate) enum CommandError {
     #[error("Database error {0}")]
     Database(String),
 
+    #[error("Serialization error {0}")]
+    Serde(String),
+
     #[error("Input error {0}")]
     InvalidInput(String),
 
@@ -14,6 +17,12 @@ pub(crate) enum CommandError {
 
     #[error("Printer error {0}")]
     Printer(String),
+
+    #[error("Failed to load settings")]
+    LoadSettings,
+
+    #[error("Failed to save settings")]
+    StoreSettings,
 }
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -39,5 +48,13 @@ impl From<sqlx::Error> for CommandError {
         log::error!("SQLx database error occurred {:?}", err);
 
         CommandError::Database(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for CommandError {
+    fn from(err: serde_json::Error) -> Self {
+        log::error!("Serializtion error occurred {:}", err);
+
+        CommandError::Serde(err.to_string())
     }
 }

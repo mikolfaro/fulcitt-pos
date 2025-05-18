@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="text-xl font-semibold mb-4">Print</h2>
+    <h2 class="text-xl font-semibold mb-4">Printer</h2>
     <div class="card bg-base-200 shadow-md mt-8">
       <div class="card-body">
         <h3 class="card-title text-lg">Test Printer (Linux Raw File)</h3>

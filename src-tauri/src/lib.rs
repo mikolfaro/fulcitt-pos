@@ -1,16 +1,19 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use escpos::{
-    driver::ConsoleDriver,
+    driver::FileDriver,
     printer::Printer,
-    printer_options::PrinterOptions,
     utils::{DebugMode, Protocol},
 };
 use log::info;
-use printing::print_tickets;
+use printing::{print_tickets, PrintingLayout};
 use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
-use tauri::{App, Manager, State};
+use tauri::{App, AppHandle, Manager, State};
+use tauri_plugin_store::StoreExt;
 
 use errors::*;
 use models::*;
@@ -25,7 +28,7 @@ struct AppState {
     db: Db,
 }
 
-type PrinterState = Arc<Mutex<Printer<ConsoleDriver>>>;
+type PrinterState = Arc<Mutex<Printer<FileDriver>>>;
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
@@ -103,6 +106,7 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 
 #[tauri::command]
 async fn process_sale(
+    app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     items: Vec<CartItem>,
@@ -169,7 +173,15 @@ async fn process_sale(
     let mut printer = printer_state.lock()?;
     printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
-    print_tickets(&mut *printer, sale_id, &items)?;
+    let store = app.get_store("store.json").unwrap();
+    let some_store = store.get("ticket-layout");
+    let layout = if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store)?
+    } else {
+        PrintingLayout::default()
+    };
+
+    print_tickets(&mut *printer, &layout, sale_id, &items)?;
 
     Ok(sale_id)
 }
@@ -235,7 +247,37 @@ async fn print_last_sale(
     .await?;
 
     let mut printer = printer_state.lock()?;
-    print_tickets(&mut *printer, last_sale_id, &items)?;
+    let layout = PrintingLayout::default();
+    print_tickets(&mut *printer, &layout, last_sale_id, &items)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
+    let store = app
+        .get_store("store.json")
+        .ok_or(CommandError::LoadSettings)?;
+
+    let some_store = store.get("ticket-layout");
+
+    if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store).map_err(Into::<CommandError>::into)
+    } else {
+        Ok(PrintingLayout::default())
+    }
+}
+
+#[tauri::command]
+async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
+    info!("Saving updated layout {:?}", layout);
+
+    let store = app
+        .get_store("store.json")
+        .ok_or(CommandError::StoreSettings)?;
+
+    let layout_value = serde_json::to_value(layout).or(Err(CommandError::StoreSettings))?;
+    store.set("ticket-layout", layout_value);
 
     Ok(())
 }
@@ -245,7 +287,7 @@ async fn test_print_raw_file(
     printer_state: State<'_, PrinterState>,
     text_to_print: String,
 ) -> CommandResult<()> {
-    info!("Attempting to print '{}'", text_to_print);
+    info!("Attempting to print {:?}", text_to_print);
 
     let mut printer = printer_state.lock()?;
 
@@ -289,11 +331,18 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
+fn setup_printer() -> Printer<FileDriver> {
+    let path = Path::new("../orders.txt");
+    let driver = FileDriver::open(path).unwrap();
+    Printer::new(driver, Protocol::default(), None)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             list_products,
             create_product,
@@ -302,18 +351,19 @@ pub fn run() {
             process_sale,
             get_sales_recap,
             print_last_sale,
+            get_print_layout,
+            save_print_layout,
             test_print_raw_file,
         ])
         .setup(|app| {
+            let printer = setup_printer();
+            app.manage(Arc::new(Mutex::new(printer)));
+
+            app.store("store.json")?;
+
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
                 app.manage(AppState { db });
-
-                let driver = ConsoleDriver::open(true);
-                let printer =
-                    Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
-                let printer_state = Arc::new(Mutex::new(printer));
-                app.manage(printer_state);
             });
 
             Ok(())

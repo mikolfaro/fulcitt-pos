@@ -29,7 +29,8 @@
 <script lang="ts" setup>
 const subRoutes = [
   { name: "Products", to: "/settings/products" },
-  { name: "Print", to: "/settings/print" },
+  { name: "Layout", to: "/settings/layout" },
+  { name: "Printer", to: "/settings/printer" },
 ]
 </script>
 
