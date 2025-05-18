@@ -137,7 +137,7 @@ const printLastSale = async () => {
   try {
     await invoke('print_last_sale')
   } catch (err) {
-    messages.addMessage(err as AppMessage)
+    messages.addUnknownError(err)
   }
 }
 
