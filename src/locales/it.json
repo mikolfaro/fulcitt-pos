@@ -47,7 +47,23 @@
   },
   "settings": {
     "menu_title": "Impostazioni",
-    "layout": { "menu_title": "Layout" },
+    "layout": {
+      "font_size_label": "Dimensione caratteri",
+      "font_size_large": "Grande",
+      "font_size_normal": "Normale",
+      "font_size_small": "Piccolo",
+      "justify_center": "Centrato",
+      "justify_label": "Allineamento",
+      "justify_left": "Sinistra",
+      "justify_right": "Destra",
+      "menu_title": "Layout",
+      "header_content_label": "Contenuto",
+      "print_body_label": "Stampa corpo",
+      "print_footer_label": "Stampa piè di pagina",
+      "print_header_label": "Stampa intestazione",
+      "save_button": "Salva",
+      "title": "Layout"
+    },
     "printer": { "menu_title": "Stampante" },
     "products": {
       "actions": "",
