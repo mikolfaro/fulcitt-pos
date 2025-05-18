@@ -27,11 +27,10 @@
             />
           </div>
           <div class="flex gap-4">
-            <button class="btn btn-info" @click="triggerPrint" :disabled="printerTest.isPrinting">
-              <span v-if="printerTest.isPrinting" class="loading loading-spinner loading-xs"></span>
-              {{ printerTest.isPrinting ? 'Printing...' : 'Send Test Print' }}
+            <button class="btn btn-info" @click="triggerPrint">
+              Test print
             </button>
-            <button class="btn btn-success">
+            <button class="btn btn-success" @click="save">
               Save
             </button>
           </div>
@@ -43,7 +42,8 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
-import { reactive } from 'vue';
+import { load } from '@tauri-apps/plugin-store';
+import { onMounted, reactive } from 'vue';
 import { useMessagesStore } from '../../../stores/messagesStore';
 import { AppMessage } from '../../../lib';
 
@@ -52,8 +52,6 @@ const messages = useMessagesStore()
 const printerTest = reactive({
   devicePath: '/dev/usb/lp0',
   text: 'Hello from Tauri! Test @ ' + new Date().toLocaleTimeString(),
-  isPrinting: false,
-  isError: false,
 })
 
 async function triggerPrint() {
@@ -61,8 +59,6 @@ async function triggerPrint() {
     messages.addInvalidInput('Device path and text cannot be empty.');
     return;
   }
-
-  printerTest.isPrinting = true;
 
   try {
     await invoke('test_print_raw_file', {
@@ -73,10 +69,34 @@ async function triggerPrint() {
 
     printerTest.text = 'Another test @ ' + new Date().toLocaleTimeString();
   } catch (error) {
-    console.error('Print command failed:', error);
-    messages.addMessage(error as AppMessage);
-  } finally {
-    printerTest.isPrinting = false;
+    if (typeof error === 'string') {
+      messages.addUnknownError(error)
+    } else {
+      messages.addMessage(error as AppMessage);
+    }
   }
 }
+
+async function save() {
+  try {
+    await invoke('save_printer_device', { devicePath: printerTest.devicePath })
+    messages.addSuccess('Printer device saved')
+  } catch (error) {
+    console.error(error)
+
+    if (typeof error === 'string') {
+      messages.addUnknownError(error)
+    } else {
+      messages.addMessage(error as AppMessage);
+    }
+  }
+}
+
+onMounted(async () => {
+  const settingsStore = await load('store.json', { autoSave: false });
+  const devicePath = await settingsStore.get('printer-device')
+  if (typeof devicePath === 'string') {
+    printerTest.devicePath = devicePath
+  }
+})
 </script>

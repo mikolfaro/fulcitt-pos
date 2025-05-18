@@ -8,7 +8,7 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::info;
+use log::{error, info, warn};
 use printing::{print_tickets, PrintingLayout};
 use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
@@ -283,13 +283,41 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn test_print_raw_file(
-    printer_state: State<'_, PrinterState>,
-    text_to_print: String,
-) -> CommandResult<()> {
-    info!("Attempting to print {:?}", text_to_print);
+async fn save_printer_device(app: AppHandle, device_path: String) -> CommandResult<()> {
+    info!("Saving printer device {:?}", device_path);
 
-    let mut printer = printer_state.lock()?;
+    let store = app
+        .get_store("store.json")
+        .ok_or(CommandError::StoreSettings)?;
+
+    store.set("printer-device", device_path);
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn test_print_raw_file(device_path: String, text_to_print: String) -> CommandResult<()> {
+    info!(
+        "Attempting to print {:?} on {:?}",
+        text_to_print, device_path
+    );
+
+    let path = Path::new(&device_path);
+    let exists_result = path.try_exists();
+    match exists_result {
+        Err(e) => {
+            error!("Error while checking device path {:?} {:?}", device_path, e);
+            return Err(e.into());
+        }
+        Ok(false) => {
+            warn!("Print device path {:?} does not exist", device_path);
+            return Err(CommandError::InvalidPrinterDevice);
+        }
+        Ok(true) => (),
+    };
+
+    let driver = FileDriver::open(path)?;
+    let mut printer = Printer::new(driver, Protocol::default(), None);
 
     println!();
     printer
@@ -353,6 +381,7 @@ pub fn run() {
             print_last_sale,
             get_print_layout,
             save_print_layout,
+            save_printer_device,
             test_print_raw_file,
         ])
         .setup(|app| {

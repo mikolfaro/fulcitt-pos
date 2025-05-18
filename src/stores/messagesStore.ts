@@ -15,6 +15,9 @@ export const useMessagesStore = defineStore('messages', {
     addSuccess(message: string) {
       this.messages.push({ type: 'Success', message })
     },
+    addUnknownError(message: string) {
+      this.messages.push({ type: 'Unknown', message })
+    },
     removeMessage(index: number) {
       this.messages.splice(index, 1)
     },
