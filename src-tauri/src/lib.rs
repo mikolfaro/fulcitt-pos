@@ -1,9 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use escpos::{
-    driver::ConsoleDriver,
+    driver::FileDriver,
     printer::Printer,
-    printer_options::PrinterOptions,
     utils::{DebugMode, Protocol},
 };
 use log::info;
@@ -26,7 +28,7 @@ struct AppState {
     db: Db,
 }
 
-type PrinterState = Arc<Mutex<Printer<ConsoleDriver>>>;
+type PrinterState = Arc<Mutex<Printer<FileDriver>>>;
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
@@ -252,9 +254,7 @@ async fn print_last_sale(
 }
 
 #[tauri::command]
-async fn get_print_layout(
-    app: AppHandle
-) -> CommandResult<PrintingLayout> {
+async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::LoadSettings)?;
@@ -262,8 +262,7 @@ async fn get_print_layout(
     let some_store = store.get("ticket-layout");
 
     if let Some(store) = some_store {
-        serde_json::from_value::<PrintingLayout>(store)
-            .map_err(Into::<CommandError>::into)
+        serde_json::from_value::<PrintingLayout>(store).map_err(Into::<CommandError>::into)
     } else {
         Ok(PrintingLayout::default())
     }
@@ -273,11 +272,11 @@ async fn get_print_layout(
 async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
     info!("Saving updated layout {:?}", layout);
 
-    let store = app.get_store("store.json")
+    let store = app
+        .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    let layout_value = serde_json::to_value(layout)
-        .or(Err(CommandError::StoreSettings))?;
+    let layout_value = serde_json::to_value(layout).or(Err(CommandError::StoreSettings))?;
     store.set("ticket-layout", layout_value);
 
     Ok(())
@@ -332,9 +331,10 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-fn setup_printer() -> Printer<ConsoleDriver> {
-    let driver = ConsoleDriver::open(true);
-    Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()))
+fn setup_printer() -> Printer<FileDriver> {
+    let path = Path::new("../orders.txt");
+    let driver = FileDriver::open(path).unwrap();
+    Printer::new(driver, Protocol::default(), None)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

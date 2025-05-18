@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use chrono::Local;
-use escpos::{driver::Driver, printer::Printer};
+use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -94,12 +94,11 @@ where
     let section_layout: SectionLayout = layout.clone().into();
 
     with_layout(printer, &section_layout, |p| {
-        p
-            .writeln("PICKUP TICKET")?;
+        p.writeln("PICKUP TICKET")?;
 
         Ok(())
     })?
-        .feed()?;
+    .feed()?;
 
     Ok(())
 }
@@ -117,7 +116,7 @@ where
 
         Ok(())
     })?
-        .feed()?;
+    .feed()?;
 
     Ok(())
 }
@@ -132,32 +131,40 @@ where
 {
     let sale_time_str = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    with_layout(printer, layout, |p | {
+    with_layout(printer, layout, |p| {
         p.writeln(&format!("#{} - {}", sale_id, sale_time_str))?;
 
         Ok(())
     })?
-        .feed()?;
+    .feed()?;
 
     Ok(())
 }
 
 fn with_layout<'a, D, F>(
     printer: &'a mut Printer<D>,
-    _layout: &'a SectionLayout,
-    func: F
+    layout: &'a SectionLayout,
+    func: F,
 ) -> CommandResult<&'a mut Printer<D>>
 where
     D: Driver,
-    F: FnOnce(&mut Printer<D>) -> CommandResult<()>
+    F: FnOnce(&mut Printer<D>) -> CommandResult<()>,
 {
-    // TODO: set font size
-    // TODO: set alignement
+    match layout.font_size {
+        FontSize::Small => printer.size(1, 1)?,
+        FontSize::Normal => printer.size(2, 2)?,
+        FontSize::Large => printer.size(3, 3)?,
+    };
+
+    match layout.justify {
+        Justify::Left => printer.justify(JustifyMode::LEFT)?,
+        Justify::Center => printer.justify(JustifyMode::CENTER)?,
+        Justify::Right => printer.justify(JustifyMode::RIGHT)?,
+    };
 
     func(printer)?;
 
-    printer
-        .reset_size()?;
+    printer.reset_size()?;
 
     Ok(printer)
 }
@@ -190,7 +197,7 @@ impl Into<SectionLayout> for HeaderLayout {
         SectionLayout {
             enabled: self.enabled,
             font_size: self.font_size,
-            justify: self.justify
+            justify: self.justify,
         }
     }
 }
