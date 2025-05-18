@@ -3,7 +3,7 @@
 ## TODO
 
 [X] - Improve invoice layout
-[ ] - Allow printing selection
+[X] - Allow printing selection
 [ ] - Clear sales history
 [ ] - Italian localization
 [ ] - Show all invoces and reprint
