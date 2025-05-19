@@ -5,13 +5,17 @@
     </h2>
     <div class="card bg-base-200 shadow-md mt-8">
       <div class="card-body">
-        <h3 class="card-title text-lg">Test Printer (Linux Raw File)</h3>
+        <h3 class="card-title text-lg">
+          {{ t('settings.printer.printer_selection_title') }}
+        </h3>
         <p class="text-sm text-base-content/70 mb-4">
-          Ensure your printer is connected and permissions are set for the device path.
+          {{ t('settings.printer.printer_selection_text') }}
         </p>
         <div class="flex flex-col justify-between">
           <div class="w-1/3 form-control mb-2">
-            <label class="label"><span class="label-text">Device Path</span></label>
+            <label class="label">
+              {{ t('settings.printer.device_path_label') }}
+            </label>
             <input
               id="devicePathInput"
               type="text"
@@ -20,7 +24,9 @@
             />
           </div>
           <div class="w-1/3 form-control mb-4">
-            <label class="label"><span class="label-text">Text to Print</span></label>
+            <label class="label">
+              {{ t('settings.printer.text_to_be_printed_label') }}
+            </label>
             <input
               id="textInput"
               type="text"
@@ -30,10 +36,10 @@
           </div>
           <div class="flex gap-4">
             <button class="btn btn-info" @click="triggerPrint">
-              Test print
+              {{ t('settings.printer.test_print_button') }}
             </button>
             <button class="btn btn-success" @click="save">
-              Save
+              {{ t('settings.printer.save_button') }}
             </button>
           </div>
         </div>

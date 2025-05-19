@@ -65,8 +65,14 @@
       "title": "Layout"
     },
     "printer": {
+      "device_path_label": "Percorso del device (ad esempio COM1 o /dev/usb/lp0)",
       "menu_title": "Stampante",
-      "title": "Stampante"
+      "title": "Stampante",
+      "printer_selection_title": "Selezione stampante",
+      "printer_selection_text": "Assicurati che la stampante sia collegata e il percorso del device sia configurato correttamente.",
+      "save_button": "Salva",
+      "test_print_button": "Stampa di prova",
+      "text_to_be_printed_label": "Testo da stampare"
     },
     "products": {
       "actions": "",
