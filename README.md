@@ -9,3 +9,5 @@
 [X] - Show all invoices and reprint
 [ ] - Export sales
 [ ] - Improve error messages
+[ ] - Make error messages disappear after few seconds
+[ ] - BUG - Sometimes on startup the printer is not configured, even though trying to print works

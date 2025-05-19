@@ -250,6 +250,7 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 
 #[tauri::command]
 async fn print_last_sale(
+    app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
 ) -> CommandResult<()> {
@@ -286,7 +287,15 @@ async fn print_last_sale(
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
-    let layout = PrintingLayout::default();
+
+    let store = app.get_store("store.json").unwrap();
+    let some_store = store.get("ticket-layout");
+    let layout = if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store)?
+    } else {
+        PrintingLayout::default()
+    };
+
     print_tickets(printer, &layout, &last_sale, &items)?;
 
     Ok(())
@@ -294,6 +303,7 @@ async fn print_last_sale(
 
 #[tauri::command]
 async fn print_sale(
+    app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     sale_id: i64
@@ -332,7 +342,14 @@ async fn print_sale(
     let printer = mutex_guard
         .as_mut()
         .ok_or_else(|| CommandError::PrinterNotConfigured)?;
-    let layout = PrintingLayout::default();
+
+    let store = app.get_store("store.json").unwrap();
+    let some_store = store.get("ticket-layout");
+    let layout = if let Some(store) = some_store {
+        serde_json::from_value::<PrintingLayout>(store)?
+    } else {
+        PrintingLayout::default()
+    };
 
     print_tickets(printer, &layout, &sale, &items)?;
 

@@ -62,14 +62,17 @@ where
             );
 
             if layout.header.enabled {
+                info!("Printing header");
                 print_header(printer, &layout.header, sale)?;
             }
 
             if layout.body.enabled {
+                info!("Printing body");
                 print_body(printer, &layout.body, item)?;
             }
 
             if layout.footer.enabled {
+                info!("Printing footer");
                 print_footer(printer, &layout.footer, sale)?;
             }
 
@@ -93,7 +96,7 @@ where
     let section_layout: SectionLayout = layout.clone().into();
 
     with_layout(printer, &section_layout, |p| {
-        p.writeln("PICKUP TICKET")?;
+        p.writeln(&layout.content)?;
 
         Ok(())
     })?
