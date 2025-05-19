@@ -32,6 +32,9 @@ pub(crate) enum CommandError {
 
     #[error("Failed to save settings")]
     StoreSettings,
+
+    #[error("Sale data not found")]
+    SaleNotFound,
 }
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;

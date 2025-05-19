@@ -28,7 +28,7 @@
         </div>
       </div>
       <div>
-        <a class="btn btn-info" @click="printLastSale()">
+        <a class="btn btn-primary" @click="printLastSale()">
           {{ t('pos.reprint_tickets_button') }}
         </a>
       </div>
