@@ -129,7 +129,7 @@ fn print_footer<D>(
 where
     D: Driver,
 {
-    let sale_time_str = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let sale_time_str = Local::now().format("%d-%m-%Y %H:%M:%S").to_string();
 
     with_layout(printer, layout, |p| {
         p.writeln(&format!("#{} - {}", sale_id, sale_time_str))?;
