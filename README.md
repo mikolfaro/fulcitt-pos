@@ -6,5 +6,5 @@
 [X] - Allow printing selection
 [X] - Clear sales history
 [W] - Italian localization
-[ ] - Show all invoces and reprint
+[ ] - Show all invoices and reprint
 [ ] - Export sales
