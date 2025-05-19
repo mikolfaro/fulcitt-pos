@@ -55,7 +55,10 @@
             <td>{{ formatCurrency(sale.total_amount) }}</td>
             <td>-</td>
             <td>
-              <button class="btn btn-xs btn-outline btn-primary">
+              <button
+                class="btn btn-xs btn-outline btn-primary"
+                @click="printTicket(sale)"
+              >
                 {{ t('reports.today_sales.reprint_tickets_button') }}
               </button>
             </td>
@@ -114,6 +117,14 @@ const formatCurrency = (value: number) => {
 const timeFormatter = new Intl.DateTimeFormat('it-IT', { timeStyle: 'short' })
 const formatTime = (value: Date) => {
   return timeFormatter.format(value)
+}
+
+const printTicket = async (sale: Sale) => {
+  try {
+    await invoke('print_sale', { saleId: sale.id })
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
 }
 
 const clearHistory = async () => {

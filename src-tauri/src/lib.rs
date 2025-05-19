@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use chrono::Local;
+use chrono::Utc;
 use escpos::{
     driver::FileDriver,
     printer::Printer,
@@ -117,7 +117,8 @@ async fn process_sale(
         ));
     }
 
-    let sale_time = Local::now();
+    let sale_time = Utc::now().naive_local();
+
     let total_amount: f64 = items
         .iter()
         .map(|item| item.price * item.quantity as f64)
@@ -133,6 +134,13 @@ async fn process_sale(
     .bind(total_amount)
     .fetch_one(&mut *tx)
     .await?;
+
+    let sale = Sale {
+        id: sale_id,
+        payment_method: None,
+        sale_time,
+        total_amount,
+    };
 
     for item in &items {
         let quantity = item.quantity;
@@ -184,7 +192,7 @@ async fn process_sale(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, sale_id, &items)?;
+    print_tickets(printer, &layout, &sale, &items)?;
 
     Ok(sale_id)
 }
@@ -245,19 +253,19 @@ async fn print_last_sale(
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
 ) -> CommandResult<()> {
-    let last_sale = sqlx::query!(
+    let last_sale = sqlx::query_as!(
+        Sale,
         r#"
-        SELECT id
+        SELECT *
         FROM sales
         ORDER BY id DESC
-        LIMIT 1 "#
+        LIMIT 1"#
     )
     .fetch_optional(&app_state.db)
     .await?
     .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
 
-    let last_sale_id = last_sale.id;
-    info!("Reprinting tickets of sale {}", last_sale_id);
+    info!("Reprinting tickets of sale {}", last_sale.id);
 
     let items = sqlx::query_as!(
         CartItem,
@@ -269,7 +277,53 @@ async fn print_last_sale(
         FROM sale_items
         WHERE sale_id = ?
     "#,
-        last_sale_id
+        last_sale.id
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    let mut mutex_guard = printer_state.lock()?;
+    let printer = mutex_guard
+        .as_mut()
+        .ok_or(CommandError::PrinterNotConfigured)?;
+    let layout = PrintingLayout::default();
+    print_tickets(printer, &layout, &last_sale, &items)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn print_sale(
+    app_state: State<'_, AppState>,
+    printer_state: State<'_, PrinterState>,
+    sale_id: i64
+) -> CommandResult<()> {
+    info!("Reprinting tickets of sale {}", sale_id);
+
+    let sale = sqlx::query_as!(
+        Sale,
+        r#"
+        SELECT *
+        FROM sales
+        WHERE id = ?
+        "#,
+        sale_id
+    )
+        .fetch_optional(&app_state.db)
+        .await?
+        .ok_or(CommandError::SaleNotFound)?;
+
+    let items = sqlx::query_as!(
+        CartItem,
+        r#"
+        SELECT product_id,
+            product_name AS name,
+            quantity,
+            price_at_sale AS price
+        FROM sale_items
+        WHERE sale_id = ?
+    "#,
+        sale_id
     )
     .fetch_all(&app_state.db)
     .await?;
@@ -279,7 +333,8 @@ async fn print_last_sale(
         .as_mut()
         .ok_or_else(|| CommandError::PrinterNotConfigured)?;
     let layout = PrintingLayout::default();
-    print_tickets(printer, &layout, last_sale_id, &items)?;
+
+    print_tickets(printer, &layout, &sale, &items)?;
 
     Ok(())
 }
@@ -426,6 +481,7 @@ pub fn run() {
             process_sale,
             get_sales_recap,
             get_today_sales,
+            print_sale,
             print_last_sale,
             get_print_layout,
             save_print_layout,

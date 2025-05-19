@@ -1,11 +1,10 @@
 use std::fmt::Debug;
 
-use chrono::Local;
 use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::{CartItem, CommandResult};
+use crate::{CartItem, CommandResult, Sale};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum FontSize {
@@ -45,13 +44,13 @@ pub(crate) struct PrintingLayout {
 pub(crate) fn print_tickets<D>(
     printer: &mut Printer<D>,
     layout: &PrintingLayout,
-    sale_id: i64,
+    sale: &Sale,
     items: &[CartItem],
 ) -> CommandResult<()>
 where
     D: Driver,
 {
-    info!("Printing tickets for sale {}", sale_id);
+    info!("Printing tickets for sale {}", sale.id);
 
     for item in items {
         for i in 0..item.quantity {
@@ -63,7 +62,7 @@ where
             );
 
             if layout.header.enabled {
-                print_header(printer, &layout.header, sale_id)?;
+                print_header(printer, &layout.header, sale)?;
             }
 
             if layout.body.enabled {
@@ -71,14 +70,14 @@ where
             }
 
             if layout.footer.enabled {
-                print_footer(printer, &layout.footer, sale_id)?;
+                print_footer(printer, &layout.footer, sale)?;
             }
 
             printer.print_cut()?;
         }
     }
 
-    info!("Completed print for sale {}", sale_id);
+    info!("Completed print for sale {}", sale.id);
 
     Ok(())
 }
@@ -86,7 +85,7 @@ where
 fn print_header<D>(
     printer: &mut Printer<D>,
     layout: &HeaderLayout,
-    _sale_id: i64,
+    _sale: &Sale,
 ) -> CommandResult<()>
 where
     D: Driver,
@@ -124,15 +123,15 @@ where
 fn print_footer<D>(
     printer: &mut Printer<D>,
     layout: &SectionLayout,
-    sale_id: i64,
+    sale: &Sale,
 ) -> CommandResult<()>
 where
     D: Driver,
 {
-    let sale_time_str = Local::now().format("%d-%m-%Y %H:%M:%S").to_string();
+    let sale_time_str = sale.sale_time.format("%d-%m-%Y %H:%M:%S").to_string();
 
     with_layout(printer, layout, |p| {
-        p.writeln(&format!("#{} - {}", sale_id, sale_time_str))?;
+        p.writeln(&format!("#{} - {}", sale.id, sale_time_str))?;
 
         Ok(())
     })?
