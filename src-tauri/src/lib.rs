@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use chrono::Utc;
+use chrono::{Datelike, NaiveDate, Utc};
 use escpos::{
     driver::FileDriver,
     printer::Printer,
@@ -218,11 +218,15 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
 
 #[tauri::command]
 async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sale>> {
+    let now = Utc::now().naive_local();
+    let start_of_day = NaiveDate::from_ymd_opt(now.year(), now.month(), now.day())
+        .ok_or(CommandError::SaleNotFound)?;
+
     let sales = sqlx::query_as!(Sale, r#"
         SELECT *
         FROM sales
-        LIMIT 10
-    "#)
+        WHERE sale_time >= ?
+    "#, start_of_day)
         .fetch_all(&app_state.db)
         .await?;
 
