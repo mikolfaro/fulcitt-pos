@@ -64,7 +64,10 @@
       "save_button": "Salva",
       "title": "Layout"
     },
-    "printer": { "menu_title": "Stampante" },
+    "printer": {
+      "menu_title": "Stampante",
+      "title": "Stampante"
+    },
     "products": {
       "actions": "",
       "add_product_button": "Aggiungi",

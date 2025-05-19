@@ -164,7 +164,10 @@
     </div>
 
     <div>
-      <button @click="saveLayout">
+      <button
+        class="btn btn-success"
+        @click="saveLayout"
+      >
         {{ t('settings.layout.save_button') }}
       </button>
     </div>

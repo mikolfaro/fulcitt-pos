@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h2 class="text-xl font-semibold mb-4">Printer</h2>
+    <h2 class="text-xl font-semibold mb-4">
+      {{ t('settings.printer.title') }}
+    </h2>
     <div class="card bg-base-200 shadow-md mt-8">
       <div class="card-body">
         <h3 class="card-title text-lg">Test Printer (Linux Raw File)</h3>
@@ -41,12 +43,14 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core';
-import { load } from '@tauri-apps/plugin-store';
-import { onMounted, reactive } from 'vue';
-import { useMessagesStore } from '../../../stores/messagesStore';
-import { AppMessage } from '../../../lib';
+import { invoke } from '@tauri-apps/api/core'
+import { load } from '@tauri-apps/plugin-store'
+import { onMounted, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useMessagesStore } from '../../../stores/messagesStore'
+import { AppMessage } from '../../../lib'
 
+const { t } = useI18n()
 const messages = useMessagesStore()
 
 const printerTest = reactive({

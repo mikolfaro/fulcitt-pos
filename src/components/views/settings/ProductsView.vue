@@ -55,12 +55,12 @@
                   <td>
                     <button
                       type="submit"
-                      class="btn btn-xs btn-outline btn-primary mr-4"
+                      class="btn btn-xs btn-outline btn-success mr-4"
                       form="editProduct"
                     >
                       {{ t('settings.products.save_product_button') }}
                     </button>
-                    <button type="button" class="btn btn-xs btn-outline btn-info" @click="closeEdit()">
+                    <button type="button" class="btn btn-xs btn-outline btn-error" @click="closeEdit()">
                       {{ t('settings.products.cancel_edit_button') }}
                     </button>
                   </td>
@@ -122,7 +122,7 @@
                 <td>
                   <button
                     type="submit"
-                    class="btn btn-xs btn-outline btn-primary"
+                    class="btn btn-xs btn-outline btn-success"
                     form="addProduct"
                   >
                       {{ t('settings.products.add_product_button') }}

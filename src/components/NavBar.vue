@@ -1,7 +1,10 @@
 <template>
   <div class="navbar bg-base-300 shadow-md">
     <div class="flex-1">
-      <a class="btn btn-ghost normal-case text-xl">{{ t('app.title') }}</a>
+      <RouterLink
+        to="/"
+        class="btn btn-ghost normal-case text-xl"
+      >{{ t('app.title') }}</RouterLink>
     </div>
     <div class="flex-none">
       <ul class="menu menu-horizontal px-1">
