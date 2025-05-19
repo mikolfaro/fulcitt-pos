@@ -28,7 +28,7 @@ export default [
     component: SettingsView,
     children: [
       {
-        path: 'products',
+        path: '',
         component: ProductSettingsView,
       },
       {

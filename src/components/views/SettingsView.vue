@@ -34,7 +34,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 
 const subRoutes = [
-  { name: t('settings.products.menu_title'), to: "/settings/products" },
+  { name: t('settings.products.menu_title'), to: "/settings" },
   { name: t('settings.layout.menu_title'), to: "/settings/layout" },
   { name: t('settings.printer.menu_title'), to: "/settings/printer" },
 ]
