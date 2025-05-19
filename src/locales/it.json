@@ -34,12 +34,21 @@
   "reports": {
     "clear_reports_button": "Cancella report e dati sul venduto",
     "menu_title": "Report",
+    "title": "Report di vendita",
     "messages": {
       "loading_data": "Caricamento dati...",
       "no_data_available": "Nessun dato sulle vendite disponibile"
     },
-    "sales_report": {
-      "title": "Report di vendita",
+    "today_sales": {
+      "title": "Vendite di oggi",
+      "invoice_number": "Numero vendita",
+      "amount_sold": "Importo venduto",
+      "payment_method": "Metodo di pagamento",
+      "reprint_tickets_button": "Ristampa vendita",
+      "sales_time": "Orario vendita"
+    },
+    "sales_by_product": {
+      "title": "Prodotti venduti",
       "product_name": "Prodotto",
       "quantity_sold": "Qtà venduta",
       "value_sold": "Importo venduto"

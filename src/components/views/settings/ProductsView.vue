@@ -71,7 +71,7 @@
                   <td class="text-right">{{ formatCurrency(product.price) }}</td>
                   <td class="flex justify-between">
                     <button
-                      class="btn btn-xs btn-outline btn-info"
+                      class="btn btn-xs btn-outline btn-primary"
                       @click="openEdit(product)"
                     >
                       {{ t('settings.products.edit_product_button') }}

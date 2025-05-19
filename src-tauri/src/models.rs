@@ -1,5 +1,6 @@
-use chrono::{DateTime, Local};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
 #[derive(Deserialize)]
 pub(crate) struct UnsavedProduct {
@@ -25,15 +26,15 @@ pub(crate) struct CartItem {
     pub quantity: i64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, FromRow, Serialize)]
 pub(crate) struct Sale {
     pub id: i64,
-    pub sale_time: DateTime<Local>,
+    pub sale_time: NaiveDateTime,
     pub total_amount: f64,
-    pub payment_method: String,
+    pub payment_method: Option<String>,
 }
 
-#[derive(Debug, sqlx::FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize)]
 pub(crate) struct SaleItem {
     id: i64,
     product_id: i64,

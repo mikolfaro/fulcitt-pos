@@ -35,7 +35,7 @@
             />
           </div>
           <div class="flex gap-4">
-            <button class="btn btn-info" @click="triggerPrint">
+            <button class="btn btn-primary" @click="triggerPrint">
               {{ t('settings.printer.test_print_button') }}
             </button>
             <button class="btn btn-success" @click="save">

@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use chrono::Local;
 use escpos::{
     driver::FileDriver,
     printer::Printer,
@@ -10,7 +11,6 @@ use escpos::{
 };
 use log::{error, info, warn};
 use printing::{print_tickets, PrintingLayout};
-use serde::Serialize;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
 use tauri_plugin_store::StoreExt;
@@ -117,7 +117,7 @@ async fn process_sale(
         ));
     }
 
-    let sale_time = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
+    let sale_time = Local::now();
     let total_amount: f64 = items
         .iter()
         .map(|item| item.price * item.quantity as f64)
@@ -210,15 +210,15 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
 
 #[tauri::command]
 async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sale>> {
-    // let sales = sqlx::query_as::<_, Sale>(r#"
-    //     SELECT *
-    //     FROM sales
-    //     LIMIT 10
-    // "#)
-    //     .fetch_all(&app_state.db)
-    //     .await?;
+    let sales = sqlx::query_as!(Sale, r#"
+        SELECT *
+        FROM sales
+        LIMIT 10
+    "#)
+        .fetch_all(&app_state.db)
+        .await?;
 
-    Ok(vec![])
+    Ok(sales)
 }
 
 #[tauri::command]
@@ -425,6 +425,7 @@ pub fn run() {
             clear_sales_data,
             process_sale,
             get_sales_recap,
+            get_today_sales,
             print_last_sale,
             get_print_layout,
             save_print_layout,
