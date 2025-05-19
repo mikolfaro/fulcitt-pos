@@ -173,7 +173,7 @@ async fn process_sale(
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
         .as_mut()
-        .ok_or_else(|| { CommandError::PrinterNotConfigured })?;
+        .ok_or_else(|| CommandError::PrinterNotConfigured)?;
     printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     let store = app.get_store("store.json").unwrap();
@@ -189,19 +189,12 @@ async fn process_sale(
     Ok(sale_id)
 }
 
-#[derive(Debug, sqlx::FromRow, Serialize)]
-struct ItemSale {
-    product_id: i64,
-    product_name: String,
-    total_quantity_sold: i64,
-    total_value_sold: f64,
-}
-
 #[tauri::command]
-async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<ItemSale>> {
-    let item_sales = sqlx::query_as::<_, ItemSale>(
+async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<SaleItem>> {
+    let item_sales = sqlx::query_as::<_, SaleItem>(
         r#"
-            SELECT product_id,
+            SELECT id,
+                product_id,
                 product_name,
                 SUM(quantity) AS total_quantity_sold,
                 SUM(quantity * price_at_sale) AS total_value_sold
@@ -216,9 +209,20 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<It
 }
 
 #[tauri::command]
-async fn clear_sales_data(
-    app_state: State<'_, AppState>
-) -> CommandResult<()> {
+async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sale>> {
+    // let sales = sqlx::query_as::<_, Sale>(r#"
+    //     SELECT *
+    //     FROM sales
+    //     LIMIT 10
+    // "#)
+    //     .fetch_all(&app_state.db)
+    //     .await?;
+
+    Ok(vec![])
+}
+
+#[tauri::command]
+async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Clearing sales data");
 
     let mut tx = app_state.db.begin().await?;
@@ -226,9 +230,7 @@ async fn clear_sales_data(
     sqlx::query!("DELETE FROM sale_items")
         .execute(&mut *tx)
         .await?;
-    sqlx::query!("DELETE FROM sales")
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query!("DELETE FROM sales").execute(&mut *tx).await?;
     sqlx::query!("DELETE FROM products WHERE is_deleted = 1")
         .execute(&mut *tx)
         .await?;
@@ -275,7 +277,7 @@ async fn print_last_sale(
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
         .as_mut()
-        .ok_or_else(|| { CommandError::PrinterNotConfigured })?;
+        .ok_or_else(|| CommandError::PrinterNotConfigured)?;
     let layout = PrintingLayout::default();
     print_tickets(printer, &layout, last_sale_id, &items)?;
 
@@ -315,7 +317,7 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 async fn save_printer_device(
     app: AppHandle,
     printer_state: State<'_, PrinterState>,
-    device_path: String
+    device_path: String,
 ) -> CommandResult<()> {
     info!("Saving printer device {:?}", device_path);
 
@@ -399,17 +401,14 @@ async fn setup_db(app: &App) -> Db {
 }
 
 fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
-    app
-        .get_store("store.json")
+    app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
         .and_then(|device_path| {
             let path = device_path.to_string();
             let path = Path::new(&path);
             FileDriver::open(path).ok()
         })
-        .and_then(|driver| {
-            Some(Printer::new(driver, Protocol::default(), None))
-        })
+        .and_then(|driver| Some(Printer::new(driver, Protocol::default(), None)))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
