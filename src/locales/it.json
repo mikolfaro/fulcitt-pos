@@ -33,11 +33,13 @@
   },
   "reports": {
     "clear_reports_button": "Cancella report e dati sul venduto",
+    "export_xlsx_button": "Esporta report",
     "menu_title": "Report",
     "title": "Report di vendita",
     "messages": {
       "loading_data": "Caricamento dati...",
-      "no_data_available": "Nessun dato sulle vendite disponibile"
+      "no_data_available": "Nessun dato sulle vendite disponibile",
+      "export_xlsx_completed": "Report esportato"
     },
     "today_sales": {
       "title": "Vendite di oggi",

@@ -6628,8 +6628,3 @@ dependencies = [
  "syn 2.0.101",
  "winnow 0.7.10",
 ]
-
-[[patch.unused]]
-name = "calamine"
-version = "0.27.0"
-source = "git+https://github.com/prophittcorey/calamine?branch=fix%2Fzip-3.0#f69a25730c568aa6cfa32390abf298ec015a96ab"
