@@ -11,6 +11,7 @@ use escpos::{
 };
 use log::{error, info, warn};
 use printing::{print_tickets, PrintingLayout};
+use rust_xlsxwriter::workbook::Workbook;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
 use tauri_plugin_store::StoreExt;
@@ -248,6 +249,32 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
         .await?;
 
     tx.commit().await?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
+    info!("Exporting to XLSX");
+
+    let mut workbook = Workbook::new();
+    let worksheet = workbook.add_worksheet();
+
+    let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
+        .fetch_all(&app_state.db)
+        .await?;
+
+    worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
+    for (idx, sale) in sales.into_iter().enumerate() {
+        let idx: u32 = idx.try_into().unwrap();
+
+        worksheet.write(idx, 0, sale.id)?;
+        worksheet.write(idx, 1, sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string())?;
+        worksheet.write(idx, 2, sale.total_amount)?;
+        worksheet.write(idx, 3, sale.payment_method)?;
+    }
+
+    workbook.save("/home/mikol/export.xlsx")?;
 
     Ok(())
 }
@@ -502,8 +529,9 @@ pub fn run() {
             process_sale,
             get_sales_recap,
             get_today_sales,
-            print_sale,
+            export_sales,
             print_last_sale,
+            print_sale,
             get_print_layout,
             save_print_layout,
             save_printer_device,

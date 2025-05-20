@@ -75,6 +75,10 @@
     </div>
 
     <div class="pt-4">
+      <button class="btn btn-primary" @click="exportXlsx()">
+        {{ t('reports.export_xlsx_button') }}
+      </button>
+
       <button class="btn btn-error" @click="clearHistory()">
         {{ t('reports.clear_reports_button') }}
       </button>
@@ -135,6 +139,14 @@ const clearHistory = async () => {
     invoiceSalesData.value = []
   } catch (err) {
     messages.addUnknownError(err)
+  }
+}
+
+const exportXlsx = async () => {
+  try {
+    await invoke('export_sales')
+  } catch (err) {
+    console.error(err)
   }
 }
 

@@ -35,6 +35,9 @@ pub(crate) enum CommandError {
 
     #[error("Sale data not found")]
     SaleNotFound,
+
+    #[error("XLSX error {0}")]
+    Xlsx(String)
 }
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -44,6 +47,14 @@ impl From<escpos::errors::PrinterError> for CommandError {
         log::error!("Printer error occurred {:?}", err);
 
         CommandError::Printer(err.to_string())
+    }
+}
+
+impl From<rust_xlsxwriter::XlsxError> for CommandError {
+    fn from(err: rust_xlsxwriter::XlsxError) -> Self {
+        log::error!("XLSX manipulation occurred {:?}", err);
+
+        CommandError::Xlsx(err.to_string())
     }
 }
 
