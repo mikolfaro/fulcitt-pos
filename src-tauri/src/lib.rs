@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
     driver::FileDriver,
     printer::Printer,
@@ -11,9 +11,10 @@ use escpos::{
 };
 use log::{error, info, warn};
 use printing::{print_tickets, PrintingLayout};
-use rust_xlsxwriter::workbook::Workbook;
+use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_store::StoreExt;
 
 use errors::*;
@@ -118,7 +119,7 @@ async fn process_sale(
         ));
     }
 
-    let sale_time = Utc::now().naive_local();
+    let sale_time = Local::now().naive_local();
 
     let total_amount: f64 = items
         .iter()
@@ -199,8 +200,8 @@ async fn process_sale(
 }
 
 #[tauri::command]
-async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<SaleItem>> {
-    let item_sales = sqlx::query_as::<_, SaleItem>(
+async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<AggregatedSaleItem>> {
+    let item_sales = sqlx::query_as::<_, AggregatedSaleItem>(
         r#"
             SELECT id,
                 product_id,
@@ -254,27 +255,63 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
+async fn export_sales(app: AppHandle, app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    let mut workbook = Workbook::new();
-    let worksheet = workbook.add_worksheet();
+    let mut invoices_worksheet = Worksheet::new();
+    invoices_worksheet.set_name("Invoices")?;
+    let mut products_worksheet = Worksheet::new();
+    products_worksheet.set_name("Invoice details")?;
 
     let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
         .fetch_all(&app_state.db)
         .await?;
 
-    worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
-    for (idx, sale) in sales.into_iter().enumerate() {
-        let idx: u32 = idx.try_into().unwrap();
+    invoices_worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
+    products_worksheet.write_row(0, 0, vec!["ID scontrino", "Prodotto", "Q.tà", "Totale"])?;
 
-        worksheet.write(idx, 0, sale.id)?;
-        worksheet.write(idx, 1, sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string())?;
-        worksheet.write(idx, 2, sale.total_amount)?;
-        worksheet.write(idx, 3, sale.payment_method)?;
+    for (i, sale) in sales.into_iter().enumerate() {
+        let i: u32 = i.try_into().unwrap();
+
+        invoices_worksheet.write(i+ 1, 0, sale.id)?;
+        invoices_worksheet.write(i + 1, 1, sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string())?;
+        invoices_worksheet.write(i + 1, 2, sale.total_amount)?;
+        invoices_worksheet.write(i + 1, 3, sale.payment_method)?;
+
+        let item_sales = sqlx::query_as::<_, SaleItem>(
+            r#"
+            SELECT id,
+                product_id,
+                product_name,
+                quantity AS total_quantity_sold,
+                (quantity * price_at_sale) AS total_value_sold
+            FROM sale_items
+            WHERE sale_id = ?
+        "#,
+        )
+            .fetch_all(&app_state.db)
+        .await?;
+
+        let mut j = 1;
+        for item in item_sales.into_iter() {
+            products_worksheet.write(j + 1, 0, item.sale_id)?;
+            products_worksheet.write(j + 1, 1, item.product_name)?;
+            products_worksheet.write(j + 1, 2, item.quantity)?;
+            products_worksheet.write(j + 1, 3, item.price_at_sale)?;
+            products_worksheet.write(j + 1, 4, (item.quantity as f64) * item.price_at_sale)?;
+
+            j += 1;
+        }
     }
 
-    workbook.save("/home/mikol/export.xlsx")?;
+    let workbook_path = "/home/mikol/export.xlsx";
+    let mut workbook = Workbook::new();
+    workbook.push_worksheet(invoices_worksheet);
+    workbook.push_worksheet(products_worksheet);
+    workbook.save(workbook_path)?;
+
+    // TODO: handle error
+    app.opener().open_path(workbook_path, None::<&str>).unwrap();
 
     Ok(())
 }

@@ -10,4 +10,8 @@
 [W] - Export sales
 [ ] - Improve error messages
 [ ] - Make error messages disappear after few seconds
-[ ] - BUG - Sometimes on startup the printer is not configured, even though trying to print works
+
+Known bugs
+
+[ ] - On startup the printer is not configured, even though trying to print works
+[ ] - Date times are not local in: tickets, reprint tickets and reports page

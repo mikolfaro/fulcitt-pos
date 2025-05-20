@@ -36,9 +36,18 @@ pub(crate) struct Sale {
 
 #[derive(Debug, FromRow, Serialize)]
 pub(crate) struct SaleItem {
-    id: i64,
-    product_id: i64,
-    product_name: String,
-    total_quantity_sold: i64,
-    total_value_sold: f64,
+    pub id: i64,
+    pub sale_id: i64,
+    pub product_id: i64,
+    pub product_name: String,
+    pub quantity: i64,
+    pub price_at_sale: f64,
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub(crate) struct AggregatedSaleItem {
+    pub product_id: i64,
+    pub product_name: String,
+    pub total_quantity_sold: i64,
+    pub total_value_sold: f64,
 }

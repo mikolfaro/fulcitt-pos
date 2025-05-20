@@ -145,8 +145,9 @@ const clearHistory = async () => {
 const exportXlsx = async () => {
   try {
     await invoke('export_sales')
+    messages.addSuccess(t('reports.messages.export_xlsx_completed'))
   } catch (err) {
-    console.error(err)
+    messages.addUnknownError(err)
   }
 }
 
