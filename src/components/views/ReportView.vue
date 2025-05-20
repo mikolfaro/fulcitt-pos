@@ -74,7 +74,11 @@
       {{ t('reports.messages.no_data_available') }}
     </div>
 
-    <div class="pt-4">
+    <div class="flex justify-between gap-4 pt-4">
+      <button class="btn btn-primary" @click="exportXlsx()">
+        {{ t('reports.export_xlsx_button') }}
+      </button>
+
       <button class="btn btn-error" @click="clearHistory()">
         {{ t('reports.clear_reports_button') }}
       </button>
@@ -138,6 +142,15 @@ const clearHistory = async () => {
   }
 }
 
+const exportXlsx = async () => {
+  try {
+    await invoke('export_sales')
+    messages.addSuccess(t('reports.messages.export_xlsx_completed'))
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
+}
+
 onMounted(async function () {
   try {
     const data = await invoke<ItemSale[]>('get_sales_recap')
@@ -158,12 +171,11 @@ onMounted(async function () {
 
   try {
     const data = await invoke("get_today_sales")
-    console.log("get_today_sales", data)
     invoiceSalesData.value = data.map(function (sale) {
       return { ...sale, sale_time: Date.parse(sale.sale_time) }
     })
   } catch (err) {
-    console.error(err)
+    messages.addUnknownError(err)
   }
 })
 
