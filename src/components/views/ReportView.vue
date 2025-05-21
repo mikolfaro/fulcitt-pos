@@ -70,9 +70,6 @@
     <div v-if="loading" class="loading">
       {{ t('reports.messages.loading_data') }}
     </div>
-    <div v-if="productSalesData.length === 0" class="alert alert-warning">
-      {{ t('reports.messages.no_data_available') }}
-    </div>
 
     <div class="flex justify-between gap-4 pt-4">
       <button class="btn btn-primary" @click="exportXlsx()">
@@ -176,6 +173,10 @@ onMounted(async function () {
     })
   } catch (err) {
     messages.addUnknownError(err)
+  }
+
+  if (invoiceSalesData.value.length === 0 && productSalesData.value.length === 0) {
+    messages.addInvalidInput(t('reports.messages.no_data_available'))
   }
 })
 

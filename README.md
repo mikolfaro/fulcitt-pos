@@ -15,5 +15,5 @@ Features
 
 Known bugs
 
-[ ] - On startup the printer is not configured, even though trying to print works
+[X] - On startup the printer is not configured, even though trying to print works
 [X] - Date times are not local in: tickets, reprint tickets and reports page

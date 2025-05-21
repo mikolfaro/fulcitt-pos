@@ -9,7 +9,7 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use printing::{print_tickets, PrintingLayout};
 use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
@@ -540,11 +540,16 @@ fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
     app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
         .and_then(|device_path| {
-            let path = device_path.to_string();
+            info!("Already configured printer device path found {}", device_path);
+            let path = serde_json::from_value::<String>(device_path).ok()?;
             let path = Path::new(&path);
+
             FileDriver::open(path).ok()
         })
-        .and_then(|driver| Some(Printer::new(driver, Protocol::default(), None)))
+        .and_then(|driver| {
+            debug!("Existing printer restored");
+            Some(Printer::new(driver, Protocol::default(), None))
+        })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
