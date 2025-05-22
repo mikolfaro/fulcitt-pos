@@ -17,3 +17,4 @@ Known bugs
 
 [X] - On startup the printer is not configured, even though trying to print works
 [X] - Date times are not local in: tickets, reprint tickets and reports page
+[ ] - Build requires `NO_STRIP=true` on Linux see [tauri/issues/8929](https://github.com/tauri-apps/tauri/issues/8929)
