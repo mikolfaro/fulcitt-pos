@@ -11,7 +11,7 @@ Features
 [X] - Show all invoices and reprint
 [X] - Export sales
 [ ] - Improve error messages
-[ ] - Make error messages disappear after few seconds
+[X] - Make error messages disappear after few seconds
 
 Known bugs
 
