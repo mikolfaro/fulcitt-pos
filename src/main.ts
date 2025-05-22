@@ -8,7 +8,7 @@ import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
 
 import App from "./App.vue";
 import routes from "./routes"
-import it from "./locales/it"
+import it from "./locales/it.json"
 
 function forwardConsole(
   fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',

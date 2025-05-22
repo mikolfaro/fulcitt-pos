@@ -167,9 +167,11 @@ onMounted(async function () {
   }
 
   try {
-    const data = await invoke("get_today_sales")
+    type DeserializedSale = Omit<Sale, 'sale_time'> & {sale_time: string};
+    const data = await invoke<DeserializedSale[]>("get_today_sales")
+
     invoiceSalesData.value = data.map(function (sale) {
-      return { ...sale, sale_time: Date.parse(sale.sale_time) }
+      return { ...sale, sale_time: new Date(sale.sale_time) }
     })
   } catch (err) {
     messages.addUnknownError(err)
