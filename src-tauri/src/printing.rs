@@ -194,12 +194,12 @@ impl Default for PrintingLayout {
     }
 }
 
-impl Into<SectionLayout> for HeaderLayout {
-    fn into(self) -> SectionLayout {
-        SectionLayout {
-            enabled: self.enabled,
-            font_size: self.font_size,
-            justify: self.justify,
+impl From<HeaderLayout> for SectionLayout {
+    fn from(value: HeaderLayout) -> Self {
+        Self {
+            enabled: value.enabled,
+            font_size: value.font_size,
+            justify: value.justify,
         }
     }
 }

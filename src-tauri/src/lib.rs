@@ -182,7 +182,7 @@ async fn process_sale(
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
         .as_mut()
-        .ok_or_else(|| CommandError::PrinterNotConfigured)?;
+        .ok_or(CommandError::PrinterNotConfigured)?;
     printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     let store = app.get_store("store.json").unwrap();
@@ -405,7 +405,7 @@ async fn print_sale(
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
         .as_mut()
-        .ok_or_else(|| CommandError::PrinterNotConfigured)?;
+        .ok_or(CommandError::PrinterNotConfigured)?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -546,9 +546,9 @@ fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
 
             FileDriver::open(path).ok()
         })
-        .and_then(|driver| {
+        .map(|driver| {
             debug!("Existing printer restored");
-            Some(Printer::new(driver, Protocol::default(), None))
+            Printer::new(driver, Protocol::default(), None)
         })
 }
 
