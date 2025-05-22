@@ -37,7 +37,7 @@ pub(crate) enum CommandError {
     SaleNotFound,
 
     #[error("XLSX error {0}")]
-    Xlsx(String)
+    Xlsx(String),
 }
 
 pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;

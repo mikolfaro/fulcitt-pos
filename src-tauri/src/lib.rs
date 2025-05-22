@@ -223,13 +223,17 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let start_of_day = NaiveDate::from_ymd_opt(now.year(), now.month(), now.day())
         .ok_or(CommandError::SaleNotFound)?;
 
-    let sales = sqlx::query_as!(Sale, r#"
+    let sales = sqlx::query_as!(
+        Sale,
+        r#"
         SELECT *
         FROM sales
         WHERE sale_time >= ?
-    "#, start_of_day)
-        .fetch_all(&app_state.db)
-        .await?;
+    "#,
+        start_of_day
+    )
+    .fetch_all(&app_state.db)
+    .await?;
 
     Ok(sales)
 }
@@ -267,15 +271,29 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
         .await?;
 
     invoices_worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
-    products_worksheet.write_row(0, 0, vec!["ID scontrino", "Prodotto", "Q.tà", "Costo unitario", "Totale"])?;
+    products_worksheet.write_row(
+        0,
+        0,
+        vec![
+            "ID scontrino",
+            "Prodotto",
+            "Q.tà",
+            "Costo unitario",
+            "Totale",
+        ],
+    )?;
 
     let currency_format = Format::new().set_num_format("#,##0.00 €");
 
     for (i, sale) in sales.into_iter().enumerate() {
         let i: u32 = i.try_into().unwrap();
 
-        invoices_worksheet.write(i+ 1, 0, sale.id)?;
-        invoices_worksheet.write(i + 1, 1, sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string())?;
+        invoices_worksheet.write(i + 1, 0, sale.id)?;
+        invoices_worksheet.write(
+            i + 1,
+            1,
+            sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string(),
+        )?;
         invoices_worksheet.write_with_format(i + 1, 2, sale.total_amount, &currency_format)?;
         invoices_worksheet.write(i + 1, 3, sale.payment_method)?;
 
@@ -288,7 +306,7 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
             "#,
             sale.id
         )
-            .fetch_all(&app_state.db)
+        .fetch_all(&app_state.db)
         .await?;
 
         let mut j = 1;
@@ -297,7 +315,12 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
             products_worksheet.write(j, 1, item.product_name)?;
             products_worksheet.write(j, 2, item.quantity)?;
             products_worksheet.write_with_format(j, 3, item.price_at_sale, &currency_format)?;
-            products_worksheet.write_formula_with_format(j, 4, format!("=C{}*D{}", j + 1, j + 1).as_str(), &currency_format)?;
+            products_worksheet.write_formula_with_format(
+                j,
+                4,
+                format!("=C{}*D{}", j + 1, j + 1).as_str(),
+                &currency_format,
+            )?;
 
             j += 1;
         }
@@ -370,7 +393,7 @@ async fn print_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
-    sale_id: i64
+    sale_id: i64,
 ) -> CommandResult<()> {
     info!("Reprinting tickets of sale {}", sale_id);
 
@@ -383,9 +406,9 @@ async fn print_sale(
         "#,
         sale_id
     )
-        .fetch_optional(&app_state.db)
-        .await?
-        .ok_or(CommandError::SaleNotFound)?;
+    .fetch_optional(&app_state.db)
+    .await?
+    .ok_or(CommandError::SaleNotFound)?;
 
     let items = sqlx::query_as!(
         CartItem,
@@ -540,7 +563,10 @@ fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
     app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
         .and_then(|device_path| {
-            info!("Already configured printer device path found {}", device_path);
+            info!(
+                "Already configured printer device path found {}",
+                device_path
+            );
             let path = serde_json::from_value::<String>(device_path).ok()?;
             let path = Path::new(&path);
 
