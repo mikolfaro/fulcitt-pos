@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "POS Fulcitt"
+  },
+  "pos": {
+    "cart": {
+      "product_name": "Prodotto",
+      "unit_price": "Prezzo",
+      "quantity": "Q.tà",
+      "title": "Ordine attuale",
+      "total_price": "Totale"
+    },
+    "cancel_payment_button": "Annulla pagamento",
+    "clear_cart_button": "Cancella ordine",
+    "menu_title": "POS",
+    "messages": {
+      "empty_cart": "Nessun prodotto",
+      "loading_products": "Caricamento prodotti..."
+    },
+    "products": {
+      "title": "Prodotti"
+    },
+    "process_payment_button": "Completa pagamento",
+    "recap": {
+      "amount_due": "Dovuto",
+      "amount_payed": "Pagato",
+      "change": "Resto",
+      "subtotal": "Subtotale",
+      "total": "Totale"
+    },
+    "reprint_tickets_button": "Ristampa ultima vendita",
+    "start_payment_button": "Pagamento"
+  },
+  "reports": {
+    "clear_reports_button": "Cancella report e dati sul venduto",
+    "export_xlsx_button": "Esporta report",
+    "menu_title": "Report",
+    "title": "Report di vendita",
+    "messages": {
+      "loading_data": "Caricamento dati...",
+      "no_data_available": "Nessun dato sulle vendite disponibile",
+      "export_xlsx_completed": "Report esportato"
+    },
+    "today_sales": {
+      "title": "Vendite di oggi",
+      "invoice_number": "Numero vendita",
+      "amount_sold": "Importo venduto",
+      "payment_method": "Metodo di pagamento",
+      "reprint_tickets_button": "Ristampa vendita",
+      "sales_time": "Orario vendita"
+    },
+    "sales_by_product": {
+      "title": "Prodotti venduti",
+      "product_name": "Prodotto",
+      "quantity_sold": "Qtà venduta",
+      "value_sold": "Importo venduto"
+    }
+  },
+  "settings": {
+    "menu_title": "Impostazioni",
+    "layout": {
+      "font_size_label": "Dimensione caratteri",
+      "font_size_large": "Grande",
+      "font_size_normal": "Normale",
+      "font_size_small": "Piccolo",
+      "justify_center": "Centrato",
+      "justify_label": "Allineamento",
+      "justify_left": "Sinistra",
+      "justify_right": "Destra",
+      "menu_title": "Layout",
+      "header_content_label": "Contenuto",
+      "print_body_label": "Stampa corpo",
+      "print_footer_label": "Stampa piè di pagina",
+      "print_header_label": "Stampa intestazione",
+      "save_button": "Salva",
+      "title": "Layout"
+    },
+    "printer": {
+      "device_path_label": "Percorso del device (ad esempio COM1 o /dev/usb/lp0)",
+      "menu_title": "Stampante",
+      "title": "Stampante",
+      "printer_selection_title": "Selezione stampante",
+      "printer_selection_text": "Assicurati che la stampante sia collegata e il percorso del device sia configurato correttamente.",
+      "save_button": "Salva",
+      "test_print_button": "Stampa di prova",
+      "text_to_be_printed_label": "Testo da stampare"
+    },
+    "products": {
+      "actions": "",
+      "add_product_button": "Aggiungi",
+      "cancel_edit_button": "Annulla",
+      "category": "Categoria",
+      "category_example": "Griglia",
+      "delete_product_button": "Elimina",
+      "edit_product_button": "Modifica",
+      "menu_title": "Prodotti",
+      "messages": {
+        "loading_existing_products": "Caricamento prodotti esistenti..."
+      },
+      "price": "Prezzo",
+      "price_example": "4,00 €",
+      "product_name": "Nome",
+      "product_name_example": "Panino con Salamella",
+      "save_product_button": "Salva",
+      "title": "Prodotti"
+    },
+    "title": "Impostazioni"
+  }
+}

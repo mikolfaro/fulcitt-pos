@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM sales",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "e861ab4ebfa54a7d92b2d36bf6637aacfee0004557c0be1817c667ceb306f2d0"
+}

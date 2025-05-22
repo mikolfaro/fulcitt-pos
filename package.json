@@ -1,27 +1,39 @@
 {
   "name": "fulcitt-pos",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "sqlx": "cd src-tauri && sqlx",
+    "sqlx:make_migration": "cd src-tauri && sqlx migrate add",
+    "tauri": "tauri",
+    "cargo": "cd src-tauri && cargo",
+    "lint": "eslint --ext .js,.ts,.vue src/",
+    "lint:fix": "eslint --ext .js,.ts,.vue src/ --fix"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.4",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-log": "~2",
+    "@tauri-apps/plugin-opener": "^2.2.6",
+    "@tauri-apps/plugin-store": "~2",
+    "pinia": "^3.0.2",
     "tailwindcss": "^4.1.4",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-i18n": "11",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@tauri-apps/cli": "^2.5.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/eslint-config-typescript": "^14.5.0",
     "daisyui": "^5.0.28",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.3",
-    "vue-tsc": "^2.1.10"
+    "eslint": "^9.25.1",
+    "typescript": "~5.6.3",
+    "vite": "^6.3.3",
+    "vue-tsc": "^2.2.10"
   }
 }

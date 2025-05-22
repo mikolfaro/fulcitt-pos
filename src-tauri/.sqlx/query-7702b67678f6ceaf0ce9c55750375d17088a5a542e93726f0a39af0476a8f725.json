@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT *\n        FROM products\n        WHERE is_deleted = 0\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "price",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "category",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_deleted",
+        "ordinal": 4,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7702b67678f6ceaf0ce9c55750375d17088a5a542e93726f0a39af0476a8f725"
+}
