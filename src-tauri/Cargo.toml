@@ -4,6 +4,7 @@ version = "0.2.0"
 description = "Minimal POS used by Gruppo Fulcitt"
 authors = ["Mikol Faro <mikol.faro@proton.me>"]
 edition = "2021"
+rust-version = "1.82"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
