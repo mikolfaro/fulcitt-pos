@@ -21,7 +21,7 @@ export const useMessagesStore = defineStore('messages', {
         }, dismissAfter * 1_000)
       }
     },
-    addInvalidInput(message: string, dismissAfter: number) {
+    addInvalidInput(message: string, dismissAfter?: number) {
       this.addMessage({ type: 'InvalidInput', message }, dismissAfter)
     },
     addSuccess(message: string) {
