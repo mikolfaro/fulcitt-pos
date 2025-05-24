@@ -4,13 +4,13 @@
       <RouterLink
         to="/"
         class="btn btn-ghost normal-case text-xl"
-      >{{ $t('app.title') }}</RouterLink>
+      >{{ $t('app-title') }}</RouterLink>
     </div>
     <div class="flex-none">
       <ul class="menu menu-horizontal px-1">
-        <li><RouterLink to="/" class="btn btn-ghost">{{ $t('pos.menu_title') }}</RouterLink></li>
-        <li><RouterLink to="/report" class="btn btn-ghost">{{ $t('reports.menu_title') }}</RouterLink></li>
-        <li><RouterLink to="/settings" class="btn btn-ghost">{{ $t('settings.menu_title') }}</RouterLink></li>
+        <li><RouterLink to="/" class="btn btn-ghost">{{ $t('pos-menu-title') }}</RouterLink></li>
+        <li><RouterLink to="/report" class="btn btn-ghost">{{ $t('reports-menu-title') }}</RouterLink></li>
+        <li><RouterLink to="/settings" class="btn btn-ghost">{{ $t('settings-menu-title') }}</RouterLink></li>
       </ul>
     </div>
   </div>

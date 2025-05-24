@@ -2,13 +2,13 @@
   <div v-if="isLoading" class="flex justify-center items-center h-full p-10">
     <div class="flex flex-col items-center space-y-2">
       <span class="loading loading-spinner loading-lg"></span>
-      <p class="text-lg">{{ $t('pos.messages.loading_products') }}</p>
+      <p class="text-lg">{{ $t('pos-messages-loading-products') }}</p>
     </div>
   </div>
   <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
     <div class="w-3/5 flex flex-col gap-4">
       <div class="flex-grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
-        <h2 class="text-xl font-bold mb-4">{{ $t('pos.products.title') }}</h2>
+        <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-title') }}</h2>
         <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
           <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
           <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -29,27 +29,27 @@
       </div>
       <div>
         <a class="btn btn-primary" @click="printLastSale()">
-          {{ $t('pos.reprint_tickets_button') }}
+          {{ $t('pos-reprint-tickets-button') }}
         </a>
       </div>
     </div>
 
     <div class="w-2/5 bg-base-100 rounded-box shadow-lg p-4 flex flex-col">
-      <h2 class="text-xl font-bold mb-4">{{ $t('pos.cart.title') }}</h2>
+      <h2 class="text-xl font-bold mb-4">{{ $t('pos-cart-title') }}</h2>
       <div class="flex-grow overflow-y-auto mb-4">
         <table class="table table-zebra w-full">
           <thead>
             <tr>
-              <th>{{ $t('pos.cart.product_name') }}</th>
-              <th>{{ $t('pos.cart.quantity') }}</th>
-              <th>{{ $t('pos.cart.unit_price') }}</th>
-              <th>{{ $t('pos.cart.total_price') }}</th>
+              <th>{{ $t('pos-cart-product-name') }}</th>
+              <th>{{ $t('pos-cart-quantity') }}</th>
+              <th>{{ $t('pos-cart-unit-price') }}</th>
+              <th>{{ $t('pos-cart-total-price') }}</th>
               <th></th> </tr>
           </thead>
           <tbody>
             <tr v-if="cart.items.length === 0">
               <td colspan="5" class="text-center">
-                {{ $t('pos.messages.empty_cart') }}
+                {{ $t('pos-messages-empty-cart') }}
               </td>
             </tr>
             <tr v-for="item in cart.items" :key="item.id">
@@ -77,7 +77,7 @@
           <span>{{ formatCurrency(cart.subTotal) }}</span>
         </div -->
          <div class="flex justify-between font-bold text-lg mb-2">
-          <span>{{ $t('pos.recap.total') }}</span>
+          <span>{{ $t('pos-recap-total') }}</span>
           <span>{{ formatCurrency(cart.total) }}</span>
         </div>
         <router-view></router-view>

@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="text-xl font-semibold mb-4">
-      {{ $t('settings.layout.title') }}
+      {{ $t('settings-layout-title') }}
     </h2>
 
     <div class="pb-4">
@@ -12,7 +12,7 @@
           :checked="layout.header.enabled"
           @click="layout.header.enabled = !layout.header.enabled"
         />
-        <h3>{{ $t('settings.layout.print_header_label') }}</h3>
+        <h3>{{ $t('settings-layout-print-header-label') }}</h3>
       </label>
       <div
         v-if="layout.header.enabled"
@@ -20,7 +20,7 @@
       >
         <fieldset class="fieldset">
           <label class="label">
-            {{ $t('settings.layout.header_content_label') }}
+            {{ $t('settings-layout-header-content-label') }}
           </label>
           <input
             class="input"
@@ -35,7 +35,7 @@
 
         <fieldset class="fieldset">
           <label for="header-font-size" class="label">
-            {{ $t('settings.layout.font_size_label') }}
+            {{ $t('settings-layout-font-size-label') }}
           </label>
           <select
             id="header-font-size"
@@ -43,15 +43,15 @@
             :value="layout.header.font_size"
             @change="(e: Event) => layout.header.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
           >
-            <option value="Small">{{ $t('settings.layout.font_size_small') }}</option>
-            <option value="Normal">{{ $t('settings.layout.font_size_normal') }}</option>
-            <option value="Large">{{ $t('settings.layout.font_size_large') }}</option>
+            <option value="Small">{{ $t('settings-layout-font-size-small') }}</option>
+            <option value="Normal">{{ $t('settings-layout-font-size-normal') }}</option>
+            <option value="Large">{{ $t('settings-layout-font-size-large') }}</option>
           </select>
         </fieldset>
 
         <fieldset class="fieldset">
           <label for="header-justify" class="label">
-            {{ $t('settings.layout.justify_label') }}
+            {{ $t('settings-layout-justify-label') }}
           </label>
           <select
             id="header-justify"
@@ -59,9 +59,9 @@
             :value="layout.header.justify"
             @change="(e: Event) => layout.header.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
           >
-            <option value="Left">{{ $t('settings.layout.justify_left') }}</option>
-            <option value="Center">{{ $t('settings.layout.justify_center') }}</option>
-            <option value="Right">{{ $t('settings.layout.justify_right') }}</option>
+            <option value="Left">{{ $t('settings-layout-justify-left') }}</option>
+            <option value="Center">{{ $t('settings-layout-justify-center') }}</option>
+            <option value="Right">{{ $t('settings-layout-justify-right') }}</option>
           </select>
         </fieldset>
       </div>
@@ -75,7 +75,7 @@
           :checked="layout.body.enabled"
           @click="layout.body.enabled = !layout.body.enabled"
         />
-        <h3>{{ $t('settings.layout.print_body_label') }}</h3>
+        <h3>{{ $t('settings-layout-print-body-label') }}</h3>
       </label>
       <div
         v-if="layout.body.enabled"
@@ -83,7 +83,7 @@
       >
         <fieldset class="fieldset">
           <label for="body-font-size" class="label">
-            {{ $t('settings.layout.font_size_label') }}
+            {{ $t('settings-layout-font-size-label') }}
           </label>
           <select
             id="body-font-size"
@@ -91,15 +91,15 @@
             :value="layout.body.font_size"
             @change="(e: Event) => layout.body.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
           >
-            <option value="Small">{{ $t('settings.layout.font_size_small') }}</option>
-            <option value="Normal">{{ $t('settings.layout.font_size_normal') }}</option>
-            <option value="Large">{{ $t('settings.layout.font_size_large') }}</option>
+            <option value="Small">{{ $t('settings-layout-font-size-small') }}</option>
+            <option value="Normal">{{ $t('settings-layout-font-size-normal') }}</option>
+            <option value="Large">{{ $t('settings-layout-font-size-large') }}</option>
           </select>
         </fieldset>
 
         <fieldset class="fieldset">
           <label for="body-justify" class="label">
-            {{ $t('settings.layout.justify_label') }}
+            {{ $t('settings-layout-justify-label') }}
           </label>
           <select
             id="body-justify"
@@ -107,9 +107,9 @@
             :value="layout.body.justify"
             @change="(e: Event) => layout.body.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
           >
-            <option value="Left">{{ $t('settings.layout.justify_left') }}</option>
-            <option value="Center">{{ $t('settings.layout.justify_center') }}</option>
-            <option value="Right">{{ $t('settings.layout.justify_right') }}</option>
+            <option value="Left">{{ $t('settings-layout-justify-left') }}</option>
+            <option value="Center">{{ $t('settings-layout-justify-center') }}</option>
+            <option value="Right">{{ $t('settings-layout-justify-right') }}</option>
           </select>
         </fieldset>
       </div>
@@ -123,7 +123,7 @@
           :checked="layout.footer.enabled"
           @click="layout.footer.enabled = !layout.footer.enabled"
         />
-        <h3>{{ $t('settings.layout.print_footer_label') }}</h3>
+        <h3>{{ $t('settings-layout-print-footer-label') }}</h3>
       </label>
       <div
         v-if="layout.footer.enabled"
@@ -131,7 +131,7 @@
       >
         <fieldset class="fieldset">
           <label for="footer-font-size" class="label">
-            {{ $t('settings.layout.font_size_label') }}
+            {{ $t('settings-layout-font-size-label') }}
           </label>
           <select
             id="footer-font-size"
@@ -139,15 +139,15 @@
             :value="layout.footer.font_size"
             @change="(e: Event) => layout.footer.font_size = (e?.currentTarget as HTMLSelectElement | null)?.value as FontSize"
           >
-            <option value="Small">{{ $t('settings.layout.font_size_small') }}</option>
-            <option value="Normal">{{ $t('settings.layout.font_size_normal') }}</option>
-            <option value="Large">{{ $t('settings.layout.font_size_large') }}</option>
+            <option value="Small">{{ $t('settings-layout-font-size-small') }}</option>
+            <option value="Normal">{{ $t('settings-layout-font-size-normal') }}</option>
+            <option value="Large">{{ $t('settings-layout-font-size-large') }}</option>
           </select>
         </fieldset>
 
         <fieldset class="fieldset">
           <label for="footer-justify" class="label">
-            {{ $t('settings.layout.justify_label') }}
+            {{ $t('settings-layout-justify-label') }}
           </label>
           <select
             id="footer-justify"
@@ -155,9 +155,9 @@
             :value="layout.footer.justify"
             @change="(e: Event) => layout.footer.justify = (e?.currentTarget as HTMLSelectElement | null)?.value as Justify"
           >
-            <option value="Left">{{ $t('settings.layout.justify_left') }}</option>
-            <option value="Center">{{ $t('settings.layout.justify_center') }}</option>
-            <option value="Right">{{ $t('settings.layout.justify_right') }}</option>
+            <option value="Left">{{ $t('settings-layout-justify-left') }}</option>
+            <option value="Center">{{ $t('settings-layout-justify-center') }}</option>
+            <option value="Right">{{ $t('settings-layout-justify-right') }}</option>
           </select>
         </fieldset>
       </div>
@@ -168,7 +168,7 @@
         class="btn btn-success"
         @click="saveLayout"
       >
-        {{ t('settings.layout.save_button') }}
+        {{ $t('settings-layout-save-button') }}
       </button>
     </div>
   </div>

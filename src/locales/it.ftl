@@ -1,7 +1,9 @@
-# App
+## App
+
 app-title = POS Fulcitt
 
-# POS
+## POS
+
 pos-cart-product-name = Prodotto
 pos-cart-unit-price = Prezzo
 pos-cart-quantity = Q.tà
@@ -28,7 +30,8 @@ pos-recap-total = Totale
 pos-reprint-tickets-button = Ristampa ultima vendita
 pos-start-payment-button = Pagamento
 
-# Reports
+## Reports
+
 reports-clear-reports-button = Cancella report e dati sul venduto
 reports-export-xlsx-button = Esporta report
 reports-menu-title = Report
@@ -54,7 +57,8 @@ reports-today-sales-payment-method = Metodo di pagamento
 reports-today-sales-reprint-tickets-button = Ristampa vendita
 reports-today-sales-sales-time = Orario vendita
 
-# Settings
+## Settings
+
 settings-menu-title = Impostazioni
 
 settings-layout-font-size-label = Dimensione caratteri
@@ -82,7 +86,7 @@ settings-printer-save-button = Salva
 settings-printer-test-print-button = Stampa di prova
 settings-printer-text-to-be-printed-label = Testo da stampare
 
-settings-products-actions =
+settings-products-actions = #
 settings-products-add-product-button = Aggiungi
 settings-products-cancel-edit-button = Annulla
 settings-products-category = Categoria

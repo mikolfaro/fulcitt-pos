@@ -1,20 +1,20 @@
 <template>
   <div>
-    <h2 class="text-xl font-semibold mb-4">{{ $t('settings.products.title') }}</h2>
+    <h2 class="text-xl font-semibold mb-4">{{ $t('settings-products-title') }}</h2>
     <div class="card bg-base-200 shadow-md mt-8">
       <div class="card-body">
         <div v-if="isLoadingProducts" class="text-center">
           <span class="loading loading-dots loading-md"></span>
-          {{ $t('settings.products.messages.loading_existing_products') }}
+          {{ $t('settings-products-messages-loading-existing-products') }}
         </div>
         <div v-else class="overflow-x-auto">
           <table class="table table-zebra w-full">
             <thead>
               <tr>
-                <th>{{ $t('settings.products.product_name') }}</th>
-                <th>{{ $t('settings.products.category') }}</th>
-                <th class="text-right">{{ $t('settings.products.price') }}</th>
-                <th>{{ $t('settings.products.actions') }}</th>
+                <th>{{ $t('settings-products-product-name') }}</th>
+                <th>{{ $t('settings-products-category') }}</th>
+                <th class="text-right">{{ $t('settings-products-price') }}</th>
+                <th>{{ $t('settings-products-actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -23,7 +23,7 @@
                   <td>
                     <input
                       type="text"
-                      placeholder="e.g., Espresso"
+                      :placeholder="$t('settings-products-product-name-example')"
                       class="input input-bordered w-full"
                       form="editProduct"
                       v-model.trim="productToEdit.name"
@@ -33,7 +33,7 @@
                   <td>
                     <input
                       type="text"
-                      placeholder="e.g., Hot Drinks"
+                      :placeholder="$t('settings-products-category-example')"
                       class="input input-bordered w-full"
                       form="editProduct"
                       v-model.trim="productToEdit.category"
@@ -45,23 +45,23 @@
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="e.g., 2.50"
+                      :placeholder="$t('settings-products-price-example')"
                       class="input input-bordered w-full"
                       form="editProduct"
                       v-model.number="productToEdit.price"
                       required
                     />
                   </td>
-                  <td>
+                  <td class="flex justify-between">
                     <button
                       type="submit"
                       class="btn btn-xs btn-outline btn-success mr-4"
                       form="editProduct"
                     >
-                      {{ $t('settings.products.save_product_button') }}
+                      {{ $t('settings-products-save-product-button') }}
                     </button>
                     <button type="button" class="btn btn-xs btn-outline btn-error" @click="closeEdit()">
-                      {{ $t('settings.products.cancel_edit_button') }}
+                      {{ $t('settings-products-cancel-edit-button') }}
                     </button>
                   </td>
                 </template>
@@ -74,14 +74,14 @@
                       class="btn btn-xs btn-outline btn-primary"
                       @click="openEdit(product)"
                     >
-                      {{ $t('settings.products.edit_product_button') }}
+                      {{ $t('settings-products-edit-product-button') }}
                     </button>
 
                     <button
                       class="btn btn-xs btn-outline btn-error"
                       @click.prevent="doDeleteProduct(product)"
                     >
-                      {{ $t('settings.products.delete_product_button') }}
+                      {{ $t('settings-products-delete-product-button') }}
                     </button>
                   </td>
                 </template>
@@ -90,7 +90,7 @@
                 <td>
                   <input
                     type="text"
-                    :placeholder="$t('settings.products.product_name_example')"
+                    :placeholder="$t('settings-products-product-name-example')"
                     class="input input-bordered w-full"
                     form="addProduct"
                     v-model.trim="newProduct.name"
@@ -100,7 +100,7 @@
                 <td>
                   <input
                     type="text"
-                    :placeholder="$t('settings.products.category_example')"
+                    :placeholder="$t('settings-products-category-example')"
                     class="input input-bordered w-full"
                     form="addProduct"
                     v-model.trim="newProduct.category"
@@ -112,7 +112,7 @@
                     type="number"
                     step="0.01"
                     min="0"
-                    :placeholder="$t('settings.products.price_example')"
+                    :placeholder="$t('settings-products-price-example')"
                     class="input input-bordered w-full"
                     form="addProduct"
                     v-model.number="newProduct.price"
@@ -125,7 +125,7 @@
                     class="btn btn-xs btn-outline btn-success"
                     form="addProduct"
                   >
-                      {{ $t('settings.products.add_product_button') }}
+                      {{ $t('settings-products-add-product-button') }}
                   </button>
                 </td>
               </tr>

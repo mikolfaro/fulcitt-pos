@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 md:p-6">
     <h1 class="text-2xl font-bold mb-4">
-      {{ $t('settings.title') }}
+      {{ $t('settings-title') }}
     </h1>
 
     <div role="tablist" class="tabs tabs-lifted mb-[-1px]">
@@ -34,9 +34,9 @@ import { useFluent } from 'fluent-vue';
 const { $t } = useFluent()
 
 const subRoutes = [
-  { name: $t('settings.products.menu_title'), to: "/settings" },
-  { name: $t('settings.layout.menu_title'), to: "/settings/layout" },
-  { name: $t('settings.printer.menu_title'), to: "/settings/printer" },
+  { name: $t('settings-products-menu-title'), to: "/settings" },
+  { name: $t('settings-layout-menu-title'), to: "/settings/layout" },
+  { name: $t('settings-printer-menu-title'), to: "/settings/printer" },
 ]
 </script>
 

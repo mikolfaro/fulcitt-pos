@@ -1,10 +1,10 @@
 <template>
   <div class="mt-2">
     <button class="btn btn-success w-full" @click="startPayment()">
-      {{ $t("pos.start_payment_button") }}
+      {{ $t("pos-start-payment-button") }}
     </button>
     <button class="btn btn-outline btn-error w-full mt-2" @click="cart.clear()">
-      {{ $t('pos.clear_cart_button') }}</button>
+      {{ $t('pos-clear-cart-button') }}</button>
   </div>
 </template>
 

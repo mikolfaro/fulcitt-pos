@@ -1,16 +1,15 @@
 import "./style.css"
 
 import { createApp } from "vue";
-import { createI18n } from "vue-i18n";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { createPinia } from "pinia";
 import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
 import { FluentBundle, FluentResource } from '@fluent/bundle'
 import { createFluentVue } from 'fluent-vue'
 
-import App from "./App.vue";
+import App from "./App.vue"
 import routes from "./routes"
-import it from "./locales/it.json"
+import it from "./locales/it.ftl?raw"
 
 function forwardConsole(
   fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',
@@ -33,6 +32,7 @@ forwardConsole('warn', warn);
 forwardConsole('error', error);
 
 const itBundle = new FluentBundle('it')
+itBundle.addResource(new FluentResource(it))
 const fluent = createFluentVue({ bundles: [itBundle] })
 
 // type MessageSchema = typeof it
