@@ -61,12 +61,12 @@ const messages = useMessagesStore()
 
 const printerTest = reactive({
   devicePath: '/dev/usb/lp0',
-  text: 'Hello from Tauri! Test @ ' + new Date().toLocaleTimeString(),
+  text: $t('settings-printer-test-example', { date: new Date() }),
 })
 
 async function triggerPrint() {
   if (!printerTest.devicePath || !printerTest.text) {
-    messages.addInvalidInput('Device path and text cannot be empty.');
+    messages.addInvalidInput($t('settings-printer-messages-device-cannot-be-empty'));
     return;
   }
 
@@ -75,9 +75,9 @@ async function triggerPrint() {
         devicePath: printerTest.devicePath,
         textToPrint: printerTest.text
     })
-    messages.addSuccess('Print command sent successfully!')
+    messages.addSuccess($t('settings-printer-messages-print-success'))
 
-    printerTest.text = 'Another test @ ' + new Date().toLocaleTimeString();
+    printerTest.text = $t('settings-printer-test-example', { date: new Date() })
   } catch (error) {
     if (typeof error === 'string') {
       messages.addUnknownError(error)
@@ -90,7 +90,7 @@ async function triggerPrint() {
 async function save() {
   try {
     await invoke('save_printer_device', { devicePath: printerTest.devicePath })
-    messages.addSuccess('Printer device saved')
+    messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
   } catch (error) {
     console.error(error)
 

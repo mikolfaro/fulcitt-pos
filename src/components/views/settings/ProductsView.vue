@@ -182,7 +182,7 @@ onMounted(async () => {
 
 const addProduct = async () => {
   if (newProduct.price === null || newProduct.price < 0) {
-    messages.addInvalidInput("Price must be zero or greater.");
+    messages.addInvalidInput($t("settings-products-messages-price-must-be-positive"))
     return;
   }
 
@@ -239,7 +239,7 @@ const closeEdit = () => {
 
 const doUpdateProduct = async () => {
   if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
-    messages.addInvalidInput("Please fill in all fields correctly (Price >= 0).")
+    messages.addInvalidInput($t("settings-products-messages-incorrect-fields"))
     return;
   }
   const product = productToEdit as Product;
@@ -248,7 +248,7 @@ const doUpdateProduct = async () => {
 
   try {
     await updateProduct(product);
-    messages.addSuccess("Product updated successfully!");
+    messages.addSuccess($t('settings-products-messages-product-updated'));
     await fetchExistingProducts();
     closeEdit();
 
@@ -267,7 +267,7 @@ const doUpdateProduct = async () => {
 const doDeleteProduct = async (productToDelete: Product) => {
   try {
     await deleteProduct(productToDelete)
-    messages.addSuccess("Product deleted successfully!");
+    messages.addSuccess($t('settings-products-messages-product-deleted'));
     await fetchExistingProducts();
   } catch (err: any) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
