@@ -1,20 +1,20 @@
 <template>
   <div class="mt-2">
     <button class="btn btn-success w-full" @click="startPayment()">
-      {{ t("pos.start_payment_button") }}
+      {{ $t("pos.start_payment_button") }}
     </button>
     <button class="btn btn-outline btn-error w-full mt-2" @click="cart.clear()">
-      {{ t('pos.clear_cart_button') }}</button>
+      {{ $t('pos.clear_cart_button') }}</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-import { useCartStore } from '../../../stores/cartStore';
-import { useMessagesStore } from '../../../stores/messagesStore';
-import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router'
+import { useFluent } from 'fluent-vue'
+import { useCartStore } from '../../../stores/cartStore'
+import { useMessagesStore } from '../../../stores/messagesStore'
 
-const { t } = useI18n()
+const { $t } = useFluent()
 const router = useRouter()
 const cart = useCartStore()
 const messages = useMessagesStore()

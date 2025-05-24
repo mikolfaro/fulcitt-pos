@@ -5,6 +5,8 @@ import { createI18n } from "vue-i18n";
 import { createMemoryHistory, createRouter } from "vue-router";
 import { createPinia } from "pinia";
 import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
+import { FluentBundle, FluentResource } from '@fluent/bundle'
+import { createFluentVue } from 'fluent-vue'
 
 import App from "./App.vue";
 import routes from "./routes"
@@ -30,18 +32,21 @@ forwardConsole('info', info);
 forwardConsole('warn', warn);
 forwardConsole('error', error);
 
-type MessageSchema = typeof it
-const i18n = createI18n<[MessageSchema], 'it'>({
-  legacy: false,
-  locale: 'it',
-  messages: { it }
-})
+const itBundle = new FluentBundle('it')
+const fluent = createFluentVue({ bundles: [itBundle] })
+
+// type MessageSchema = typeof it
+// const i18n = createI18n<[MessageSchema], 'it'>({
+//   legacy: false,
+//   locale: 'it',
+//   messages: { it }
+// })
 
 const pinia = createPinia()
 const router = createRouter({ history: createMemoryHistory(), routes })
 
 createApp(App)
-  .use(i18n)
+  .use(fluent)
   .use(pinia)
   .use(router)
   .mount("#app")
