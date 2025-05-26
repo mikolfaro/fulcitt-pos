@@ -16,7 +16,7 @@ pub(crate) async fn export_sales_report(
         .fetch_all(&db)
     .await?;
 
-    invoices_worksheet.write_row(0, 0, vec!["ID", "Time", "Payment method", "Amount"])?;
+    invoices_worksheet.write_row(0, 0, vec!["ID", "Data", "Metodo di pagamento", "Importo"])?;
     products_worksheet.write_row(
         0,
         0,
