@@ -33,3 +33,5 @@ thiserror = "2.0.12"
 tauri-plugin-log = "2"
 tauri-plugin-store = "2"
 rust_xlsxwriter = { version = "0.87.0", features = ["chrono", "serde"] }
+fluent-bundle = "0.16.0"
+unic-langid = { version = "0.9.6", features = ["macros"] }

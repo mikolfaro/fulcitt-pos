@@ -9,7 +9,7 @@ import { createFluentVue } from 'fluent-vue'
 
 import App from "./App.vue"
 import routes from "./routes"
-import it from "./locales/it.ftl?raw"
+import it from "../locales/it/app.ftl?raw"
 
 function forwardConsole(
   fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',

@@ -1,6 +1,7 @@
 ## App
 
 app-title = POS Fulcitt
+app-currency = { NUMBER($amount, style: "currency", currency: "eur", currencyDisplay: "symbol") }
 
 ## POS
 
@@ -40,6 +41,12 @@ reports-title = Report di vendita
 reports-export-product-name = Prodotto
 reports-export-quantity = Q.tà
 reports-export-sale-id = # Scontrino
+
+reports-export-xlsx-currency-format = "#,##0.00 €"
+reports-export-xlsx-date-time-format = "%Y-%M-%d %H:%m:%S"
+reports-export-xlsx-unit-cost = Costo unitario
+reports-export-xslx-invoices-tab-title = "Scontrini"
+reports-export-xslx-invoices-details-tab-title = "Dettaglio"
 
 reports-messages-loading-data = Caricamento dati...
 reports-messages-no-data-available = Nessun dato sulle vendite disponibile

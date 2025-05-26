@@ -9,17 +9,20 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
+use fluent_bundle::{concurrent::FluentBundle, FluentResource};
 use log::{debug, error, info, warn};
 use printing::{print_tickets, PrintingLayout};
-use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
 use tauri_plugin_store::StoreExt;
+use unic_langid::langid;
 
 use errors::*;
+use exports::*;
 use models::*;
 
 mod errors;
+mod exports;
 mod models;
 mod printing;
 
@@ -29,6 +32,7 @@ struct AppState {
     db: Db,
 }
 
+type FluentState = Arc<Mutex<FluentBundle<Arc<FluentResource>>>>;
 type PrinterState = Arc<Mutex<Option<Printer<FileDriver>>>>;
 
 #[tauri::command]
@@ -261,78 +265,10 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    let mut invoices_worksheet = Worksheet::new();
-    invoices_worksheet.set_name("Invoices")?;
-    let mut products_worksheet = Worksheet::new();
-    products_worksheet.set_name("Invoice details")?;
-
-    let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
-        .fetch_all(&app_state.db)
-        .await?;
-
-    invoices_worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
-    products_worksheet.write_row(
-        0,
-        0,
-        vec![
-            "ID scontrino",
-            "Prodotto",
-            "Q.tà",
-            "Costo unitario",
-            "Totale",
-        ],
-    )?;
-
-    let currency_format = Format::new().set_num_format("#,##0.00 €");
-
-    for (i, sale) in sales.into_iter().enumerate() {
-        let i: u32 = i.try_into().unwrap();
-
-        invoices_worksheet.write(i + 1, 0, sale.id)?;
-        invoices_worksheet.write(
-            i + 1,
-            1,
-            sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string(),
-        )?;
-        invoices_worksheet.write_with_format(i + 1, 2, sale.total_amount, &currency_format)?;
-        invoices_worksheet.write(i + 1, 3, sale.payment_method)?;
-
-        let item_sales = sqlx::query_as!(
-            SaleItem,
-            r#"
-            SELECT *
-            FROM sale_items
-            WHERE sale_id = ?
-            "#,
-            sale.id
-        )
-        .fetch_all(&app_state.db)
-        .await?;
-
-        let mut j = 1;
-        for item in item_sales.into_iter() {
-            products_worksheet.write(j, 0, item.sale_id)?;
-            products_worksheet.write(j, 1, item.product_name)?;
-            products_worksheet.write(j, 2, item.quantity)?;
-            products_worksheet.write_with_format(j, 3, item.price_at_sale, &currency_format)?;
-            products_worksheet.write_formula_with_format(
-                j,
-                4,
-                format!("=C{}*D{}", j + 1, j + 1).as_str(),
-                &currency_format,
-            )?;
-
-            j += 1;
-        }
-    }
-
-    let workbook_path = "/home/mikol/export.xlsx";
-    let mut workbook = Workbook::new();
-    workbook.push_worksheet(invoices_worksheet);
-    workbook.push_worksheet(products_worksheet);
-    workbook.save(workbook_path)?;
-
-    Ok(())
+    export_sales_report(
+        app_state.db.clone(),
+        "/home/mikol/export.xlsx")
+        .await
 }
 
 #[tauri::command]
@@ -603,6 +539,25 @@ pub fn run() {
         ])
         .setup(|app| {
             app.store("store.json")?;
+
+            let langid_it = langid!("it");
+            let ftl_string = "hello-world = Ciao, cane!".to_owned();
+            let res = FluentResource::try_new(ftl_string)
+                .expect("Could not parse FTL string.");
+
+            let mut bundle: FluentBundle<FluentResource> = FluentBundle::new_concurrent(vec![langid_it]);
+
+            bundle.add_resource(res).expect("Failed to add FTL resources to the bundle.");
+
+            let msg = bundle.get_message("hello-world").expect("Message doesn't exist.");
+            let pattern = msg.value().expect("Message has no value");
+            let mut errors = vec![];
+            let value = bundle.format_pattern(&pattern, None, &mut errors);
+
+            info!("Translated message: {:?}", value);
+
+            // let fluent_state: FluentState = Arc::new(Mutex::new(bundle));
+            // app.manage(fluent_state);
 
             let printer = setup_printer(app);
             app.manage(Arc::new(Mutex::new(printer)));
