@@ -18,17 +18,17 @@ pub(crate) enum CommandError {
     #[error("Invalid printer device")]
     InvalidPrinterDevice,
 
-    #[error("Printer not configured")]
-    PrinterNotConfigured,
+    #[error("Failed to load settings")]
+    LoadSettings,
 
     #[error("Concurrency resource access error")]
     MutexPoison,
 
+    #[error("Printer not configured")]
+    PrinterNotConfigured,
+
     #[error("Printer error {0}")]
     Printer(String),
-
-    #[error("Failed to load settings")]
-    LoadSettings,
 
     #[error("Failed to save settings")]
     StoreSettings,

@@ -11,15 +11,19 @@ use escpos::{
 };
 use log::{debug, error, info, warn};
 use printing::{print_tickets, PrintingLayout};
-use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
 use tauri_plugin_store::StoreExt;
+use unic_langid::langid;
 
 use errors::*;
+use exports::*;
+use intl::*;
 use models::*;
 
 mod errors;
+mod exports;
+mod intl;
 mod models;
 mod printing;
 
@@ -110,11 +114,12 @@ async fn process_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
+    intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
 ) -> CommandResult<i64> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
-            "Cannot add a sale with no items.".to_string(),
+            intl_state.t("pos-messages-cannot-process-sale-with-no-items")?.to_string()
         ));
     }
 
@@ -148,16 +153,17 @@ async fn process_sale(
         let price_at_sale = item.price;
 
         if quantity <= 0 {
-            return Err(CommandError::InvalidInput(format!(
-                "Invalid quantity {} for product {}",
-                quantity, item.product_id
-            )));
+            return Err(CommandError::InvalidInput(
+                intl_state.t("pos-messages-invalid-quantity-for-product")?
+                    .to_string() // quantity, item.product_id
+            ));
         }
         if price_at_sale < 0.0 {
-            return Err(CommandError::InvalidInput(format!(
-                "Invalid price {} for product {}",
-                price_at_sale, item.product_id
-            )));
+            return Err(CommandError::InvalidInput(
+                intl_state.t("pos-messages-invalid-price-for-product")?
+                    .to_string()
+                // price_at_sale, item.product_id
+            ));
         }
 
         sqlx::query(
@@ -261,78 +267,10 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    let mut invoices_worksheet = Worksheet::new();
-    invoices_worksheet.set_name("Invoices")?;
-    let mut products_worksheet = Worksheet::new();
-    products_worksheet.set_name("Invoice details")?;
-
-    let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
-        .fetch_all(&app_state.db)
-        .await?;
-
-    invoices_worksheet.write_row(0, 0, vec!["ID", "Time", "Amount", "Payment method"])?;
-    products_worksheet.write_row(
-        0,
-        0,
-        vec![
-            "ID scontrino",
-            "Prodotto",
-            "Q.tà",
-            "Costo unitario",
-            "Totale",
-        ],
-    )?;
-
-    let currency_format = Format::new().set_num_format("#,##0.00 €");
-
-    for (i, sale) in sales.into_iter().enumerate() {
-        let i: u32 = i.try_into().unwrap();
-
-        invoices_worksheet.write(i + 1, 0, sale.id)?;
-        invoices_worksheet.write(
-            i + 1,
-            1,
-            sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string(),
-        )?;
-        invoices_worksheet.write_with_format(i + 1, 2, sale.total_amount, &currency_format)?;
-        invoices_worksheet.write(i + 1, 3, sale.payment_method)?;
-
-        let item_sales = sqlx::query_as!(
-            SaleItem,
-            r#"
-            SELECT *
-            FROM sale_items
-            WHERE sale_id = ?
-            "#,
-            sale.id
-        )
-        .fetch_all(&app_state.db)
-        .await?;
-
-        let mut j = 1;
-        for item in item_sales.into_iter() {
-            products_worksheet.write(j, 0, item.sale_id)?;
-            products_worksheet.write(j, 1, item.product_name)?;
-            products_worksheet.write(j, 2, item.quantity)?;
-            products_worksheet.write_with_format(j, 3, item.price_at_sale, &currency_format)?;
-            products_worksheet.write_formula_with_format(
-                j,
-                4,
-                format!("=C{}*D{}", j + 1, j + 1).as_str(),
-                &currency_format,
-            )?;
-
-            j += 1;
-        }
-    }
-
-    let workbook_path = "/home/mikol/export.xlsx";
-    let mut workbook = Workbook::new();
-    workbook.push_worksheet(invoices_worksheet);
-    workbook.push_worksheet(products_worksheet);
-    workbook.save(workbook_path)?;
-
-    Ok(())
+    export_sales_report(
+        app_state.db.clone(),
+        "/home/mikol/export.xlsx")
+        .await
 }
 
 #[tauri::command]
@@ -603,6 +541,11 @@ pub fn run() {
         ])
         .setup(|app| {
             app.store("store.json")?;
+
+            let langid_it = langid!("it");
+            let intl = Intl::try_new(langid_it)
+                .expect("Failed to load localization");
+            app.manage(intl);
 
             let printer = setup_printer(app);
             app.manage(Arc::new(Mutex::new(printer)));

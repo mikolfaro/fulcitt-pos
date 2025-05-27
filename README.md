@@ -10,8 +10,9 @@ Features
 [X] - Italian localization
 [X] - Show all invoices and reprint
 [X] - Export sales
-[ ] - Improve error messages
+[W] - Improve error messages
 [X] - Make error messages disappear after few seconds
+[ ] - Gestire disconnessione della stampante
 
 Known bugs
 

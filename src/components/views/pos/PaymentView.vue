@@ -1,20 +1,20 @@
 <template>
   <div class="flex justify-between font-bold text-lg mb-2">
-    <span>{{ t('pos.recap.amount_payed') }}</span>
+    <span>{{ $t('pos-recap-amount-payed') }}</span>
     <span>{{ formatCurrency(amount) }}</span>
   </div>
   <div
     v-if="amount >= cart.total"
     class="flex justify-between font-bold text-lg mb-4"
   >
-    <span>{{ t('pos.recap.change') }}</span>
+    <span>{{ $t('pos-recap-change') }}</span>
     <span>{{ formatCurrency(amount - cart.total) }}</span>
   </div>
   <div
     v-else
     class="flex justify-between font-bold text-lg mb-4"
   >
-    <span>{{ t('pos.recap.amount_due') }}</span>
+    <span>{{ $t('pos-recap-amount-due') }}</span>
     <span class="text-error">{{ formatCurrency(cart.total - amount) }}</span>
   </div>
 
@@ -33,13 +33,13 @@
   </div>
 
   <button class="btn btn-success w-full mt-4" @click="processPayment">
-    {{ t('pos.process_payment_button') }}
+    {{ $t('pos-process-payment-button') }}
   </button>
   <button
     class="btn btn-outline btn-error w-full mt-2"
     @click="cancelPayment"
   >
-    {{ t('pos.cancel_payment_button') }}
+    {{ $t('pos-cancel-payment-button') }}
   </button>
 </template>
 
@@ -47,13 +47,13 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { invoke } from '@tauri-apps/api/core';
+import { useFluent } from 'fluent-vue';
 import { useCartStore } from '../../../stores/cartStore';
 import { useMessagesStore } from '../../../stores/messagesStore';
 import { AppMessage } from '../../../lib';
-import { useI18n } from 'vue-i18n';
 
 const router = useRouter()
-const { t } = useI18n()
+const { $t } = useFluent()
 const messages = useMessagesStore()
 const cart = useCartStore()
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
@@ -81,7 +81,7 @@ function undoType() {
 
 async function processPayment() {
   if (cart.items.length === 0) {
-    messages.addInvalidInput('Cart is empty')
+    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
     return;
   }
 

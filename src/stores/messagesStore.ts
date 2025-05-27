@@ -33,8 +33,8 @@ export const useMessagesStore = defineStore('messages', {
       } else if (typeof message === "object") {
         if (message?.message && message?.type) {
           message = message as AppMessage
-        } else {
-          message = { type: 'Unknown', message }
+        } else if (message?.type) {
+          message = { type: message.type, message: '' }
         }
       } else {
         message = { type: 'Unknown', message }
