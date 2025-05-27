@@ -25,7 +25,7 @@ function startPayment() {
 
     router.push("/checkout")
   } else {
-    messages.addInvalidInput("Cart is empty")
+    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
   }
 }
 </script>

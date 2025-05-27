@@ -7,7 +7,7 @@
       role="alert"
     >
       <div class="flex-grow">
-        <h3 class="font-bold" v-if="message.type !== 'Success'">{{ message.type }}</h3>
+        <h3 class="font-bold" v-if="message.type !== 'Success'">{{ getTitle(message.type) }}</h3>
         <div class="text-xs">{{ message.message }}</div>
       </div>
       <div>
@@ -20,8 +20,10 @@
 </template>
 
 <script setup lang="ts">
+import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../stores/messagesStore'
 
+const { $t } = useFluent()
 const messages = useMessagesStore()
 
 function getAlertType(type: string) {
@@ -36,8 +38,13 @@ function getAlertType(type: string) {
     case 'Success':
       return 'alert-success'
     default:
+      console.warn("Unknown error", type)
       return 'alert-error'
   }
+}
+
+function getTitle(type: string) {
+  return $t(`app-message-generic-${type}`)
 }
 
 function dismissMessage(index: number) {

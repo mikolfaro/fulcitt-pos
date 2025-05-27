@@ -3,6 +3,9 @@
 app-title = POS Fulcitt
 app-currency = { NUMBER($amount, style: "currency", currency: "eur", currencyDisplay: "symbol") }
 
+app-message-generic-InvalidInput = Operazione non valida
+app-message-generic-PrinterNotConfigured = Stampante non configurata
+
 ## POS
 
 pos-cart-product-name = Prodotto
@@ -17,6 +20,9 @@ pos-menu-title = POS
 
 pos-messages-empty-cart = Nessun prodotto
 pos-messages-loading-products = Caricamento prodotti...
+pos-messages-cannot-process-sale-with-no-items = Nessun prodotto nel carrello
+pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
+pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
 
 pos-products-title = Prodotti
 

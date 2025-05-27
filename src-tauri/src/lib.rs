@@ -9,7 +9,6 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use fluent_bundle::{concurrent::FluentBundle, FluentResource};
 use log::{debug, error, info, warn};
 use printing::{print_tickets, PrintingLayout};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
@@ -19,10 +18,12 @@ use unic_langid::langid;
 
 use errors::*;
 use exports::*;
+use intl::*;
 use models::*;
 
 mod errors;
 mod exports;
+mod intl;
 mod models;
 mod printing;
 
@@ -32,7 +33,6 @@ struct AppState {
     db: Db,
 }
 
-type FluentState = Arc<Mutex<FluentBundle<Arc<FluentResource>>>>;
 type PrinterState = Arc<Mutex<Option<Printer<FileDriver>>>>;
 
 #[tauri::command]
@@ -114,11 +114,12 @@ async fn process_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
+    intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
 ) -> CommandResult<i64> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
-            "Cannot add a sale with no items.".to_string(),
+            intl_state.t("pos-messages-cannot-process-sale-with-no-items")?.to_string()
         ));
     }
 
@@ -152,16 +153,17 @@ async fn process_sale(
         let price_at_sale = item.price;
 
         if quantity <= 0 {
-            return Err(CommandError::InvalidInput(format!(
-                "Invalid quantity {} for product {}",
-                quantity, item.product_id
-            )));
+            return Err(CommandError::InvalidInput(
+                intl_state.t("pos-messages-invalid-quantity-for-product")?
+                    .to_string() // quantity, item.product_id
+            ));
         }
         if price_at_sale < 0.0 {
-            return Err(CommandError::InvalidInput(format!(
-                "Invalid price {} for product {}",
-                price_at_sale, item.product_id
-            )));
+            return Err(CommandError::InvalidInput(
+                intl_state.t("pos-messages-invalid-price-for-product")?
+                    .to_string()
+                // price_at_sale, item.product_id
+            ));
         }
 
         sqlx::query(
@@ -541,23 +543,9 @@ pub fn run() {
             app.store("store.json")?;
 
             let langid_it = langid!("it");
-            let ftl_string = "hello-world = Ciao, cane!".to_owned();
-            let res = FluentResource::try_new(ftl_string)
-                .expect("Could not parse FTL string.");
-
-            let mut bundle: FluentBundle<FluentResource> = FluentBundle::new_concurrent(vec![langid_it]);
-
-            bundle.add_resource(res).expect("Failed to add FTL resources to the bundle.");
-
-            let msg = bundle.get_message("hello-world").expect("Message doesn't exist.");
-            let pattern = msg.value().expect("Message has no value");
-            let mut errors = vec![];
-            let value = bundle.format_pattern(&pattern, None, &mut errors);
-
-            info!("Translated message: {:?}", value);
-
-            // let fluent_state: FluentState = Arc::new(Mutex::new(bundle));
-            // app.manage(fluent_state);
+            let intl = Intl::try_new(langid_it)
+                .expect("Failed to load localization");
+            app.manage(intl);
 
             let printer = setup_printer(app);
             app.manage(Arc::new(Mutex::new(printer)));

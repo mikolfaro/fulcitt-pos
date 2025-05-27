@@ -81,7 +81,7 @@ function undoType() {
 
 async function processPayment() {
   if (cart.items.length === 0) {
-    messages.addInvalidInput('Cart is empty')
+    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
     return;
   }
 
