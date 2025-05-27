@@ -1,20 +1,20 @@
 <template>
   <div class="p-4 md:p-6">
     <h1 class="text-2xl font-bold mb-4">
-      {{ t('reports.title') }}
+      {{ $t('reports-title') }}
     </h1>
 
     <div class="overflow-x-auto pb-8">
       <h2 class="pb-4">
-        {{ t('reports.sales_by_product.title') }}
+        {{ $t('reports-sales-by-product-title') }}
       </h2>
 
       <table class="table table-zebra w-full">
         <thead>
           <tr>
-            <th>{{ t('reports.sales_by_product.product_name') }}</th>
-            <th>{{ t('reports.sales_by_product.quantity_sold') }}</th>
-            <th>{{ t('reports.sales_by_product.value_sold') }}</th>
+            <th>{{ $t('reports-sales-by-product-product-name') }}</th>
+            <th>{{ $t('reports-sales-by-product-quantity-sold') }}</th>
+            <th>{{ $t('reports-sales-by-product-value-sold') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -32,16 +32,16 @@
 
     <div class="overflow-x-auto pb-8">
       <h2 class="pb-4">
-        {{ t('reports.today_sales.title') }}
+        {{ $t('reports-today-sales-title') }}
       </h2>
 
       <table class="table table-zebra w-full">
         <thead>
           <tr>
-            <th>{{ t('reports.today_sales.invoice_number') }}</th>
-            <th>{{ t('reports.today_sales.sales_time') }}</th>
-            <th>{{ t('reports.today_sales.amount_sold') }}</th>
-            <th>{{ t('reports.today_sales.payment_method') }}</th>
+            <th>{{ $t('reports-today-sales-invoice-number') }}</th>
+            <th>{{ $t('reports-today-sales-sales-time') }}</th>
+            <th>{{ $t('reports-today-sales-amount-sold') }}</th>
+            <th>{{ $t('reports-today-sales-payment-method') }}</th>
             <th></th>
           </tr>
         </thead>
@@ -59,7 +59,7 @@
                 class="btn btn-xs btn-outline btn-primary"
                 @click="printTicket(sale)"
               >
-                {{ t('reports.today_sales.reprint_tickets_button') }}
+                {{ $t('reports-today-sales-reprint-tickets-button') }}
               </button>
             </td>
           </tr>
@@ -68,16 +68,16 @@
     </div>
 
     <div v-if="loading" class="loading">
-      {{ t('reports.messages.loading_data') }}
+      {{ $t('reports-messages-loading-data') }}
     </div>
 
     <div class="flex justify-between gap-4 pt-4">
       <button class="btn btn-primary" @click="exportXlsx()">
-        {{ t('reports.export_xlsx_button') }}
+        {{ $t('reports-export-xlsx-button') }}
       </button>
 
       <button class="btn btn-error" @click="clearHistory()">
-        {{ t('reports.clear_reports_button') }}
+        {{ $t('reports-clear-reports-button') }}
       </button>
     </div>
   </div>
@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../stores/messagesStore'
 
 interface ItemSale {
@@ -104,7 +104,7 @@ interface Sale {
 
 }
 
-const { t } = useI18n()
+const { $t } = useFluent()
 const messages = useMessagesStore()
 const loading = ref<boolean>(true)
 const productSalesData = ref<ItemSale[]>([])
@@ -142,7 +142,7 @@ const clearHistory = async () => {
 const exportXlsx = async () => {
   try {
     await invoke('export_sales')
-    messages.addSuccess(t('reports.messages.export_xlsx_completed'))
+    messages.addSuccess($t('reports-messages-export-xlsx-completed'))
   } catch (err) {
     messages.addUnknownError(err)
   }
@@ -178,7 +178,7 @@ onMounted(async function () {
   }
 
   if (invoiceSalesData.value.length === 0 && productSalesData.value.length === 0) {
-    messages.addInvalidInput(t('reports.messages.no_data_available'))
+    messages.addInvalidInput($t('reports-messages-no-data-available'))
   }
 })
 
