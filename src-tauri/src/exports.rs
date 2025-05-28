@@ -5,7 +5,7 @@ use crate::{CommandResult, Sale, SaleItem};
 
 pub(crate) async fn export_sales_report(
     db: Pool<Sqlite>,
-    report_file_path: &str
+    report_file_path: &str,
 ) -> CommandResult<()> {
     let mut invoices_worksheet = Worksheet::new();
     invoices_worksheet.set_name("reports-export-xslx-invoices-tab-title")?;
@@ -14,7 +14,7 @@ pub(crate) async fn export_sales_report(
 
     let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
         .fetch_all(&db)
-    .await?;
+        .await?;
 
     invoices_worksheet.write_row(0, 0, vec!["ID", "Data", "Metodo di pagamento", "Importo"])?;
     products_worksheet.write_row(

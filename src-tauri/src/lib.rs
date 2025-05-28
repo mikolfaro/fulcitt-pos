@@ -1,16 +1,14 @@
-use std::{
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
-    driver::FileDriver,
+    driver::UsbDriver,
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{debug, error, info, warn};
+use log::{debug, info};
 use printing::{print_tickets, PrintingLayout};
+use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
 use tauri_plugin_store::StoreExt;
@@ -33,7 +31,14 @@ struct AppState {
     db: Db,
 }
 
-type PrinterState = Arc<Mutex<Option<Printer<FileDriver>>>>;
+type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Device {
+    vendor_id: u16,
+    product_id: u16,
+    name: String,
+}
 
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
@@ -119,7 +124,9 @@ async fn process_sale(
 ) -> CommandResult<i64> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
-            intl_state.t("pos-messages-cannot-process-sale-with-no-items")?.to_string()
+            intl_state
+                .t("pos-messages-cannot-process-sale-with-no-items")?
+                .to_string(),
         ));
     }
 
@@ -154,15 +161,16 @@ async fn process_sale(
 
         if quantity <= 0 {
             return Err(CommandError::InvalidInput(
-                intl_state.t("pos-messages-invalid-quantity-for-product")?
-                    .to_string() // quantity, item.product_id
+                intl_state
+                    .t("pos-messages-invalid-quantity-for-product")?
+                    .to_string(), // quantity, item.product_id
             ));
         }
         if price_at_sale < 0.0 {
             return Err(CommandError::InvalidInput(
-                intl_state.t("pos-messages-invalid-price-for-product")?
-                    .to_string()
-                // price_at_sale, item.product_id
+                intl_state
+                    .t("pos-messages-invalid-price-for-product")?
+                    .to_string(), // price_at_sale, item.product_id
             ));
         }
 
@@ -267,10 +275,7 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    export_sales_report(
-        app_state.db.clone(),
-        "/home/mikol/export.xlsx")
-        .await
+    export_sales_report(app_state.db.clone(), "/home/mikol/export.xlsx").await
 }
 
 #[tauri::command]
@@ -414,47 +419,30 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 async fn save_printer_device(
     app: AppHandle,
     printer_state: State<'_, PrinterState>,
-    device_path: String,
+    device: Device,
 ) -> CommandResult<()> {
-    info!("Saving printer device {:?}", device_path);
+    info!("Saving printer device {:?}", device);
+
+    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
+    let new_printer = Printer::new(driver, Protocol::default(), None);
+    let mut mutex_guard = printer_state.lock()?;
+    *mutex_guard = Some(new_printer);
 
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    store.set("printer-device", device_path.clone());
-
-    let path = Path::new(&device_path);
-    let driver = FileDriver::open(path)?;
-    let new_printer = Printer::new(driver, Protocol::default(), None);
-    let mut mutex_guard = printer_state.lock()?;
-    *mutex_guard = Some(new_printer);
+    let value = serde_json::to_value(device)?;
+    store.set("printer-device", value);
 
     Ok(())
 }
 
 #[tauri::command]
-async fn test_print_raw_file(device_path: String, text_to_print: String) -> CommandResult<()> {
-    info!(
-        "Attempting to print {:?} on {:?}",
-        text_to_print, device_path
-    );
+async fn test_print_raw_file(device: Device, text_to_print: String) -> CommandResult<()> {
+    info!("Attempting to print {:?} on {:?}", text_to_print, device);
 
-    let path = Path::new(&device_path);
-    let exists_result = path.try_exists();
-    match exists_result {
-        Err(e) => {
-            error!("Error while checking device path {:?} {:?}", device_path, e);
-            return Err(e.into());
-        }
-        Ok(false) => {
-            warn!("Print device path {:?} does not exist", device_path);
-            return Err(CommandError::InvalidPrinterDevice);
-        }
-        Ok(true) => (),
-    };
-
-    let driver = FileDriver::open(path)?;
+    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
     let mut printer = Printer::new(driver, Protocol::default(), None);
 
     println!();
@@ -497,18 +485,14 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-fn setup_printer(app: &App) -> Option<Printer<FileDriver>> {
+fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
     app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
-        .and_then(|device_path| {
-            info!(
-                "Already configured printer device path found {}",
-                device_path
-            );
-            let path = serde_json::from_value::<String>(device_path).ok()?;
-            let path = Path::new(&path);
+        .and_then(|device| {
+            info!("Already configured printer device path found {}", device);
+            let device = serde_json::from_value::<Device>(device).ok()?;
 
-            FileDriver::open(path).ok()
+            UsbDriver::open(device.vendor_id, device.product_id, None).ok()
         })
         .map(|driver| {
             debug!("Existing printer restored");
@@ -543,8 +527,7 @@ pub fn run() {
             app.store("store.json")?;
 
             let langid_it = langid!("it");
-            let intl = Intl::try_new(langid_it)
-                .expect("Failed to load localization");
+            let intl = Intl::try_new(langid_it).expect("Failed to load localization");
             app.manage(intl);
 
             let printer = setup_printer(app);

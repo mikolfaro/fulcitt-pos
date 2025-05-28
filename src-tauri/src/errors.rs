@@ -15,8 +15,8 @@ pub(crate) enum CommandError {
     #[error("Input error {0}")]
     InvalidInput(String),
 
-    #[error("Invalid printer device")]
-    InvalidPrinterDevice,
+    // #[error("Invalid printer device")]
+    // InvalidPrinterDevice,
 
     #[error("Failed to load settings")]
     LoadSettings,
