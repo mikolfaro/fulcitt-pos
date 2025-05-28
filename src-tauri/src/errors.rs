@@ -36,6 +36,9 @@ pub(crate) enum CommandError {
     #[error("Sale data not found")]
     SaleNotFound,
 
+    #[error("Usb error {0}")]
+    Usb(String),
+
     #[error("XLSX error {0}")]
     Xlsx(String),
 }
@@ -47,6 +50,14 @@ impl From<escpos::errors::PrinterError> for CommandError {
         log::error!("Printer error occurred {:?}", err);
 
         CommandError::Printer(err.to_string())
+    }
+}
+
+impl From<rusb::Error> for CommandError {
+    fn from(err: rusb::Error) -> Self {
+        log::error!("USB error occurred {:?}", err);
+
+        CommandError::Usb(err.to_string())
     }
 }
 

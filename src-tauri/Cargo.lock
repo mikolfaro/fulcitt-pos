@@ -1504,6 +1504,7 @@ dependencies = [
  "escpos",
  "fluent-bundle",
  "log",
+ "rusb",
  "rust_xlsxwriter",
  "serde",
  "serde_json",

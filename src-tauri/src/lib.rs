@@ -8,6 +8,7 @@ use escpos::{
 };
 use log::{debug, info};
 use printing::{print_tickets, PrintingLayout};
+use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
@@ -34,10 +35,11 @@ struct AppState {
 type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Device {
+struct UsbDevice {
     vendor_id: u16,
     product_id: u16,
-    name: String,
+    vendor_name: String,
+    product_name: String,
 }
 
 #[tauri::command]
@@ -419,7 +421,7 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 async fn save_printer_device(
     app: AppHandle,
     printer_state: State<'_, PrinterState>,
-    device: Device,
+    device: UsbDevice,
 ) -> CommandResult<()> {
     info!("Saving printer device {:?}", device);
 
@@ -438,8 +440,49 @@ async fn save_printer_device(
     Ok(())
 }
 
+fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>) -> Option<String> {
+    if index == None || index == Some(0) {
+        return None;
+    }
+
+    let index = index.expect("Index must be known now");
+
+    let handle = device.open().ok()?;
+    let timeout = std::time::Duration::from_secs(1);
+    let languages = handle.read_languages(timeout).ok()?;
+
+    if let Some(language) = languages.get(0) {
+        handle.read_string_descriptor(*language, index, timeout).ok()
+    } else {
+        None
+    }
+}
+
 #[tauri::command]
-async fn test_print_raw_file(device: Device, text_to_print: String) -> CommandResult<()> {
+async fn list_usb_devices(
+) -> CommandResult<Vec<UsbDevice>> {
+    let context = Context::new()?;
+    let devices = DeviceList::new_with_context(context)?;
+
+    let mut usb_devices = Vec::new();
+
+    for device in devices.iter() {
+        let device_desc = device.device_descriptor()?;
+
+        usb_devices.push(UsbDevice {
+            vendor_id: device_desc.vendor_id(),
+            product_id: device_desc.product_id(),
+            vendor_name: get_string_descriptor(&device, device_desc.manufacturer_string_index()).unwrap_or_default(),
+            product_name: get_string_descriptor(&device, device_desc.product_string_index()).unwrap_or_default(),
+        });
+    }
+
+    Ok(usb_devices)
+}
+
+
+#[tauri::command]
+async fn test_print_raw_file(device: UsbDevice, text_to_print: String) -> CommandResult<()> {
     info!("Attempting to print {:?} on {:?}", text_to_print, device);
 
     let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
@@ -490,7 +533,7 @@ fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
         .and_then(|store| store.get("printer-device"))
         .and_then(|device| {
             info!("Already configured printer device path found {}", device);
-            let device = serde_json::from_value::<Device>(device).ok()?;
+            let device = serde_json::from_value::<UsbDevice>(device).ok()?;
 
             UsbDriver::open(device.vendor_id, device.product_id, None).ok()
         })
@@ -521,6 +564,7 @@ pub fn run() {
             get_print_layout,
             save_print_layout,
             save_printer_device,
+            list_usb_devices,
             test_print_raw_file,
         ])
         .setup(|app| {

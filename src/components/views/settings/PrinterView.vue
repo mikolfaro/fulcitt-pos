@@ -16,16 +16,18 @@
             <label class="label">
               {{ $t('settings-printer-device-path-label') }}
             </label>
-            <input
-              id="devicePathInput"
-              type="text"
-              class="input input-bordered w-full font-mono"
-              v-model="printerTest.devicePath"
-            />
+            <select class="select w-full" v-model="printerTest.device">
+              <option v-for="device in availableDevices"
+                :value="device">
+                {{ device.vendor_name }}
+                {{ device.product_name }}
+                ({{ device.vendor_id.toString(16).padStart(4, "0") }}:{{ device.product_id.toString(16).padStart(4, "0") }})
+              </option>
+            </select>
           </div>
           <div class="w-1/3 form-control mb-4">
             <label class="label">
-              {{ $t('settings-printer-text-to-be-printed_label') }}
+              {{ $t('settings-printer-text-to-be-printed-label') }}
             </label>
             <input
               id="textInput"
@@ -51,28 +53,37 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { load } from '@tauri-apps/plugin-store'
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../../stores/messagesStore'
 import { AppMessage } from '../../../lib'
 
+interface Device {
+  vendor_id: number,
+  product_id: number,
+  vendor_name: string,
+  product_name: string,
+}
+
 const { $t } = useFluent()
 const messages = useMessagesStore()
 
-const printerTest = reactive({
-  devicePath: '/dev/usb/lp0',
+const availableDevices = ref<Device[]>([])
+
+const printerTest = reactive<{text: string, device: Device | null}>({
+  device: null,
   text: $t('settings-printer-test-example', { date: new Date() }),
 })
 
 async function triggerPrint() {
-  if (!printerTest.devicePath || !printerTest.text) {
+  if (!printerTest.device || !printerTest.text) {
     messages.addInvalidInput($t('settings-printer-messages-device-cannot-be-empty'));
     return;
   }
 
   try {
     await invoke('test_print_raw_file', {
-        devicePath: printerTest.devicePath,
+        device: printerTest.device,
         textToPrint: printerTest.text
     })
     messages.addSuccess($t('settings-printer-messages-print-success'))
@@ -89,7 +100,7 @@ async function triggerPrint() {
 
 async function save() {
   try {
-    await invoke('save_printer_device', { devicePath: printerTest.devicePath })
+    await invoke('save_printer_device', { device: printerTest.device })
     messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
   } catch (error) {
     console.error(error)
@@ -104,9 +115,16 @@ async function save() {
 
 onMounted(async () => {
   const settingsStore = await load('store.json', { autoSave: false });
-  const devicePath = await settingsStore.get('printer-device')
-  if (typeof devicePath === 'string') {
-    printerTest.devicePath = devicePath
+  const device = await settingsStore.get('printer-device')
+  if (typeof device === 'object') {
+    printerTest.device = device as Device
+  }
+
+  try {
+    const devices = await invoke('list_usb_devices')
+    availableDevices.value = devices as Device[]
+  } catch (err) {
+    messages.addUnknownError(err)
   }
 })
 </script>
