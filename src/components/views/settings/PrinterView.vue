@@ -19,9 +19,7 @@
             <select class="select w-full" v-model="printerTest.device">
               <option v-for="device in availableDevices"
                 :value="device">
-                {{ device.vendor_name }}
-                {{ device.product_name }}
-                ({{ device.vendor_id.toString(16).padStart(4, "0") }}:{{ device.product_id.toString(16).padStart(4, "0") }})
+                {{ formatName(device) }}
               </option>
             </select>
           </div>
@@ -37,6 +35,9 @@
             />
           </div>
           <div class="flex gap-4">
+            <button class="btn btn-primary" @click="refreshAvailableDevices">
+              {{ $t('settings-printer-refresh-available-devices-button') }}
+            </button>
             <button class="btn btn-primary" @click="triggerPrint">
               {{ $t('settings-printer-test-print-button') }}
             </button>
@@ -74,6 +75,13 @@ const printerTest = reactive<{text: string, device: Device | null}>({
   device: null,
   text: $t('settings-printer-test-example', { date: new Date() }),
 })
+
+const formatName = function (device: Device): string {
+  const name = `${device.vendor_name} ${device.product_name}`
+  const vendorId = device.vendor_id.toString(16).padStart(4, "0")
+  const productId = device.product_id.toString(16).padStart(4, "0")
+  return `${name} (${vendorId}:${productId})`.trim()
+}
 
 async function triggerPrint() {
   if (!printerTest.device || !printerTest.text) {
@@ -113,6 +121,26 @@ async function save() {
   }
 }
 
+async function refreshAvailableDevices() {
+  try {
+    const devices = await invoke('list_usb_devices')
+    availableDevices.value = (devices as Device[]).sort(function (a, b) {
+      const nameA = formatName(a)
+      const nameB = formatName(b)
+
+      if (nameA < nameB) {
+        return -1
+      } else if (nameA > nameB) {
+        return 1
+      } else {
+        return 0
+      }
+    })
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
+}
+
 onMounted(async () => {
   const settingsStore = await load('store.json', { autoSave: false });
   const device = await settingsStore.get('printer-device')
@@ -120,11 +148,6 @@ onMounted(async () => {
     printerTest.device = device as Device
   }
 
-  try {
-    const devices = await invoke('list_usb_devices')
-    availableDevices.value = devices as Device[]
-  } catch (err) {
-    messages.addUnknownError(err)
-  }
+  await refreshAvailableDevices()
 })
 </script>
