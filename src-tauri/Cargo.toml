@@ -1,6 +1,6 @@
 [package]
 name = "fulcitt-pos"
-version = "0.4.0"
+version = "0.6.0"
 description = "Minimal POS used by Gruppo Fulcitt"
 authors = ["Mikol Faro <mikol.faro@proton.me>"]
 edition = "2021"
