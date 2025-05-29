@@ -90,9 +90,10 @@ settings-layout-print-header-label = Stampa intestazione
 settings-layout-save-button = Salva
 settings-layout-title = Layout
 
-settings-printer-device-path-label = Percorso del device (ad esempio COM1 o /dev/usb/lp0)
+settings-printer-device-path-label = Stampante
 settings-printer-menu-title = Stampante
 settings-printer-title = Stampante
+settings-printer-refresh-available-devices-button = Aggiorna elenco device
 settings-printer-printer-selection-title = Selezione stampante
 settings-printer-printer-selection-text = Assicurati che la stampante sia collegata e il percorso del device sia configurato correttamente.
 settings-printer-save-button = Salva
