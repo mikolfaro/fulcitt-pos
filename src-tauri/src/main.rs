@@ -4,7 +4,7 @@
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    dotenvy::dotenv()?;
+    dotenvy::dotenv().ok();
 
     fulcitt_pos_lib::run();
 
