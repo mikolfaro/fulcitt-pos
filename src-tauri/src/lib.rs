@@ -441,7 +441,7 @@ async fn save_printer_device(
 }
 
 fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>) -> Option<String> {
-    if index == None || index == Some(0) {
+    if index.is_none() || index == Some(0) {
         return None;
     }
 
@@ -451,7 +451,7 @@ fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>
     let timeout = std::time::Duration::from_secs(1);
     let languages = handle.read_languages(timeout).ok()?;
 
-    if let Some(language) = languages.get(0) {
+    if let Some(language) = languages.first() {
         handle.read_string_descriptor(*language, index, timeout).ok()
     } else {
         None
