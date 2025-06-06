@@ -153,7 +153,17 @@ const printLastSale = async () => {
 }
 
 const groupedProducts = computed<Record<string, Product[]>>(() => {
-  return availableProducts.value.reduce((groups: Record<string, Product[]>, product: Product) => {
+  const sortedProducts = availableProducts.value.sort((a: Product, b: Product) => {
+    if (a.name < b.name) {
+      return -1
+    } else if (a.name > b.name) {
+      return 1
+    } else {
+      return 0
+    }
+  })
+
+  return sortedProducts.reduce((groups: Record<string, Product[]>, product: Product) => {
     const category = product.category || 'Uncategorized'; // Default category if none provided
     if (!groups[category]) {
       groups[category] = [];
