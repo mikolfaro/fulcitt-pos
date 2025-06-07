@@ -40,11 +40,12 @@
         <table class="table table-zebra w-full">
           <thead>
             <tr>
-              <th>{{ $t('pos-cart-product-name') }}</th>
               <th>{{ $t('pos-cart-quantity') }}</th>
+              <th>{{ $t('pos-cart-product-name') }}</th>
               <th>{{ $t('pos-cart-unit-price') }}</th>
               <th>{{ $t('pos-cart-total-price') }}</th>
-              <th></th> </tr>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
             <tr v-if="cart.items.length === 0">
@@ -53,17 +54,17 @@
               </td>
             </tr>
             <tr v-for="item in cart.items" :key="item.id">
-              <td>{{ item.name }}</td>
               <td>
-                <button class="btn btn-xs btn-ghost" @click="decrementQuantity(item)">-</button>
-                {{ item.quantity }}
-                <button class="btn btn-xs btn-ghost" @click="incrementQuantity(item)">+</button>
+                <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
+                <span class="px-2">{{ item.quantity }}</span>
+                <button class="btn btn-xs btn-primary" @click="incrementQuantity(item)">+</button>
               </td>
+              <td>{{ item.name }}</td>
               <td>{{ formatCurrency(item.price) }}</td>
               <td>{{ formatCurrency(item.price * item.quantity) }}</td>
               <td>
                 <button
-                  class="btn btn-xs btn-error btn-ghost"
+                  class="btn btn-xs btn-error"
                   @click="removeFromCart(item)"
                 >X</button>
               </td>
