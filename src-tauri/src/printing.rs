@@ -4,7 +4,7 @@ use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::{CartItem, CommandResult, Sale};
+use crate::{CartItem, CommandResult, Product, Sale};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum FontSize {
@@ -45,7 +45,7 @@ pub(crate) fn print_tickets<D>(
     printer: &mut Printer<D>,
     layout: &PrintingLayout,
     sale: &Sale,
-    items: &[CartItem],
+    items: &[(CartItem, Product)],
 ) -> CommandResult<()>
 where
     D: Driver,
@@ -53,12 +53,12 @@ where
     info!("Printing tickets for sale {}", sale.id);
 
     for item in items {
-        for i in 0..item.quantity {
+        for i in 0..item.0.quantity {
             info!(
                 "Printing ticket for product {:?} ({} of {})",
-                item.name,
+                item.0.name,
                 i + 1,
-                item.quantity
+                item.0.quantity
             );
 
             if layout.header.enabled {
@@ -68,7 +68,7 @@ where
 
             if layout.body.enabled {
                 info!("Printing body");
-                print_body(printer, &layout.body, item)?;
+                print_body(printer, &layout.body, &item.0)?;
             }
 
             if layout.footer.enabled {

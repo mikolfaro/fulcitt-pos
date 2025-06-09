@@ -157,7 +157,12 @@ async fn process_sale(
         total_amount,
     };
 
-    for item in &items {
+    let mut items_with_products: Vec<(CartItem, Product)> = vec!();
+    for item in items {
+        let product = sqlx::query_as!(Product, "SELECT * FROM products WHERE id = ?", item.product_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
         let quantity = item.quantity;
         let price_at_sale = item.price;
 
@@ -189,6 +194,8 @@ async fn process_sale(
         .bind(price_at_sale)
         .execute(&mut *tx)
         .await?;
+
+        items_with_products.push((item, product));
     }
 
     tx.commit().await?;
@@ -209,7 +216,7 @@ async fn process_sale(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, &sale, &items)?;
+    print_tickets(printer, &layout, &sale, &items_with_products)?;
 
     Ok(sale_id)
 }
@@ -294,26 +301,35 @@ async fn print_last_sale(
         ORDER BY id DESC
         LIMIT 1"#
     )
-    .fetch_optional(&app_state.db)
-    .await?
-    .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
+        .fetch_optional(&app_state.db)
+        .await?
+        .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
 
     info!("Reprinting tickets of sale {}", last_sale.id);
 
-    let items = sqlx::query_as!(
-        CartItem,
-        r#"
-        SELECT product_id,
-            product_name AS name,
-            quantity,
-            price_at_sale AS price
+    let items: Vec<(CartItem, Product)> = sqlx::query_as!(
+        CartItemWithProduct,
+    r#"
+        SELECT
+                sale_items.product_name AS 'name_at_sale',
+                sale_items.price_at_sale,
+                sale_items.quantity,
+                products.id AS 'product_id',
+                products.category,
+                products.name,
+                products.price,
+                products.is_deleted AS 'is_product_deleted'
         FROM sale_items
+            JOIN products ON sale_items.product_id = products.id
         WHERE sale_id = ?
     "#,
         last_sale.id
     )
-    .fetch_all(&app_state.db)
-    .await?;
+        .fetch_all(&app_state.db)
+        .await?
+        .into_iter()
+        .map(|i| i.into())
+        .collect();
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
@@ -355,20 +371,30 @@ async fn print_sale(
     .await?
     .ok_or(CommandError::SaleNotFound)?;
 
-    let items = sqlx::query_as!(
-        CartItem,
+    let items: Vec<(CartItem, Product)> = sqlx::query_as!(
+        CartItemWithProduct,
         r#"
-        SELECT product_id,
-            product_name AS name,
-            quantity,
-            price_at_sale AS price
-        FROM sale_items
-        WHERE sale_id = ?
+            SELECT
+                sale_items.product_name AS 'name_at_sale',
+                sale_items.price_at_sale,
+                sale_items.quantity,
+                products.id AS 'product_id',
+                products.category,
+                products.name,
+                products.price,
+                products.is_deleted AS 'is_product_deleted'
+            FROM sale_items
+                JOIN products ON sale_items.product_id = products.id
+            WHERE sale_id = ?
     "#,
         sale_id
     )
-    .fetch_all(&app_state.db)
-    .await?;
+        .fetch_all(&app_state.db)
+        .await?
+        .into_iter()
+        .map(|i| i.into())
+        .collect();
+
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
