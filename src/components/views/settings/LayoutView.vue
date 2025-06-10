@@ -238,7 +238,7 @@ const layout = ref<Layout>({
 const saveLayout = async function () {
   try {
     await invoke('save_print_layout', { layout: layout.value })
-    messages.addSuccess("Layout saved")
+    messages.addSuccess($t("Settings-layout-messages-layout-saved"))
   } catch (err) {
     messages.addMessage(err as AppMessage)
   }
