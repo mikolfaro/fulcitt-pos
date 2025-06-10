@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
-    driver::UsbDriver,
+    driver::{ConsoleDriver, UsbDriver},
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
@@ -32,6 +32,10 @@ struct AppState {
     db: Db,
 }
 
+#[cfg(debug_assertions)]
+type PrinterState = Arc<Mutex<Option<Printer<ConsoleDriver>>>>;
+
+#[cfg(not(debug_assertions))]
 type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -451,7 +455,11 @@ async fn save_printer_device(
 ) -> CommandResult<()> {
     info!("Saving printer device {:?}", device);
 
+    #[cfg(debug_assertions)]
+    let driver = ConsoleDriver::open(true);
+    #[cfg(not(debug_assertions))]
     let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
+
     let new_printer = Printer::new(driver, Protocol::default(), None);
     let mut mutex_guard = printer_state.lock()?;
     *mutex_guard = Some(new_printer);
@@ -554,6 +562,13 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
+#[cfg(debug_assertions)]
+fn setup_printer(_app: &App) -> Option<Printer<ConsoleDriver>> {
+    let driver = ConsoleDriver::open(true);
+    Some(Printer::new(driver, Protocol::default(), None))
+}
+
+#[cfg(not(debug_assertions))]
 fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
     app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
