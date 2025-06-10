@@ -36,6 +36,7 @@ pub(crate) struct HeaderLayout {
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub(crate) struct PrintingLayout {
+    group_tickets_by_category: bool,
     header: HeaderLayout,
     body: SectionLayout,
     footer: SectionLayout,
@@ -52,6 +53,27 @@ where
 {
     info!("Printing tickets for sale {}", sale.id);
 
+    print_split_tickets(
+        printer,
+        layout,
+        sale,
+        items,
+    )?;
+
+    info!("Completed print for sale {}", sale.id);
+
+    Ok(())
+}
+
+fn print_split_tickets<D>(
+    printer: &mut Printer<D>,
+    layout: &PrintingLayout,
+    sale: &Sale,
+    items: &[(CartItem, Product)],
+) -> CommandResult<()>
+where
+    D: Driver,
+{
     for item in items {
         for i in 0..item.0.quantity {
             info!(
@@ -79,8 +101,6 @@ where
             printer.print_cut()?;
         }
     }
-
-    info!("Completed print for sale {}", sale.id);
 
     Ok(())
 }
@@ -174,6 +194,7 @@ where
 impl Default for PrintingLayout {
     fn default() -> Self {
         Self {
+            group_tickets_by_category: false,
             header: HeaderLayout {
                 enabled: false,
                 content: "".into(),

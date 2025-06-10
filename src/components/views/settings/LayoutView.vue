@@ -9,6 +9,18 @@
         <input
           type="checkbox"
           class="checkbox"
+          :checked="layout.group_tickets_by_category"
+          @click="layout.group_tickets_by_category = !layout.group_tickets_by_category"
+        />
+        <h3>{{ $t('settings-layout-print-group-tickets-by-category') }}</h3>
+      </label>
+    </div>
+
+    <div class="pb-4">
+      <label class="label">
+        <input
+          type="checkbox"
+          class="checkbox"
           :checked="layout.header.enabled"
           @click="layout.header.enabled = !layout.header.enabled"
         />
@@ -197,12 +209,14 @@ interface SectionSettings {
 }
 
 interface Layout {
+  group_tickets_by_category: boolean,
   header: SectionSettings & { content: string },
   body: SectionSettings,
   footer: SectionSettings
 }
 
 const layout = ref<Layout>({
+  group_tickets_by_category: false,
   header: {
     enabled: false,
     content: '',
