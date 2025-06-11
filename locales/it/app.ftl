@@ -86,9 +86,11 @@ settings-layout-menu-title = Layout
 settings-layout-header-content-label = Contenuto
 settings-layout-print-body-label = Stampa corpo
 settings-layout-print-footer-label = Stampa piè di pagina
+settings-layout-print-group-tickets-by-category = Raggruppa ticket per categoria
 settings-layout-print-header-label = Stampa intestazione
 settings-layout-save-button = Salva
 settings-layout-title = Layout
+Settings-layout-messages-layout-saved = Layout salvato
 
 settings-printer-device-path-label = Stampante
 settings-printer-menu-title = Stampante
