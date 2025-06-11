@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
 use log::info;
@@ -53,12 +53,11 @@ where
 {
     info!("Printing tickets for sale {}", sale.id);
 
-    print_split_tickets(
-        printer,
-        layout,
-        sale,
-        items,
-    )?;
+    if layout.group_tickets_by_category {
+        print_grouped_tickets(printer, layout, sale, items)?;
+    } else {
+        print_split_tickets(printer, layout, sale, items)?;
+    }
 
     info!("Completed print for sale {}", sale.id);
 
@@ -88,15 +87,11 @@ where
                 print_header(printer, &layout.header, sale)?;
             }
 
-            if layout.body.enabled {
-                info!("Printing body");
-                print_body(printer, &layout.body, &item.0)?;
-            }
+            info!("Printing body");
+            print_body(printer, &layout.body, &item.0)?;
 
-            if layout.footer.enabled {
-                info!("Printing footer");
-                print_footer(printer, &layout.footer, sale)?;
-            }
+            info!("Printing footer");
+            print_footer(printer, &layout.footer, sale)?;
 
             printer.print_cut()?;
         }
@@ -104,6 +99,41 @@ where
 
     Ok(())
 }
+
+fn print_grouped_tickets<D>(
+    printer: &mut Printer<D>,
+    layout: &PrintingLayout,
+    sale: &Sale,
+    items: &[(CartItem, Product)],
+) -> CommandResult<()>
+where
+    D: Driver,
+{
+    let mut groups: HashMap<String, Vec<CartItem>> = HashMap::new();
+    for item in items.into_iter() {
+        if let Some(sale_items) = groups.get_mut(&item.1.category) {
+            sale_items.push(item.0.clone());
+        } else {
+            groups.insert(item.1.category.clone(), vec![item.0.clone()]);
+        }
+    }
+
+    for (category, items) in groups {
+        info!("Printing ticket for group {:?}", category);
+        print_header(printer, &layout.header, sale)?;
+
+        for item in items {
+            for _ in 0..item.quantity {
+                print_body(printer, &layout.body, &item)?;
+            }
+        }
+
+        print_footer(printer, &layout.footer, sale)?;
+    }
+
+    Ok(())
+}
+
 
 fn print_header<D>(
     printer: &mut Printer<D>,
@@ -113,6 +143,10 @@ fn print_header<D>(
 where
     D: Driver,
 {
+    if !layout.enabled {
+        return Ok(())
+    }
+
     let section_layout: SectionLayout = layout.clone().into();
 
     with_layout(printer, &section_layout, |p| {
@@ -133,6 +167,10 @@ fn print_body<D>(
 where
     D: Driver,
 {
+    if !layout.enabled {
+        return Ok(())
+    }
+
     with_layout(printer, layout, |p| {
         p.writeln(&item.name.to_string())?;
 
@@ -151,6 +189,10 @@ fn print_footer<D>(
 where
     D: Driver,
 {
+    if !layout.enabled {
+        return Ok(())
+    }
+
     let sale_time_str = sale.sale_time.format("%d-%m-%Y %H:%M:%S").to_string();
 
     with_layout(printer, layout, |p| {

@@ -18,7 +18,7 @@ pub(crate) struct Product {
     pub is_deleted: bool,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub(crate) struct CartItem {
     pub product_id: i64,
     pub name: String,
