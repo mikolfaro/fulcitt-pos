@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n                sale_items.product_name AS 'name_at_sale',\n                sale_items.price_at_sale,\n                sale_items.quantity,\n                products.id AS 'product_id: uuid::Uuid',\n                products.category,\n                products.name,\n                products.price,\n                products.is_deleted AS 'is_product_deleted'\n        FROM sale_items\n            JOIN products ON sale_items.product_id = products.id\n        WHERE sale_id = ?\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name_at_sale",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "price_at_sale",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "product_id: uuid::Uuid",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "category",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "price",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "is_product_deleted",
+        "ordinal": 7,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a162234e064c4af0421659655d89785a1d569d97864e02f6691ac1080ed7c894"
+}

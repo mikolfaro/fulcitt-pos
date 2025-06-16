@@ -6,7 +6,7 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{debug, info};
+use log::info;
 use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,7 @@ use errors::*;
 use exports::*;
 use intl::*;
 use models::*;
+use uuid::Uuid;
 
 mod errors;
 mod exports;
@@ -51,7 +52,7 @@ async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Prod
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
         FROM products
         WHERE is_deleted = 0
     "#
@@ -69,11 +70,12 @@ async fn create_product(
 ) -> CommandResult<()> {
     sqlx::query(
         r#"
-        INSERT INTO products(name, price, category, is_deleted)
-        VALUES ($1, $2, $3, 0)
-        ON CONFLICT(name) DO UPDATE SET price = $2, category = $3, is_deleted = 0
+        INSERT INTO products(id, name, price, category, is_deleted)
+        VALUES ($1, $2, $3, $4, 0)
+        ON CONFLICT(name) DO UPDATE SET price = $3, category = $4, is_deleted = 0
     "#,
     )
+    .bind(Uuid::new_v4())
     .bind(&product.name)
     .bind(product.price)
     .bind(&product.category)
@@ -127,7 +129,7 @@ async fn process_sale(
     printer_state: State<'_, PrinterState>,
     intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
-) -> CommandResult<i64> {
+) -> CommandResult<Uuid> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
             intl_state
@@ -144,11 +146,12 @@ async fn process_sale(
         .sum();
 
     let mut tx = app_state.db.begin().await?;
-    let sale_id: i64 = sqlx::query_scalar(
+    let sale_id: uuid::Uuid = sqlx::query_scalar(
         r#"
-        INSERT INTO sales (sale_time, total_amount) VALUES (?, ?) RETURNING id;
+        INSERT INTO sales (id, sale_time, total_amount) VALUES (?, ?, ?) RETURNING id as "id: uuid::Uuid";
         "#,
     )
+    .bind(Uuid::new_v4())
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -163,7 +166,15 @@ async fn process_sale(
 
     let mut items_with_products: Vec<(CartItem, Product)> = vec!();
     for item in items {
-        let product = sqlx::query_as!(Product, "SELECT * FROM products WHERE id = ?", item.product_id)
+        let product = sqlx::query_as!(
+            Product,
+            r#"
+            SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
+            FROM products
+            WHERE id = ?
+            "#,
+            item.product_id
+        )
             .fetch_one(&mut *tx)
             .await?;
 
@@ -187,10 +198,11 @@ async fn process_sale(
 
         sqlx::query(
             r#"
-            INSERT INTO sale_items (sale_id, product_id, product_name, quantity, price_at_sale)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, price_at_sale)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#,
         )
+        .bind(Uuid::new_v4())
         .bind(sale_id)
         .bind(item.product_id)
         .bind(&item.name)
@@ -253,7 +265,7 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
         WHERE sale_time >= ?
     "#,
@@ -300,9 +312,9 @@ async fn print_last_sale(
     let last_sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
-        ORDER BY id DESC
+        ORDER BY sale_time DESC
         LIMIT 1"#
     )
         .fetch_optional(&app_state.db)
@@ -318,7 +330,7 @@ async fn print_last_sale(
                 sale_items.product_name AS 'name_at_sale',
                 sale_items.price_at_sale,
                 sale_items.quantity,
-                products.id AS 'product_id',
+                products.id AS 'product_id: uuid::Uuid',
                 products.category,
                 products.name,
                 products.price,
@@ -365,7 +377,7 @@ async fn print_sale(
     let sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
         WHERE id = ?
         "#,
@@ -379,10 +391,10 @@ async fn print_sale(
         CartItemWithProduct,
         r#"
             SELECT
-                sale_items.product_name AS 'name_at_sale',
+                sale_items.product_name AS "name_at_sale",
                 sale_items.price_at_sale,
                 sale_items.quantity,
-                products.id AS 'product_id',
+                products.id AS "product_id: uuid::Uuid",
                 products.category,
                 products.name,
                 products.price,
@@ -555,9 +567,12 @@ async fn setup_db(app: &App) -> Db {
     let db = SqlitePoolOptions::new()
         .connect(path.to_str().unwrap())
         .await
-        .unwrap();
+        .expect("Failed to connect to database");
 
-    sqlx::migrate!("./migrations").run(&db).await.unwrap();
+    sqlx::migrate!("./migrations")
+        .run(&db)
+        .await
+        .expect("Failed to run migrations");
 
     db
 }

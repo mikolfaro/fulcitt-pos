@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT id as \"id: uuid::Uuid\",\n                sale_id as \"sale_id: uuid::Uuid\",\n                product_id as \"product_id: uuid::Uuid\",\n                product_name,\n                quantity,\n                price_at_sale\n            FROM sale_items\n            WHERE sale_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id: uuid::Uuid",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "sale_id: uuid::Uuid",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "product_id: uuid::Uuid",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "product_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "price_at_sale",
+        "ordinal": 5,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "aba892d9355700eaeaebc8694b0a1f1aefb5eccae82f30099a7f2d541db69b52"
+}
