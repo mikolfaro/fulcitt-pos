@@ -110,7 +110,7 @@ where
     D: Driver,
 {
     let mut groups: HashMap<String, Vec<CartItem>> = HashMap::new();
-    for item in items.into_iter() {
+    for item in items.iter() {
         if let Some(sale_items) = groups.get_mut(&item.1.category) {
             sale_items.push(item.0.clone());
         } else {
