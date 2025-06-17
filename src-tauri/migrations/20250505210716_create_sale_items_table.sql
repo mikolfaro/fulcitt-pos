@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS sale_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  sale_id INTEGER NOT NULL,
-  product_id INTEGER NOT NULL,
+  id TEXT NOT NULL PRIMARY KEY DEFAULT(uuid()),
+  sale_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
   product_name TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   price_at_sale REAL NOT NULL CHECK(price_at_sale >= 0),
