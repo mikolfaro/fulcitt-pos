@@ -1,0 +1,99 @@
+name: Build AppImage (Development)
+
+on:
+  push:
+    branches: [ main, develop, feature/automated-build ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  NO_STRIP: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          curl \
+          wget \
+          file \
+          libssl-dev \
+          libgtk-3-dev \
+          libwebkit2gtk-4.0-dev \
+          libayatana-appindicator3-dev \
+          librsvg2-dev \
+          libusb-1.0-0-dev \
+          pkg-config \
+          libudev-dev
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          src-tauri/target/
+          ~/.bun/install/cache/
+          node_modules/
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/Cargo.lock', '**/bun.lockb') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    - name: Install frontend dependencies
+      run: bun install
+
+    - name: Run linting
+      run: |
+        bun run lint
+        echo "Frontend linting passed"
+
+    - name: Run TypeScript check
+      run: |
+        bun run build
+        echo "TypeScript compilation successful"
+
+    - name: Install Tauri CLI
+      run: cargo install tauri-cli@2.0.0-beta
+
+    - name: Run Rust tests
+      run: |
+        cd src-tauri
+        cargo test
+        echo "Rust tests passed"
+
+    - name: Build AppImage
+      run: |
+        echo "Building development AppImage..."
+        bun run tauri build --bundles appimage
+
+        echo "AppImage build successful!"
+        ls -la src-tauri/target/release/bundle/appimage/
+
+    # - name: Upload development build
+    #   uses: actions/upload-artifact@v3
+    #   if: github.event_name != 'pull_request'
+    #   with:
+    #     name: fulcitt-pos-dev-${{ github.sha }}
+    #     path: src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
+    #     retention-days: 7
