@@ -90,20 +90,20 @@ jobs:
         else
           BRANCH_NAME="${{ github.ref_name }}"
         fi
-        
+
         # Sanitize branch name: replace special chars with dashes, limit length
         SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g' | cut -c1-20)
-        
+
         echo "Original branch: $BRANCH_NAME"
         echo "Sanitized for version: $SANITIZED_BRANCH"
         echo "BRANCH_VERSION=$SANITIZED_BRANCH" >> $GITHUB_ENV
-        
+
         # Backup original tauri.conf.json
         cp src-tauri/tauri.conf.json src-tauri/tauri.conf.json.backup
-        
+
         # Replace version with branch name in tauri.conf.json
-        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
-        
+        sed -i "s/\"version\": \"([^\"]*)\"/\"version\": \"\\1-$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
+
         echo "Modified tauri.conf.json version:"
         grep "\"version\":" src-tauri/tauri.conf.json
 
