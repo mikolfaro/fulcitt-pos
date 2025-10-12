@@ -23,6 +23,8 @@ use uuid::Uuid;
 
 #[cfg(debug_assertions)]
 use escpos::driver::ConsoleDriver;
+#[cfg(not(debug_assertions))]
+use log::debug;
 
 mod errors;
 mod exports;
