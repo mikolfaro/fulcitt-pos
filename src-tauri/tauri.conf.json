@@ -34,6 +34,7 @@
     "linux": {
       "appimage": {
         "bundleMediaFramework": false,
+        "bundleXdgOpen": false,
         "files": {}
       }
     },
