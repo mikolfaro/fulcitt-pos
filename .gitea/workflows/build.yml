@@ -26,6 +26,7 @@ jobs:
     - name: Setup Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
+        rust-src-dir: src-tauri
         toolchain: stable
 
     - name: Install system dependencies
