@@ -2,11 +2,16 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
-    driver::{ConsoleDriver, UsbDriver},
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{info};
+
+#[cfg(debug_assertions)]
+use escpos::driver::ConsoleDriver;
+#[cfg(not(debug_assertions))]
+use escpos::driver::UsbDriver;
+
+use log::info;
 use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
