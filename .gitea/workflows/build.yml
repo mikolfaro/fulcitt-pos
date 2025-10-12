@@ -82,13 +82,47 @@ jobs:
         cargo test
         echo "Rust tests passed"
 
+    - name: Prepare branch-based version
+      run: |
+        # Extract branch name and sanitize for version format
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BRANCH_NAME="${{ github.head_ref }}"
+        else
+          BRANCH_NAME="${{ github.ref_name }}"
+        fi
+        
+        # Sanitize branch name: replace special chars with dashes, limit length
+        SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g' | cut -c1-20)
+        
+        echo "Original branch: $BRANCH_NAME"
+        echo "Sanitized for version: $SANITIZED_BRANCH"
+        echo "BRANCH_VERSION=$SANITIZED_BRANCH" >> $GITHUB_ENV
+        
+        # Backup original tauri.conf.json
+        cp src-tauri/tauri.conf.json src-tauri/tauri.conf.json.backup
+        
+        # Replace version with branch name in tauri.conf.json
+        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
+        
+        echo "Modified tauri.conf.json version:"
+        grep "\"version\":" src-tauri/tauri.conf.json
+
     - name: Build AppImage
       run: |
-        echo "Building development AppImage..."
+        echo "Building development AppImage for branch: ${{ env.BRANCH_VERSION }}..."
         bun run tauri build --bundles appimage
 
         echo "AppImage build successful!"
         ls -la src-tauri/target/release/bundle/appimage/
+
+    - name: Restore original configuration
+      if: always()
+      run: |
+        # Restore original tauri.conf.json
+        if [ -f src-tauri/tauri.conf.json.backup ]; then
+          mv src-tauri/tauri.conf.json.backup src-tauri/tauri.conf.json
+          echo "Restored original tauri.conf.json"
+        fi
 
     # - name: Upload development build
     #   uses: actions/upload-artifact@v3
