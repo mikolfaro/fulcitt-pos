@@ -2,15 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
+    driver::UsbDriver,
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-
-#[cfg(debug_assertions)]
-use escpos::driver::ConsoleDriver;
-#[cfg(not(debug_assertions))]
-use escpos::driver::UsbDriver;
-
 use log::info;
 use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
@@ -25,6 +20,9 @@ use exports::*;
 use intl::*;
 use models::*;
 use uuid::Uuid;
+
+#[cfg(debug_assertions)]
+use escpos::driver::ConsoleDriver;
 
 mod errors;
 mod exports;
