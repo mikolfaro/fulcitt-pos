@@ -71,8 +71,8 @@ jobs:
         bun run build
         echo "TypeScript compilation successful"
 
-    - name: Install Tauri CLI
-      run: cargo install tauri-cli@2.0.0-beta
+    # - name: Install Tauri CLI
+    #   run: cd src-tauri && cargo install
 
     - name: Run Rust tests
       run: |

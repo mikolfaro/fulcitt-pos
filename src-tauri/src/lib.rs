@@ -6,7 +6,7 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{debug, info};
+use log::{info};
 use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
