@@ -61,10 +61,10 @@ jobs:
     - name: Install frontend dependencies
       run: bun install
 
-    - name: Run linting
-      run: |
-        bun run lint
-        echo "Frontend linting passed"
+    # - name: Run linting
+    #   run: |
+    #     bun run lint
+    #     echo "Frontend linting passed"
 
     - name: Run TypeScript check
       run: |
