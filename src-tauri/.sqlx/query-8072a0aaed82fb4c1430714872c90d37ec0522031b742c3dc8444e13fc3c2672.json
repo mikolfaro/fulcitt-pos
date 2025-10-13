@@ -1,12 +1,12 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT *\n        FROM products\n        WHERE is_deleted = 0\n    ",
+  "query": "\n        SELECT id as \"id: uuid::Uuid\", name, category, price, is_deleted\n        FROM products\n        WHERE is_deleted = 0\n    ",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id: uuid::Uuid",
         "ordinal": 0,
-        "type_info": "Integer"
+        "type_info": "Text"
       },
       {
         "name": "name",
@@ -14,14 +14,14 @@
         "type_info": "Text"
       },
       {
-        "name": "price",
+        "name": "category",
         "ordinal": 2,
-        "type_info": "Float"
+        "type_info": "Text"
       },
       {
-        "name": "category",
+        "name": "price",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Float"
       },
       {
         "name": "is_deleted",
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "7702b67678f6ceaf0ce9c55750375d17088a5a542e93726f0a39af0476a8f725"
+  "hash": "8072a0aaed82fb4c1430714872c90d37ec0522031b742c3dc8444e13fc3c2672"
 }

@@ -39,6 +39,6 @@ impl Intl {
         let mut errors = vec![];
         let value = self.bundle.format_pattern(pattern, None, &mut errors);
 
-        Ok(value.to_owned())
+        Ok(value)
     }
 }

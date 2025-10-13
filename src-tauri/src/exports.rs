@@ -12,7 +12,14 @@ pub(crate) async fn export_sales_report(
     let mut products_worksheet = Worksheet::new();
     products_worksheet.set_name("reports-export-xslx-invoices-details-tab-title")?;
 
-    let sales = sqlx::query_as!(Sale, "SELECT * FROM sales")
+    let sales = sqlx::query_as!(
+        Sale,
+        r#"
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        FROM sales
+        ORDER BY sale_time DESC
+        "#,
+    )
         .fetch_all(&db)
         .await?;
 
@@ -34,7 +41,7 @@ pub(crate) async fn export_sales_report(
     for (i, sale) in sales.into_iter().enumerate() {
         let i: u32 = i.try_into().unwrap();
 
-        invoices_worksheet.write(i + 1, 0, sale.id)?;
+        invoices_worksheet.write(i + 1, 0, sale.id.to_string())?;
         invoices_worksheet.write(
             i + 1,
             1,
@@ -46,7 +53,12 @@ pub(crate) async fn export_sales_report(
         let item_sales = sqlx::query_as!(
             SaleItem,
             r#"
-            SELECT *
+            SELECT id as "id: uuid::Uuid",
+                sale_id as "sale_id: uuid::Uuid",
+                product_id as "product_id: uuid::Uuid",
+                product_name,
+                quantity,
+                price_at_sale
             FROM sale_items
             WHERE sale_id = ?
             "#,
@@ -57,7 +69,7 @@ pub(crate) async fn export_sales_report(
 
         let mut j = 1;
         for item in item_sales.into_iter() {
-            products_worksheet.write(j, 0, item.sale_id)?;
+            products_worksheet.write(j, 0, item.sale_id.to_string())?;
             products_worksheet.write(j, 1, item.product_name)?;
             products_worksheet.write(j, 2, item.quantity)?;
             products_worksheet.write_with_format(j, 3, item.price_at_sale, &currency_format)?;

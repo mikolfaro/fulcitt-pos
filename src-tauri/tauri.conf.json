@@ -30,6 +30,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false,
+        "files": {}
+      }
+    },
+    "category": "Business",
+    "shortDescription": "Minimal Point of Sale system for Gruppo Fulcitt",
+    "longDescription": "A modern Point of Sale application built with Tauri and Vue 3, featuring product management, sales processing, thermal receipt printing, and sales reporting. Designed specifically for retail environments with USB thermal printer support."
   }
 }

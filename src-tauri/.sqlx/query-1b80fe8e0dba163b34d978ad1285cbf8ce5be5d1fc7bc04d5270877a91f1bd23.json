@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT id as \"id: uuid::Uuid\", sale_time, total_amount, payment_method\n        FROM sales\n        WHERE sale_time >= ?\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id: uuid::Uuid",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "sale_time",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "total_amount",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "payment_method",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "1b80fe8e0dba163b34d978ad1285cbf8ce5be5d1fc7bc04d5270877a91f1bd23"
+}

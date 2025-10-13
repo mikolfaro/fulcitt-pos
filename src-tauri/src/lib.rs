@@ -6,7 +6,7 @@ use escpos::{
     printer::Printer,
     utils::{DebugMode, Protocol},
 };
-use log::{debug, info};
+use log::info;
 use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,12 @@ use errors::*;
 use exports::*;
 use intl::*;
 use models::*;
+use uuid::Uuid;
+
+#[cfg(debug_assertions)]
+use escpos::driver::ConsoleDriver;
+#[cfg(not(debug_assertions))]
+use log::debug;
 
 mod errors;
 mod exports;
@@ -32,6 +38,10 @@ struct AppState {
     db: Db,
 }
 
+#[cfg(debug_assertions)]
+type PrinterState = Arc<Mutex<Option<Printer<ConsoleDriver>>>>;
+
+#[cfg(not(debug_assertions))]
 type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,7 +57,7 @@ async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Prod
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
         FROM products
         WHERE is_deleted = 0
     "#
@@ -65,11 +75,12 @@ async fn create_product(
 ) -> CommandResult<()> {
     sqlx::query(
         r#"
-        INSERT INTO products(name, price, category, is_deleted)
-        VALUES ($1, $2, $3, 0)
-        ON CONFLICT(name) DO UPDATE SET price = $2, category = $3, is_deleted = 0
+        INSERT INTO products(id, name, price, category, is_deleted)
+        VALUES ($1, $2, $3, $4, 0)
+        ON CONFLICT(name) DO UPDATE SET price = $3, category = $4, is_deleted = 0
     "#,
     )
+    .bind(Uuid::new_v4())
     .bind(&product.name)
     .bind(product.price)
     .bind(&product.category)
@@ -123,7 +134,7 @@ async fn process_sale(
     printer_state: State<'_, PrinterState>,
     intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
-) -> CommandResult<i64> {
+) -> CommandResult<Uuid> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
             intl_state
@@ -140,11 +151,12 @@ async fn process_sale(
         .sum();
 
     let mut tx = app_state.db.begin().await?;
-    let sale_id: i64 = sqlx::query_scalar(
+    let sale_id: uuid::Uuid = sqlx::query_scalar(
         r#"
-        INSERT INTO sales (sale_time, total_amount) VALUES (?, ?) RETURNING id;
+        INSERT INTO sales (id, sale_time, total_amount) VALUES (?, ?, ?) RETURNING id as "id: uuid::Uuid";
         "#,
     )
+    .bind(Uuid::new_v4())
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -157,7 +169,20 @@ async fn process_sale(
         total_amount,
     };
 
-    for item in &items {
+    let mut items_with_products: Vec<(CartItem, Product)> = vec!();
+    for item in items {
+        let product = sqlx::query_as!(
+            Product,
+            r#"
+            SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
+            FROM products
+            WHERE id = ?
+            "#,
+            item.product_id
+        )
+            .fetch_one(&mut *tx)
+            .await?;
+
         let quantity = item.quantity;
         let price_at_sale = item.price;
 
@@ -178,10 +203,11 @@ async fn process_sale(
 
         sqlx::query(
             r#"
-            INSERT INTO sale_items (sale_id, product_id, product_name, quantity, price_at_sale)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, price_at_sale)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#,
         )
+        .bind(Uuid::new_v4())
         .bind(sale_id)
         .bind(item.product_id)
         .bind(&item.name)
@@ -189,6 +215,8 @@ async fn process_sale(
         .bind(price_at_sale)
         .execute(&mut *tx)
         .await?;
+
+        items_with_products.push((item, product));
     }
 
     tx.commit().await?;
@@ -209,7 +237,7 @@ async fn process_sale(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, &sale, &items)?;
+    print_tickets(printer, &layout, &sale, &items_with_products)?;
 
     Ok(sale_id)
 }
@@ -242,7 +270,7 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
         WHERE sale_time >= ?
     "#,
@@ -289,31 +317,40 @@ async fn print_last_sale(
     let last_sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
-        ORDER BY id DESC
+        ORDER BY sale_time DESC
         LIMIT 1"#
     )
-    .fetch_optional(&app_state.db)
-    .await?
-    .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
+        .fetch_optional(&app_state.db)
+        .await?
+        .ok_or_else(|| CommandError::InvalidInput("No sales recorded yet".to_string()))?;
 
     info!("Reprinting tickets of sale {}", last_sale.id);
 
-    let items = sqlx::query_as!(
-        CartItem,
-        r#"
-        SELECT product_id,
-            product_name AS name,
-            quantity,
-            price_at_sale AS price
+    let items: Vec<(CartItem, Product)> = sqlx::query_as!(
+        CartItemWithProduct,
+    r#"
+        SELECT
+                sale_items.product_name AS 'name_at_sale',
+                sale_items.price_at_sale,
+                sale_items.quantity,
+                products.id AS 'product_id: uuid::Uuid',
+                products.category,
+                products.name,
+                products.price,
+                products.is_deleted AS 'is_product_deleted'
         FROM sale_items
+            JOIN products ON sale_items.product_id = products.id
         WHERE sale_id = ?
     "#,
         last_sale.id
     )
-    .fetch_all(&app_state.db)
-    .await?;
+        .fetch_all(&app_state.db)
+        .await?
+        .into_iter()
+        .map(|i| i.into())
+        .collect();
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
@@ -345,7 +382,7 @@ async fn print_sale(
     let sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT *
+        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
         FROM sales
         WHERE id = ?
         "#,
@@ -355,20 +392,30 @@ async fn print_sale(
     .await?
     .ok_or(CommandError::SaleNotFound)?;
 
-    let items = sqlx::query_as!(
-        CartItem,
+    let items: Vec<(CartItem, Product)> = sqlx::query_as!(
+        CartItemWithProduct,
         r#"
-        SELECT product_id,
-            product_name AS name,
-            quantity,
-            price_at_sale AS price
-        FROM sale_items
-        WHERE sale_id = ?
+            SELECT
+                sale_items.product_name AS "name_at_sale",
+                sale_items.price_at_sale,
+                sale_items.quantity,
+                products.id AS "product_id: uuid::Uuid",
+                products.category,
+                products.name,
+                products.price,
+                products.is_deleted AS 'is_product_deleted'
+            FROM sale_items
+                JOIN products ON sale_items.product_id = products.id
+            WHERE sale_id = ?
     "#,
         sale_id
     )
-    .fetch_all(&app_state.db)
-    .await?;
+        .fetch_all(&app_state.db)
+        .await?
+        .into_iter()
+        .map(|i| i.into())
+        .collect();
+
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
@@ -425,7 +472,11 @@ async fn save_printer_device(
 ) -> CommandResult<()> {
     info!("Saving printer device {:?}", device);
 
+    #[cfg(debug_assertions)]
+    let driver = ConsoleDriver::open(true);
+    #[cfg(not(debug_assertions))]
     let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
+
     let new_printer = Printer::new(driver, Protocol::default(), None);
     let mut mutex_guard = printer_state.lock()?;
     *mutex_guard = Some(new_printer);
@@ -521,13 +572,23 @@ async fn setup_db(app: &App) -> Db {
     let db = SqlitePoolOptions::new()
         .connect(path.to_str().unwrap())
         .await
-        .unwrap();
+        .expect("Failed to connect to database");
 
-    sqlx::migrate!("./migrations").run(&db).await.unwrap();
+    sqlx::migrate!("./migrations")
+        .run(&db)
+        .await
+        .expect("Failed to run migrations");
 
     db
 }
 
+#[cfg(debug_assertions)]
+fn setup_printer(_app: &App) -> Option<Printer<ConsoleDriver>> {
+    let driver = ConsoleDriver::open(true);
+    Some(Printer::new(driver, Protocol::default(), None))
+}
+
+#[cfg(not(debug_assertions))]
 fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
     app.get_store("store.json")
         .and_then(|store| store.get("printer-device"))
