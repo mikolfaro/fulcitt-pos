@@ -130,5 +130,5 @@ jobs:
       with:
         prerelease: true
         # name: fulcitt-pos-latest-${{ github.sha }}
-        files: -tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
+        files: src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
         # retention-days: 7
