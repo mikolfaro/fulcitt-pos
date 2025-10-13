@@ -125,7 +125,7 @@ jobs:
         fi
 
     - name: Create release
-      uses: actions/gitea-release-action@v1
+      uses: https://gitea.com/actions/gitea-release-action@v1
       # if: github.event_name != 'pull_request'
       with:
         prerelease: true
