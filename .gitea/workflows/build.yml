@@ -124,10 +124,10 @@ jobs:
           echo "Restored original tauri.conf.json"
         fi
 
-    # - name: Upload development build
-    #   uses: actions/upload-artifact@v3
-    #   if: github.event_name != 'pull_request'
-    #   with:
-    #     name: fulcitt-pos-dev-${{ github.sha }}
-    #     path: src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
-    #     retention-days: 7
+    - name: Upload development build
+      uses: actions/upload-artifact@v3
+      if: github.event_name != 'pull_request'
+      with:
+        name: fulcitt-pos-latest-${{ github.sha }}
+        path: src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
+        retention-days: 7
