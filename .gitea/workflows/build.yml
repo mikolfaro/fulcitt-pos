@@ -102,7 +102,7 @@ jobs:
         cp src-tauri/tauri.conf.json src-tauri/tauri.conf.json.backup
 
         # Replace version with branch name in tauri.conf.json
-        sed -i "s/\"version\": \"([^\"]*)\"/\"version\": \"\\1-$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
+        sed -i "s/\"version\": \"\([^\"]*\)\"/\"version\": \"\\1-$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
 
         echo "Modified tauri.conf.json version:"
         grep "\"version\":" src-tauri/tauri.conf.json
