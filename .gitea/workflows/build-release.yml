@@ -1,17 +1,21 @@
-name: Build AppImage (Development)
+name: Build AppImage (Release)
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g., v1.0.0)'
+        required: true
+        type: string
 
 env:
   NO_STRIP: true
 
 jobs:
-  build-test:
+  build-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -45,36 +49,13 @@ jobs:
           librsvg2-dev \
           xdg-utils
 
-    # - name: Cache dependencies
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: |
-    #       ~/.cargo/bin/
-    #       ~/.cargo/registry/index/
-    #       ~/.cargo/registry/cache/
-    #       ~/.cargo/git/db/
-    #       src-tauri/target/
-    #       ~/.bun/install/cache/
-    #       node_modules/
-    #     key: ${{ runner.os }}-deps-${{ hashFiles('**/Cargo.lock', '**/bun.lockb') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-deps-
-
     - name: Install frontend dependencies
       run: bun install
-
-    # - name: Run linting
-    #   run: |
-    #     bun run lint
-    #     echo "Frontend linting passed"
 
     - name: Run TypeScript check
       run: |
         bun run build
         echo "TypeScript compilation successful"
-
-    # - name: Install Tauri CLI
-    #   run: cd src-tauri && cargo install
 
     - name: Run Rust tests
       run: |
@@ -82,34 +63,35 @@ jobs:
         cargo test
         echo "Rust tests passed"
 
-    - name: Prepare branch-based version
+    - name: Prepare release version
       run: |
-        # Extract branch name and sanitize for version format
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          BRANCH_NAME="${{ github.head_ref }}"
+        # Get tag name from trigger
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          TAG_NAME="${{ github.event.inputs.tag }}"
         else
-          BRANCH_NAME="${{ github.ref_name }}"
+          TAG_NAME="${{ github.ref_name }}"
         fi
-
-        # Sanitize branch name: replace special chars with dashes, limit length
-        SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g' | cut -c1-20)
-
-        echo "Original branch: $BRANCH_NAME"
-        echo "Sanitized for version: $SANITIZED_BRANCH"
-        echo "BRANCH_VERSION=$SANITIZED_BRANCH" >> $GITHUB_ENV
+        
+        # Remove 'v' prefix if present for version number
+        VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+        
+        echo "Tag: $TAG_NAME"
+        echo "Version: $VERSION"
+        echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
 
         # Backup original tauri.conf.json
         cp src-tauri/tauri.conf.json src-tauri/tauri.conf.json.backup
 
-        # Replace version with branch name in tauri.conf.json
-        sed -i "s/\"version\": \"\([^\"]*\)\"/\"version\": \"\\1-$SANITIZED_BRANCH\"/" src-tauri/tauri.conf.json
+        # Replace version in tauri.conf.json
+        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
 
         echo "Modified tauri.conf.json version:"
         grep "\"version\":" src-tauri/tauri.conf.json
 
     - name: Build AppImage
       run: |
-        echo "Building development AppImage for branch: ${{ env.BRANCH_VERSION }}..."
+        echo "Building release AppImage for tag: ${{ env.TAG_NAME }}..."
         bun run tauri build --bundles appimage
 
         echo "AppImage build successful!"
@@ -126,9 +108,8 @@ jobs:
 
     - name: Create release
       uses: https://gitea.com/actions/gitea-release-action@v1
-      # if: github.event_name != 'pull_request'
       with:
-        prerelease: true
-        # name: fulcitt-pos-latest-${{ github.sha }}
+        prerelease: false
+        name: "Fulcitt POS ${{ env.TAG_NAME }}"
+        tag: "${{ env.TAG_NAME }}"
         files: src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
-        # retention-days: 7
