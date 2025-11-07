@@ -36,6 +36,7 @@ type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
+    sale_number: i64,
 }
 
 #[cfg(debug_assertions)]
@@ -144,6 +145,7 @@ async fn process_sale(
     }
 
     let sale_time = Local::now().naive_local();
+    let sale_number = app_state.sale_number;
 
     let total_amount: f64 = items
         .iter()
@@ -153,10 +155,11 @@ async fn process_sale(
     let mut tx = app_state.db.begin().await?;
     let sale_id: uuid::Uuid = sqlx::query_scalar(
         r#"
-        INSERT INTO sales (id, sale_time, total_amount) VALUES (?, ?, ?) RETURNING id as "id: uuid::Uuid";
+        INSERT INTO sales (id, sale_number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
         "#,
     )
     .bind(Uuid::new_v4())
+    .bind(Some(sale_number))
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -164,6 +167,8 @@ async fn process_sale(
 
     let sale = Sale {
         id: sale_id,
+        // TODO: generate number increamentally for the day
+        number: None,
         payment_method: None,
         sale_time,
         total_amount,
@@ -270,7 +275,7 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
         FROM sales
         WHERE sale_time >= ?
     "#,
@@ -317,7 +322,7 @@ async fn print_last_sale(
     let last_sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
         FROM sales
         ORDER BY sale_time DESC
         LIMIT 1"#
@@ -382,7 +387,7 @@ async fn print_sale(
     let sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number, sale_time, total_amount, payment_method
         FROM sales
         WHERE id = ?
         "#,
@@ -640,7 +645,7 @@ pub fn run() {
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
-                app.manage(AppState { db });
+                app.manage(AppState { db, sale_number: 1 });
             });
 
             Ok(())

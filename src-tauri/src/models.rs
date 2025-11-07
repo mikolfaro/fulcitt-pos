@@ -30,6 +30,7 @@ pub(crate) struct CartItem {
 #[derive(Debug, Deserialize, FromRow, Serialize)]
 pub(crate) struct Sale {
     pub id: Uuid,
+    pub number: Option<i64>,
     pub sale_time: NaiveDateTime,
     pub total_amount: f64,
     pub payment_method: Option<String>,

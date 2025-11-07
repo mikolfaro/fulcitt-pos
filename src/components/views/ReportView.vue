@@ -50,7 +50,7 @@
             v-for="sale in invoiceSalesData"
             :key="sale.id"
           >
-            <td>{{ sale.id }}</td>
+            <td>{{ sale.number || 'N/A' }}</td>
             <td>{{ formatTime(sale.sale_time) }}</td>
             <td>{{ formatCurrency(sale.total_amount) }}</td>
             <td>-</td>

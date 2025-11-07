@@ -15,7 +15,7 @@ pub(crate) async fn export_sales_report(
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
         FROM sales
         ORDER BY sale_time DESC
         "#,
