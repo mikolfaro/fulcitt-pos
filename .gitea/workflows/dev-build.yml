@@ -98,17 +98,6 @@ jobs:
           echo "Restored original tauri.conf.json"
         fi
 
-    - name: Rename AppImage with dev version
-      run: |
-        cd src-tauri/target/release/bundle/appimage/
-        # Find the AppImage file
-        APPIMAGE_FILE=$(ls fulcitt-pos_*.AppImage)
-        # Create new filename with dev version
-        NEW_NAME="fulcitt-pos_${DEV_VERSION}_amd64.AppImage"
-        mv "$APPIMAGE_FILE" "$NEW_NAME"
-        echo "Renamed to: $NEW_NAME"
-        echo "APPIMAGE_NAME=$NEW_NAME" >> $GITHUB_ENV
-
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
