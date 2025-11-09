@@ -36,8 +36,9 @@ type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
-    sale_number: i64,
 }
+
+type SaleNumberState = Arc<Mutex<i64>>;
 
 #[cfg(debug_assertions)]
 type PrinterState = Arc<Mutex<Option<Printer<ConsoleDriver>>>>;
@@ -134,6 +135,7 @@ async fn process_sale(
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     intl_state: State<'_, Intl>,
+    sale_number_state: State<'_, SaleNumberState>,
     items: Vec<CartItem>,
 ) -> CommandResult<Uuid> {
     if items.is_empty() {
@@ -145,7 +147,10 @@ async fn process_sale(
     }
 
     let sale_time = Local::now().naive_local();
-    let sale_number = app_state.sale_number;
+    let sale_number = sale_number_state.lock().unwrap();
+
+    asdasdaspdè
+     skao fkoad fkodf
 
     let total_amount: f64 = items
         .iter()
@@ -159,7 +164,7 @@ async fn process_sale(
         "#,
     )
     .bind(Uuid::new_v4())
-    .bind(Some(sale_number))
+    .bind(*sale_number)
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -174,7 +179,7 @@ async fn process_sale(
         total_amount,
     };
 
-    let mut items_with_products: Vec<(CartItem, Product)> = vec!();
+    let mut items_with_products: Vec<(CartItem, Product)> = vec![];
     for item in items {
         let product = sqlx::query_as!(
             Product,
@@ -185,8 +190,8 @@ async fn process_sale(
             "#,
             item.product_id
         )
-            .fetch_one(&mut *tx)
-            .await?;
+        .fetch_one(&mut *tx)
+        .await?;
 
         let quantity = item.quantity;
         let price_at_sale = item.price;
@@ -335,7 +340,7 @@ async fn print_last_sale(
 
     let items: Vec<(CartItem, Product)> = sqlx::query_as!(
         CartItemWithProduct,
-    r#"
+        r#"
         SELECT
                 sale_items.product_name AS 'name_at_sale',
                 sale_items.price_at_sale,
@@ -351,11 +356,11 @@ async fn print_last_sale(
     "#,
         last_sale.id
     )
-        .fetch_all(&app_state.db)
-        .await?
-        .into_iter()
-        .map(|i| i.into())
-        .collect();
+    .fetch_all(&app_state.db)
+    .await?
+    .into_iter()
+    .map(|i| i.into())
+    .collect();
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
@@ -415,12 +420,11 @@ async fn print_sale(
     "#,
         sale_id
     )
-        .fetch_all(&app_state.db)
-        .await?
-        .into_iter()
-        .map(|i| i.into())
-        .collect();
-
+    .fetch_all(&app_state.db)
+    .await?
+    .into_iter()
+    .map(|i| i.into())
+    .collect();
 
     let mut mutex_guard = printer_state.lock()?;
     let printer = mutex_guard
@@ -496,7 +500,10 @@ async fn save_printer_device(
     Ok(())
 }
 
-fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>) -> Option<String> {
+fn get_string_descriptor(
+    device: &rusb::Device<rusb::Context>,
+    index: Option<u8>,
+) -> Option<String> {
     if index.is_none() || index == Some(0) {
         return None;
     }
@@ -508,15 +515,16 @@ fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>
     let languages = handle.read_languages(timeout).ok()?;
 
     if let Some(language) = languages.first() {
-        handle.read_string_descriptor(*language, index, timeout).ok()
+        handle
+            .read_string_descriptor(*language, index, timeout)
+            .ok()
     } else {
         None
     }
 }
 
 #[tauri::command]
-async fn list_usb_devices(
-) -> CommandResult<Vec<UsbDevice>> {
+async fn list_usb_devices() -> CommandResult<Vec<UsbDevice>> {
     let context = Context::new()?;
     let devices = DeviceList::new_with_context(context)?;
 
@@ -528,14 +536,15 @@ async fn list_usb_devices(
         usb_devices.push(UsbDevice {
             vendor_id: device_desc.vendor_id(),
             product_id: device_desc.product_id(),
-            vendor_name: get_string_descriptor(&device, device_desc.manufacturer_string_index()).unwrap_or_default(),
-            product_name: get_string_descriptor(&device, device_desc.product_string_index()).unwrap_or_default(),
+            vendor_name: get_string_descriptor(&device, device_desc.manufacturer_string_index())
+                .unwrap_or_default(),
+            product_name: get_string_descriptor(&device, device_desc.product_string_index())
+                .unwrap_or_default(),
         });
     }
 
     Ok(usb_devices)
 }
-
 
 #[tauri::command]
 async fn test_print_raw_file(device: UsbDevice, text_to_print: String) -> CommandResult<()> {
@@ -645,8 +654,11 @@ pub fn run() {
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
-                app.manage(AppState { db, sale_number: 1 });
+                app.manage(AppState { db });
             });
+
+            let sale_number: SaleNumberState = Arc::new(Mutex::new(1));
+            app.manage(sale_number);
 
             Ok(())
         })
