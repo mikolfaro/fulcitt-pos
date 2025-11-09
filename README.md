@@ -15,6 +15,7 @@ Features
 - [ ] Gestire disconnessione della stampante
 - [X] Migrare a UsbDriver
 - [X] Numero scontrino
+- [ ] Integrate biome
 
 Known bugs
 
