@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
 use escpos::{
@@ -38,13 +38,13 @@ struct AppState {
     db: Db,
 }
 
-type SaleNumberState = Arc<Mutex<i64>>;
+type SaleNumberState = Arc<tokio::sync::Mutex<i64>>;
 
 #[cfg(debug_assertions)]
-type PrinterState = Arc<Mutex<Option<Printer<ConsoleDriver>>>>;
+type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<ConsoleDriver>>>>;
 
 #[cfg(not(debug_assertions))]
-type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
+type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<UsbDriver>>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct UsbDevice {
@@ -146,25 +146,23 @@ async fn process_sale(
         ));
     }
 
-    let sale_time = Local::now().naive_local();
-    let sale_number = sale_number_state.lock().unwrap();
+    let mut tx = app_state.db.begin().await?;
 
-    asdasdaspdè
-     skao fkoad fkodf
+    let sale_time = Local::now().naive_local();
+    let mut sale_number = sale_number_state.lock().await;
 
     let total_amount: f64 = items
         .iter()
         .map(|item| item.price * item.quantity as f64)
         .sum();
 
-    let mut tx = app_state.db.begin().await?;
     let sale_id: uuid::Uuid = sqlx::query_scalar(
         r#"
-        INSERT INTO sales (id, sale_number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
+        INSERT INTO sales (id, number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
         "#,
     )
     .bind(Uuid::new_v4())
-    .bind(*sale_number)
+    .bind(Some(*sale_number))
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -173,7 +171,7 @@ async fn process_sale(
     let sale = Sale {
         id: sale_id,
         // TODO: generate number increamentally for the day
-        number: None,
+        number: Some(*sale_number),
         payment_method: None,
         sale_time,
         total_amount,
@@ -231,9 +229,11 @@ async fn process_sale(
 
     tx.commit().await?;
 
+    *sale_number += 1;
+
     info!("Created new sale {}", sale_id);
 
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
@@ -362,7 +362,7 @@ async fn print_last_sale(
     .map(|i| i.into())
     .collect();
 
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
@@ -426,7 +426,7 @@ async fn print_sale(
     .map(|i| i.into())
     .collect();
 
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
@@ -487,7 +487,7 @@ async fn save_printer_device(
     let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
 
     let new_printer = Printer::new(driver, Protocol::default(), None);
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     *mutex_guard = Some(new_printer);
 
     let store = app
@@ -650,15 +650,15 @@ pub fn run() {
             app.manage(intl);
 
             let printer = setup_printer(app);
-            app.manage(Arc::new(Mutex::new(printer)));
+            app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
                 app.manage(AppState { db });
-            });
 
-            let sale_number: SaleNumberState = Arc::new(Mutex::new(1));
-            app.manage(sale_number);
+                let sale_number: SaleNumberState = Arc::new(tokio::sync::Mutex::new(1));
+                app.manage(sale_number);
+            });
 
             Ok(())
         })
