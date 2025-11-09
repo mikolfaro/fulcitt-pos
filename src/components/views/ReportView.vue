@@ -97,7 +97,8 @@ interface ItemSale {
 }
 
 interface Sale {
-  id: number,
+  id: string,
+  number: number | null,
   sale_time: Date,
   total_amount: number,
   payment_method: string
