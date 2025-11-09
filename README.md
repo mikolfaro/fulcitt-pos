@@ -14,6 +14,7 @@ Features
 - [X] Make error messages disappear after few seconds
 - [ ] Gestire disconnessione della stampante
 - [X] Migrare a UsbDriver
+- [X] Numero scontrino
 
 Known bugs
 

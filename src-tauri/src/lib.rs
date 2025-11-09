@@ -38,8 +38,6 @@ struct AppState {
     db: Db,
 }
 
-type SaleNumberState = Arc<tokio::sync::Mutex<i64>>;
-
 #[cfg(debug_assertions)]
 type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<ConsoleDriver>>>>;
 
@@ -135,7 +133,6 @@ async fn process_sale(
     app_state: State<'_, AppState>,
     printer_state: State<'_, PrinterState>,
     intl_state: State<'_, Intl>,
-    sale_number_state: State<'_, SaleNumberState>,
     items: Vec<CartItem>,
 ) -> CommandResult<Uuid> {
     if items.is_empty() {
@@ -149,7 +146,22 @@ async fn process_sale(
     let mut tx = app_state.db.begin().await?;
 
     let sale_time = Local::now().naive_local();
-    let mut sale_number = sale_number_state.lock().await;
+    let start_of_day = NaiveDate::from_ymd_opt(sale_time.year(), sale_time.month(), sale_time.day())
+        .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
+        .and_hms_opt(0, 0, 0)
+        .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
+
+    // Get the next sale number for today
+    let next_sale_number: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COALESCE(MAX(number), 0) + 1
+        FROM sales
+        WHERE sale_time >= ?
+        "#,
+    )
+    .bind(start_of_day)
+    .fetch_one(&mut *tx)
+    .await?;
 
     let total_amount: f64 = items
         .iter()
@@ -162,7 +174,7 @@ async fn process_sale(
         "#,
     )
     .bind(Uuid::new_v4())
-    .bind(Some(*sale_number))
+    .bind(Some(next_sale_number))
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -170,8 +182,7 @@ async fn process_sale(
 
     let sale = Sale {
         id: sale_id,
-        // TODO: generate number increamentally for the day
-        number: Some(*sale_number),
+        number: Some(next_sale_number),
         payment_method: None,
         sale_time,
         total_amount,
@@ -228,8 +239,6 @@ async fn process_sale(
     }
 
     tx.commit().await?;
-
-    *sale_number += 1;
 
     info!("Created new sale {}", sale_id);
 
@@ -655,9 +664,6 @@ pub fn run() {
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
                 app.manage(AppState { db });
-
-                let sale_number: SaleNumberState = Arc::new(tokio::sync::Mutex::new(1));
-                app.manage(sale_number);
             });
 
             Ok(())
