@@ -515,55 +515,9 @@ async fn save_printer_device(
     Ok(())
 }
 
-fn get_string_descriptor(
-    device: &rusb::Device<rusb::Context>,
-    index: Option<u8>,
-) -> Option<String> {
-    if index.is_none() || index == Some(0) {
-        return None;
-    }
-
-    let index = index.expect("Index must be known now");
-
-    let handle = device.open().ok()?;
-    let timeout = std::time::Duration::from_secs(1);
-    let languages = handle.read_languages(timeout).ok()?;
-
-    if let Some(language) = languages.first() {
-        handle
-            .read_string_descriptor(*language, index, timeout)
-            .ok()
-    } else {
-        None
-    }
-}
-
 #[tauri::command]
-async fn list_usb_devices() -> CommandResult<Vec<UsbDevice>> {
-    let context = Context::new()?;
-    let devices = DeviceList::new_with_context(context)?;
-
-    let mut usb_devices = Vec::new();
-
-    for device in devices.iter() {
-        let device_desc = device.device_descriptor()?;
-
-        // TODO: filter devices with class 07h (Printer)
-        // ttps://www.usb.org/defined-class-codes
-
-        usb_devices.push(UsbDevice {
-            vendor_id: device_desc.vendor_id(),
-            product_id: device_desc.product_id(),
-            vendor_name: get_string_descriptor(&device, device_desc.manufacturer_string_index())
-                .unwrap_or_default(),
-            product_name: get_string_descriptor(&device, device_desc.product_string_index())
-                .unwrap_or_default(),
-            class_code: device_desc.class_code(),
-            sub_class_code: device_desc.sub_class_code(),
-        });
-    }
-
-    Ok(usb_devices)
+async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
+    list_available_printers()
 }
 
 #[tauri::command]

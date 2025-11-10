@@ -17,7 +17,6 @@ pub(crate) enum CommandError {
 
     // #[error("Invalid printer device")]
     // InvalidPrinterDevice,
-
     #[error("Failed to load settings")]
     LoadSettings,
 
@@ -48,6 +47,14 @@ pub(crate) type CommandResult<T> = std::result::Result<T, CommandError>;
 impl From<escpos::errors::PrinterError> for CommandError {
     fn from(err: escpos::errors::PrinterError) -> Self {
         log::error!("Printer error occurred {:?}", err);
+
+        CommandError::Printer(err.to_string())
+    }
+}
+
+impl From<nusb::Error> for CommandError {
+    fn from(err: nusb::Error) -> Self {
+        log::error!("Printer error occurred: {:?}", err);
 
         CommandError::Printer(err.to_string())
     }

@@ -24,16 +24,18 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <div v-if="printerTest.type === 'FILE'">
-        <p>
-          Una stampante virtuale non è una vera e propria "stampante".
-          <br />
-          I ticket sono salvati in un file TXT.
-        </p>
-      </div>
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'FILE'">
+      <p>
+        Una stampante virtuale non è una vera e propria "stampante".
+        <br />
+        I ticket sono salvati in un file TXT.
+      </p>
+    </div>
 
-      <div v-if="printerTest.type === 'USB'">
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'USB'">
+      <div class="card-body">
         <h3 class="card-title text-lg">
           {{ $t('settings.printer-usb-device-selection') }}
         </h3>
@@ -43,7 +45,10 @@
             <label class="label">
               {{ $t('settings-printer-usb-device-selection-label') }}
             </label>
-            <select class="select w-full" v-model="printerTest.type">
+            <select class="select w-full">
+              <option v-for="option in availableUsbPrinters">
+                {{ formatName(option) }}
+              </option>
             </select>
           </div>
         </div>
@@ -60,17 +65,19 @@ import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../../stores/messagesStore'
 import { AppMessage } from '../../../lib'
 
-// interface Device {
-//   vendor_id: number,
-//   product_id: number,
-//   vendor_name: string,
-//   product_name: string,
-// }
+interface Printer {
+  vendor_id: number,
+  product_id: number,
+  class: number,
+  subclass: number,
+  manufacturer: string,
+  product: string,
+}
 
 const { $t } = useFluent()
 const messages = useMessagesStore()
 
-// const availableDevices = ref<Device[]>([])
+const availableUsbPrinters = ref<Printer[]>([])
 
 type PrinterType = "NONE" | "FILE" | "USB"
 
@@ -90,12 +97,12 @@ const printerTest = reactive<{
 //   text: $t('settings-printer-test-example', { date: new Date() }),
 // })
 
-// const formatName = function (device: Device): string {
-//   const name = `${device.vendor_name} ${device.product_name}`
-//   const vendorId = device.vendor_id.toString(16).padStart(4, "0")
-//   const productId = device.product_id.toString(16).padStart(4, "0")
-//   return `${name} (${vendorId}:${productId})`.trim()
-// }
+const formatName = function (printer: Printer): string {
+  const name = [printer.manufacturer, printer.product].join(' ')
+  const vendorId = printer.vendor_id.toString(16).padStart(4, "0")
+  const productId = printer.product_id.toString(16).padStart(4, "0")
+  return `${name} (${vendorId}:${productId})`.trim()
+}
 
 async function triggerPrint() {
   // if (!printerTest.device || !printerTest.text) {
@@ -135,31 +142,32 @@ async function save() {
   // }
 }
 
-async function refreshAvailableDevices() {
+async function refreshAvailablePrinters() {
   try {
-    const devices = await invoke('list_usb_devices')
+    const usbPrinters = await invoke<Printer[]>('list_usb_devices')
 
-    const deviceClasses = devices.map((device) => {
+    const deviceClasses = usbPrinters.map((device) => {
       return {
-        classCode: device.class_code.toString(16),
-        subClassCode: device.sub_class_code.toString(16),
+        ...device,
+        class: device.class.toString(16),
+        subClass: device.subclass.toString(16),
       }
     })
 
     console.log("Available devices found", deviceClasses)
 
-    // availableDevices.value = (devices as Device[]).sort(function (a, b) {
-    //   const nameA = formatName(a)
-    //   const nameB = formatName(b)
-    //
-    //   if (nameA < nameB) {
-    //     return -1
-    //   } else if (nameA > nameB) {
-    //     return 1
-    //   } else {
-    //     return 0
-    //   }
-    // })
+    availableUsbPrinters.value = usbPrinters.sort(function (a, b) {
+      const nameA = formatName(a)
+      const nameB = formatName(b)
+
+      if (nameA < nameB) {
+        return -1
+      } else if (nameA > nameB) {
+        return 1
+      } else {
+        return 0
+      }
+    })
   } catch (err) {
     messages.addUnknownError(err)
   }
@@ -169,9 +177,9 @@ onMounted(async () => {
   const settingsStore = await load('store.json', { autoSave: false });
   const device = await settingsStore.get('printer-device')
 
-  console.log("REstored device", device)
+  console.log("Restored device", device)
 
-  refreshAvailableDevices()
+  refreshAvailablePrinters()
 
   // if (typeof device === 'object') {
   //   printerTest.device = device as Device
