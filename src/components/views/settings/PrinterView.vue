@@ -22,15 +22,11 @@
               <option value="USB">Stampante USB</option>
             </select>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'FILE'">
-      <div class="card-body">
-        <p class="text-sm text-base-content/70">
-          {{ $t('settings-printer-virtual-printer-description') }}
-        </p>
+          <p class="text-sm text-base-content/70">
+            {{ $t('settings-printer-virtual-printer-description') }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -46,11 +42,34 @@
               {{ $t('settings-printer-usb-device-selection-label') }}
             </label>
             <select class="select w-full">
-              <option v-for="option in availableUsbPrinters">
+              <option v-for="option in availableUsbPrinters" :key="`${option.vendor_id} ${option.product_id}`">
                 {{ formatName(option) }}
               </option>
             </select>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-200 shadow-md mt-8" v-id="printerTest.type !== 'NONE'">
+      <div class="card-body">
+        <h3 class="card-title text-lg">
+          {{ $t('settings-printer-test-printer-title') }}
+        </h3>
+
+        <div class="flex flex-col justify-between">
+          <div class="w-1/3 form-control mb-2">
+            <label class="label">
+              {{ $t('settings-printer-text-to-be-printed-label') }}
+            </label>
+            <input id="textInput" type="text" class="input input-bordered w-full" v-model="printerTest.text" />
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-primary" @click="triggerPrint">
+            {{ $t('settings-printer-test-print-button') }}
+          </button>
         </div>
       </div>
     </div>
@@ -65,7 +84,7 @@ import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../../stores/messagesStore'
 import { AppMessage } from '../../../lib'
 
-interface Printer {
+interface PrinterInfo {
   vendor_id: number,
   product_id: number,
   class: number,
@@ -77,27 +96,25 @@ interface Printer {
 const { $t } = useFluent()
 const messages = useMessagesStore()
 
-const availableUsbPrinters = ref<Printer[]>([])
+const availableUsbPrinters = ref<PrinterInfo[]>([])
 
 type PrinterType = "NONE" | "FILE" | "USB"
+type UsbPrinterId = {
+  vendor_id: number,
+  product_id: number,
+}
 
 const printerTest = reactive<{
   text: string,
-  type: PrinterType
+  printerType: PrinterType,
+  id: UsbPrinterId | null
 }>({
-  text: "",
-  type: "NONE"
+  text: $t('settings-printer-test-example', { date: new Date() }),
+  printerType: "NONE",
+  id: null,
 })
 
-// const printerTest = reactive<{
-//   text: string,
-//   // device: Device | null
-// }>({
-//   // device: null,
-//   text: $t('settings-printer-test-example', { date: new Date() }),
-// })
-
-const formatName = function (printer: Printer): string {
+const formatName = function (printer: PrinterInfo): string {
   const name = [printer.manufacturer, printer.product].join(' ')
   const vendorId = printer.vendor_id.toString(16).padStart(4, "0")
   const productId = printer.product_id.toString(16).padStart(4, "0")
@@ -105,6 +122,14 @@ const formatName = function (printer: Printer): string {
 }
 
 async function triggerPrint() {
+  if (printerTest.printerType === 'NONE') {
+    messages.addInvalidInput($t('settings-printer-messages-no-printer-selected'));
+    return;
+  } else if (printerTest.printerType === 'USB' && !printerTest.id) {
+    messages.addInvalidInput($t('settings-printer-messages-usb-device-not-selected'));
+    return;
+  }
+
   // if (!printerTest.device || !printerTest.text) {
   //   messages.addInvalidInput($t('settings-printer-messages-device-cannot-be-empty'));
   //   return;
@@ -144,7 +169,7 @@ async function save() {
 
 async function refreshAvailablePrinters() {
   try {
-    const usbPrinters = await invoke<Printer[]>('list_usb_devices')
+    const usbPrinters = await invoke<PrinterInfo[]>('list_usb_devices')
 
     const deviceClasses = usbPrinters.map((device) => {
       return {
