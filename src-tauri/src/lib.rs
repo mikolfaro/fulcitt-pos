@@ -19,6 +19,7 @@ use errors::*;
 use exports::*;
 use intl::*;
 use models::*;
+use new_printing::*;
 use uuid::Uuid;
 
 #[cfg(debug_assertions)]
@@ -31,6 +32,8 @@ mod exports;
 mod intl;
 mod models;
 mod printing;
+
+mod new_printing;
 
 type Db = SqlitePool;
 #[derive(Clone)]
@@ -50,6 +53,8 @@ struct UsbDevice {
     product_id: u16,
     vendor_name: String,
     product_name: String,
+    class_code: u8,
+    sub_class_code: u8,
 }
 
 #[tauri::command]
@@ -146,10 +151,11 @@ async fn process_sale(
     let mut tx = app_state.db.begin().await?;
 
     let sale_time = Local::now().naive_local();
-    let start_of_day = NaiveDate::from_ymd_opt(sale_time.year(), sale_time.month(), sale_time.day())
-        .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
-        .and_hms_opt(0, 0, 0)
-        .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
+    let start_of_day =
+        NaiveDate::from_ymd_opt(sale_time.year(), sale_time.month(), sale_time.day())
+            .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
+            .and_hms_opt(0, 0, 0)
+            .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
 
     // Get the next sale number for today
     let next_sale_number: i64 = sqlx::query_scalar(
@@ -542,6 +548,9 @@ async fn list_usb_devices() -> CommandResult<Vec<UsbDevice>> {
     for device in devices.iter() {
         let device_desc = device.device_descriptor()?;
 
+        // TODO: filter devices with class 07h (Printer)
+        // ttps://www.usb.org/defined-class-codes
+
         usb_devices.push(UsbDevice {
             vendor_id: device_desc.vendor_id(),
             product_id: device_desc.product_id(),
@@ -549,6 +558,8 @@ async fn list_usb_devices() -> CommandResult<Vec<UsbDevice>> {
                 .unwrap_or_default(),
             product_name: get_string_descriptor(&device, device_desc.product_string_index())
                 .unwrap_or_default(),
+            class_code: device_desc.class_code(),
+            sub_class_code: device_desc.sub_class_code(),
         });
     }
 
@@ -660,6 +671,9 @@ pub fn run() {
 
             let printer = setup_printer(app);
             app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
+
+            let new_printer = setup_new_printer();
+            app.manage(Arc::new(tokio::sync::Mutex::new(new_printer)));
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;
