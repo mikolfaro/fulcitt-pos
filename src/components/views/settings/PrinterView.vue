@@ -27,11 +27,11 @@
     </div>
 
     <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'FILE'">
-      <p>
-        Una stampante virtuale non è una vera e propria "stampante".
-        <br />
-        I ticket sono salvati in un file TXT.
-      </p>
+      <div class="card-body">
+        <p class="text-sm text-base-content/70">
+          {{ $t('settings-printer-virtual-printer-description') }}
+        </p>
+      </div>
     </div>
 
     <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'USB'">
