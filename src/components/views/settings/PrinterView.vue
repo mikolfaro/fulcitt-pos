@@ -30,6 +30,40 @@
       </div>
     </div>
 
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'File'">
+      <div class="card-body">
+        <h3 class="card-title text-lg">
+          Virtual Printer Output
+        </h3>
+
+        <div class="flex flex-col gap-2">
+          <p class="text-sm text-base-content/70">
+            The virtual printer writes to a file in your app data directory:
+          </p>
+          <code class="text-xs bg-base-300 p-2 rounded">{{ printerOutputPath }}</code>
+
+          <div class="flex gap-2 mt-2">
+            <button class="btn btn-sm btn-outline" @click="openPrinterFile">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Open File
+            </button>
+            <button class="btn btn-sm btn-outline" @click="openPrinterFolder">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Open Folder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'Usb'">
       <div class="card-body">
         <h3 class="card-title text-lg">
@@ -85,6 +119,8 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
+import { appDataDir } from '@tauri-apps/api/path'
+import { openPath } from '@tauri-apps/plugin-opener'
 import { load } from '@tauri-apps/plugin-store'
 import { onMounted, reactive, ref } from 'vue'
 import { useFluent } from 'fluent-vue'
@@ -104,6 +140,7 @@ const { $t } = useFluent()
 const messages = useMessagesStore()
 
 const availableUsbPrinters = ref<PrinterInfo[]>([])
+const printerOutputPath = ref<string>('')
 
 type PrinterType = "None" | "File" | "Usb"
 type UsbPrinterId = {
@@ -162,6 +199,14 @@ async function triggerPrint() {
 
 async function save() {
   try {
+    if (printerTest.type === 'None') {
+      messages.addInvalidInput($t('settings-printer-messages-no-printer-selected'));
+      return;
+    } else if (printerTest.type === 'Usb' && !printerTest.id) {
+      messages.addInvalidInput($t('settings-printer-messages-usb-device-not-selected'));
+      return;
+    }
+
     await invoke('save_printer_selection', {
       printerType: printerTest.type,
       printerId: printerTest.id,
@@ -176,6 +221,25 @@ async function save() {
     } else {
       messages.addMessage(error as AppMessage);
     }
+  }
+}
+
+async function openPrinterFile() {
+  try {
+    await openPath(printerOutputPath.value)
+    messages.addSuccess('Opening printer output file...')
+  } catch (err) {
+    messages.addUnknownError(err)
+  }
+}
+
+async function openPrinterFolder() {
+  try {
+    const dataDir = await appDataDir()
+    await openPath(dataDir)
+    messages.addSuccess('Opening app data folder...')
+  } catch (err) {
+    messages.addUnknownError(err)
   }
 }
 
@@ -201,6 +265,10 @@ async function refreshAvailablePrinters() {
 }
 
 onMounted(async () => {
+  // Set up printer output path
+  const dataDir = await appDataDir()
+  printerOutputPath.value = `${dataDir}/printer_output.txt`
+
   const settingsStore = await load('store.json', { autoSave: false });
   const printerType = await settingsStore.get<PrinterType>('printer-type') || 'None'
   const printerId = await settingsStore.get<UsbPrinterId>('printer-id')

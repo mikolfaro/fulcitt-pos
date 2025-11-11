@@ -93,6 +93,16 @@ pub type NewPrinterState = Arc<Mutex<Option<PrinterWrapper>>>;
 /// Create a file printer that writes to the specified path
 /// Use this for testing/debugging - output will be written to the file
 pub fn create_file_printer(file_path: &Path) -> CommandResult<PrinterWrapper> {
+    // Ensure the parent directory exists
+    if let Some(parent) = file_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    // Create the file if it doesn't exist
+    if !file_path.exists() {
+        std::fs::File::create(file_path)?;
+    }
+
     let driver = FileDriver::open(file_path)?;
     let printer = Printer::new(driver, Protocol::default(), None);
     Ok(PrinterWrapper::File(printer))
