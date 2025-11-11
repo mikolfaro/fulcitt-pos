@@ -74,6 +74,8 @@ impl PrinterWrapper {
     delegate_method!(cut);
 
     delegate_method!(print_cut);
+
+    delegate_method!(reset_size);
 }
 
 /// USB device information for printer enumeration

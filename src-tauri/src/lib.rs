@@ -7,7 +7,6 @@ use escpos::{
     utils::{DebugMode, Protocol},
 };
 use log::info;
-use printing::{print_tickets, PrintingLayout};
 use rusb::{Context, DeviceList};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
@@ -19,7 +18,8 @@ use errors::*;
 use exports::*;
 use intl::*;
 use models::*;
-use new_printing::*;
+use printer::*;
+use ticket_printing::*;
 use uuid::Uuid;
 
 #[cfg(debug_assertions)]
@@ -31,9 +31,8 @@ mod errors;
 mod exports;
 mod intl;
 mod models;
-mod printing;
-
-mod new_printing;
+mod printer;
+mod ticket_printing;
 
 type Db = SqlitePool;
 #[derive(Clone)]
@@ -41,11 +40,11 @@ struct AppState {
     db: Db,
 }
 
-#[cfg(debug_assertions)]
-type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<ConsoleDriver>>>>;
-
-#[cfg(not(debug_assertions))]
-type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<UsbDriver>>>>;
+// #[cfg(debug_assertions)]
+// type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<ConsoleDriver>>>>;
+//
+// #[cfg(not(debug_assertions))]
+// type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<UsbDriver>>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct UsbDevice {
@@ -136,7 +135,7 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 async fn process_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
     intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
 ) -> CommandResult<Uuid> {
@@ -252,7 +251,6 @@ async fn process_sale(
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
-    printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -337,7 +335,7 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
 async fn print_last_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
 ) -> CommandResult<()> {
     let last_sale = sqlx::query_as!(
         Sale,
@@ -399,7 +397,7 @@ async fn print_last_sale(
 async fn print_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
     sale_id: i64,
 ) -> CommandResult<()> {
     info!("Reprinting tickets of sale {}", sale_id);
@@ -517,6 +515,7 @@ async fn save_printer_selection(
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
+    // TODO: save printer settings
     // let value = serde_json::to_value(device)?;
     // store.set("printer-device", value);
 
