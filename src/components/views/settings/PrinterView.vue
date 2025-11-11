@@ -22,10 +22,6 @@
               <option value="Usb">Stampante USB</option>
             </select>
           </div>
-
-          <p class="text-sm text-base-content/70">
-            {{ $t('settings-printer-virtual-printer-description') }}
-          </p>
         </div>
       </div>
     </div>
@@ -38,26 +34,16 @@
 
         <div class="flex flex-col gap-2">
           <p class="text-sm text-base-content/70">
-            The virtual printer writes to a file in your app data directory:
+            {{ $t('settings-printer-virtual-printer-description') }}
           </p>
           <code class="text-xs bg-base-300 p-2 rounded">{{ printerOutputPath }}</code>
 
           <div class="flex gap-2 mt-2">
-            <button class="btn btn-sm btn-outline" @click="openPrinterFile">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Open File
+            <button class="btn btn-sm btn-primary btn-outline" @click="openPrinterFile">
+              {{ $t("settings-printer-virtual-printer-open-file-button") }}
             </button>
-            <button class="btn btn-sm btn-outline" @click="openPrinterFolder">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              Open Folder
+            <button class="btn btn-sm btn-primary btn-outline" @click="openPrinterFolder">
+              {{ $t("settings-printer-virtual-printer-open-directory-button") }}
             </button>
           </div>
         </div>
@@ -109,8 +95,8 @@
       </div>
     </div>
 
-    <div>
-      <button class="btn btn-positive" @click="save">
+    <div class="pt-8">
+      <button class="btn btn-success" @click="save">
         {{ $t('settings-printer-save-button') }}
       </button>
     </div>
