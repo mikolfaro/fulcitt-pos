@@ -1,61 +1,147 @@
-use escpos::{driver::NativeUsbDriver, printer::Printer};
+use escpos::{
+    driver::{FileDriver, NativeUsbDriver},
+    printer::Printer,
+    utils::{JustifyMode, Protocol},
+};
+use log::info;
 use nusb::{list_devices, MaybeFuture};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 use tokio::sync::Mutex;
 
 use crate::errors::CommandResult;
 
-pub trait NewPrinter: Send {}
-pub type PrinterWrapper = Option<Box<dyn NewPrinter>>;
-
-struct DummyPrinter {}
-struct UsbPrinter {
-    printer: Printer<NativeUsbDriver>,
+/// Runtime-switchable printer wrapper supporting both file and USB printers
+#[derive(Clone)]
+pub enum PrinterWrapper {
+    /// File printer for debugging/testing (writes to app data directory)
+    File(Printer<FileDriver>),
+    /// USB ESC/POS thermal printer
+    Usb(Printer<NativeUsbDriver>),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Macro to delegate method calls to both enum variants
+macro_rules! delegate_method {
+    // No arguments, no return value
+    ($method:ident) => {
+        pub fn $method(&mut self) -> CommandResult<()> {
+            match self {
+                PrinterWrapper::File(p) => {
+                    p.$method()?;
+                }
+                PrinterWrapper::Usb(p) => {
+                    p.$method()?;
+                }
+            }
+            Ok(())
+        }
+    };
+    // With arguments, no return value
+    ($method:ident, $($arg:ident: $arg_ty:ty),+) => {
+        pub fn $method(&mut self, $($arg: $arg_ty),+) -> CommandResult<()> {
+            match self {
+                PrinterWrapper::File(p) => {
+                    p.$method($($arg),+)?;
+                }
+                PrinterWrapper::Usb(p) => {
+                    p.$method($($arg),+)?;
+                }
+            }
+            Ok(())
+        }
+    };
+}
+
+
+/// All methods are delegated to `escpos::printer::Printer`
+impl PrinterWrapper {
+    delegate_method!(init);
+
+    delegate_method!(write, text: &str);
+
+    delegate_method!(writeln, text: &str);
+
+    delegate_method!(justify, mode: JustifyMode);
+
+    delegate_method!(bold, enable: bool);
+
+    delegate_method!(size, width: u8, height: u8);
+
+    delegate_method!(feed);
+
+    delegate_method!(feeds, lines: u8);
+
+    delegate_method!(cut);
+
+    delegate_method!(print_cut);
+}
+
+/// USB device information for printer enumeration
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AvailablePrinter {
-    vendor_id: u16,
-    product_id: u16,
-    class: u8,
-    subclass: u8,
-    manufacturer: Option<String>,
-    product: Option<String>,
+    pub vendor_id: u16,
+    pub product_id: u16,
+    pub class: u8,
+    pub subclass: u8,
+    pub manufacturer: Option<String>,
+    pub product: Option<String>,
 }
 
-type NewPrinterState = Arc<Mutex<PrinterWrapper>>;
+/// Thread-safe printer state for use in Tauri
+pub type NewPrinterState = Arc<Mutex<Option<PrinterWrapper>>>;
 
-impl NewPrinter for DummyPrinter {}
-
-impl NewPrinter for UsbPrinter {}
-
-pub fn setup_new_printer() -> PrinterWrapper {
-    PrinterWrapper::default()
+/// Create a file printer that writes to the specified path
+/// Use this for testing/debugging - output will be written to the file
+pub fn create_file_printer(file_path: &Path) -> CommandResult<PrinterWrapper> {
+    let driver = FileDriver::open(file_path)?;
+    let printer = Printer::new(driver, Protocol::default(), None);
+    Ok(PrinterWrapper::File(printer))
 }
 
+/// Create a USB printer with the specified vendor and product IDs
+pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<PrinterWrapper> {
+    info!("Setting up printer {:x}:{:x}", vendor_id, product_id);
+    let driver = NativeUsbDriver::open(vendor_id, product_id)?;
+    let printer = Printer::new(driver, Protocol::default(), None);
+    Ok(PrinterWrapper::Usb(printer))
+}
+
+/// Setup a new printer state (initially None, printer must be configured later)
+pub fn setup_new_printer_state() -> NewPrinterState {
+    Arc::new(Mutex::new(None))
+}
+
+/// List all available USB devices (optionally filtered by printer class)
+///
+/// Note: USB printer class is typically 7 (Printer), subclass 1 (Printer)
+/// However, some printers may identify as vendor-specific (class 0xFF),
+/// so we return all devices and let the frontend/user decide.
 pub fn list_available_printers() -> CommandResult<Vec<AvailablePrinter>> {
     let device_list = list_devices().wait()?;
 
-    let mut printers = vec![];
-    for device_info in device_list {
-        printers.push(AvailablePrinter {
+    let printers: Vec<AvailablePrinter> = device_list
+        .into_iter()
+        .map(|device_info| AvailablePrinter {
             vendor_id: device_info.vendor_id(),
             product_id: device_info.product_id(),
-
             class: device_info.class(),
             subclass: device_info.subclass(),
-
-            manufacturer: device_info
-                .manufacturer_string()
-                .and_then(|s| Some(String::from(s))),
-            product: device_info
-                .product_string()
-                .and_then(|s| Some(String::from(s))),
-        });
-    }
-
-    println!("Printers {:?}", printers);
+            manufacturer: device_info.manufacturer_string().map(String::from),
+            product: device_info.product_string().map(String::from),
+        })
+        .collect();
 
     Ok(printers)
+}
+
+/// List only USB devices that identify as printer class (class 7)
+pub fn list_printer_class_devices() -> CommandResult<Vec<AvailablePrinter>> {
+    const USB_CLASS_PRINTER: u8 = 7;
+
+    let all_printers = list_available_printers()?;
+
+    Ok(all_printers
+        .into_iter()
+        .filter(|p| p.class == USB_CLASS_PRINTER)
+        .collect())
 }

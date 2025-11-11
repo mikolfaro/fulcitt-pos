@@ -489,19 +489,27 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn save_printer_device(
+async fn save_printer_selection(
     app: AppHandle,
-    printer_state: State<'_, PrinterState>,
-    device: UsbDevice,
+    printer_state: State<'_, NewPrinterState>,
+    printer_type: PrinterType,
+    printer_id: Option<PrinterId>,
 ) -> CommandResult<()> {
-    info!("Saving printer device {:?}", device);
+    info!("Saving printer {:?}, {:?}", printer_type, printer_id);
 
-    #[cfg(debug_assertions)]
-    let driver = ConsoleDriver::open(true);
-    #[cfg(not(debug_assertions))]
-    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
+    let mut new_printer = match (printer_type, printer_id) {
+        (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _) => {
+            // Create printer output file in app data directory
+            let mut print_path = app.path().app_data_dir().expect("Failed to get app_data_dir");
+            print_path.push("printer_output.txt");
+            info!("Writing printer output to: {:?}", print_path);
+            create_file_printer(&print_path)
+        },
+        (PrinterType::Usb, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id)) => create_usb_printer(printer_id.vendor_id, printer_id.product_id),
+    }?;
 
-    let new_printer = Printer::new(driver, Protocol::default(), None);
     let mut mutex_guard = printer_state.lock().await;
     *mutex_guard = Some(new_printer);
 
@@ -509,8 +517,8 @@ async fn save_printer_device(
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    let value = serde_json::to_value(device)?;
-    store.set("printer-device", value);
+    // let value = serde_json::to_value(device)?;
+    // store.set("printer-device", value);
 
     Ok(())
 }
@@ -520,21 +528,52 @@ async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
     list_available_printers()
 }
 
+#[derive(Debug, Deserialize)]
+enum PrinterType {
+    None,
+    File,
+    Usb,
+}
+
+#[derive(Debug, Deserialize)]
+struct PrinterId {
+    product_id: u16,
+    vendor_id: u16,
+}
+
 #[tauri::command]
-async fn test_print_raw_file(device: UsbDevice, text_to_print: String) -> CommandResult<()> {
-    info!("Attempting to print {:?} on {:?}", text_to_print, device);
+async fn test_printer(
+    printer_type: PrinterType,
+    printer_id: Option<PrinterId>,
+    text_to_print: String,
+    app: AppHandle,
+) -> CommandResult<()> {
+    info!(
+        "Attempting to print {:?} on {:?} {:?}",
+        text_to_print, printer_type, printer_id
+    );
 
-    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
-    let mut printer = Printer::new(driver, Protocol::default(), None);
+    let mut printer = match (printer_type, printer_id) {
+        (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _) => {
+            // Create printer output file in app data directory
+            let mut print_path = app.path().app_data_dir().expect("Failed to get app_data_dir");
+            print_path.push("printer_output.txt");
+            info!("Writing printer output to: {:?}", print_path);
+            create_file_printer(&print_path)
+        }
+        (PrinterType::Usb, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id)) => {
+            create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+        }
+    }?;
 
-    println!();
-    printer
-        .debug_mode(Some(DebugMode::Dec))
-        .init()?
-        .writeln(&text_to_print)?
-        .feed()?
-        .print_cut()?;
-    println!();
+    info!("Printer created successfully, sending test print...");
+    printer.init()?;
+    printer.writeln(&text_to_print)?;
+    printer.feed()?;
+    printer.print_cut()?;
+    info!("Test print completed successfully");
 
     Ok(())
 }
@@ -612,9 +651,9 @@ pub fn run() {
             print_sale,
             get_print_layout,
             save_print_layout,
-            save_printer_device,
+            save_printer_selection,
             list_usb_devices,
-            test_print_raw_file,
+            test_printer,
         ])
         .setup(|app| {
             app.store("store.json")?;
@@ -626,8 +665,8 @@ pub fn run() {
             let printer = setup_printer(app);
             app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
 
-            let new_printer = setup_new_printer();
-            app.manage(Arc::new(tokio::sync::Mutex::new(new_printer)));
+            let new_printer = setup_new_printer_state();
+            app.manage(new_printer);
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;

@@ -17,9 +17,9 @@
               {{ $t('settings-printer-type-selection-label') }}
             </label>
             <select class="select w-full" v-model="printerTest.type">
-              <option value="NONE">Nessuna stampate selezionata</option>
-              <option value="FILE">Stampante virtuale</option>
-              <option value="USB">Stampante USB</option>
+              <option value="None">Nessuna stampate selezionata</option>
+              <option value="File">Stampante virtuale</option>
+              <option value="Usb">Stampante USB</option>
             </select>
           </div>
 
@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'USB'">
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'Usb'">
       <div class="card-body">
         <h3 class="card-title text-lg">
           {{ $t('settings.printer-usb-device-selection') }}
@@ -41,8 +41,9 @@
             <label class="label">
               {{ $t('settings-printer-usb-device-selection-label') }}
             </label>
-            <select class="select w-full">
-              <option v-for="option in availableUsbPrinters" :key="`${option.vendor_id} ${option.product_id}`">
+            <select class="select w-full" v-model="printerTest.id">
+              <option v-for="option in availableUsbPrinters" :key="`${option.vendor_id} ${option.product_id}`"
+                :value="option">
                 {{ formatName(option) }}
               </option>
             </select>
@@ -51,7 +52,7 @@
       </div>
     </div>
 
-    <div class="card bg-base-200 shadow-md mt-8" v-id="printerTest.type !== 'NONE'">
+    <div class="card bg-base-200 shadow-md mt-8" v-id="printerTest.type !== 'None'">
       <div class="card-body">
         <h3 class="card-title text-lg">
           {{ $t('settings-printer-test-printer-title') }}
@@ -72,6 +73,12 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <div>
+      <button class="btn btn-positive" @click="save">
+        {{ $t('settings-printer-save-button') }}
+      </button>
     </div>
   </div>
 </template>
@@ -98,7 +105,7 @@ const messages = useMessagesStore()
 
 const availableUsbPrinters = ref<PrinterInfo[]>([])
 
-type PrinterType = "NONE" | "FILE" | "USB"
+type PrinterType = "None" | "File" | "Usb"
 type UsbPrinterId = {
   vendor_id: number,
   product_id: number,
@@ -106,11 +113,11 @@ type UsbPrinterId = {
 
 const printerTest = reactive<{
   text: string,
-  printerType: PrinterType,
+  type: PrinterType,
   id: UsbPrinterId | null
 }>({
   text: $t('settings-printer-test-example', { date: new Date() }),
-  printerType: "NONE",
+  type: "None",
   id: null,
 })
 
@@ -122,64 +129,59 @@ const formatName = function (printer: PrinterInfo): string {
 }
 
 async function triggerPrint() {
-  if (printerTest.printerType === 'NONE') {
+  if (printerTest.type === 'None') {
     messages.addInvalidInput($t('settings-printer-messages-no-printer-selected'));
     return;
-  } else if (printerTest.printerType === 'USB' && !printerTest.id) {
+  } else if (printerTest.type === 'Usb' && !printerTest.id) {
     messages.addInvalidInput($t('settings-printer-messages-usb-device-not-selected'));
     return;
   }
 
-  // if (!printerTest.device || !printerTest.text) {
-  //   messages.addInvalidInput($t('settings-printer-messages-device-cannot-be-empty'));
-  //   return;
-  // }
-  //
-  // try {
-  //   await invoke('test_print_raw_file', {
-  //       device: printerTest.device,
-  //       textToPrint: printerTest.text
-  //   })
-  //   messages.addSuccess($t('settings-printer-messages-print-success'))
-  //
-  //   printerTest.text = $t('settings-printer-test-example', { date: new Date() })
-  // } catch (error) {
-  //   if (typeof error === 'string') {
-  //     messages.addUnknownError(error)
-  //   } else {
-  //     messages.addMessage(error as AppMessage);
-  //   }
-  // }
+  if (!printerTest.text) {
+    messages.addInvalidInput($t('settings-printer-messages-no-text-to-print'));
+    return;
+  }
+
+  try {
+    await invoke('test_printer', {
+      printerType: printerTest.type,
+      printerId: printerTest.id,
+      textToPrint: printerTest.text
+    })
+    messages.addSuccess($t('settings-printer-messages-print-success'))
+
+    printerTest.text = $t('settings-printer-test-example', { date: new Date() })
+  } catch (error) {
+    if (typeof error === 'string') {
+      messages.addUnknownError(error)
+    } else {
+      messages.addMessage(error as AppMessage);
+    }
+  }
 }
 
 async function save() {
-  // try {
-  //   await invoke('save_printer_device', { device: printerTest.device })
-  //   messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
-  // } catch (error) {
-  //   console.error(error)
-  //
-  //   if (typeof error === 'string') {
-  //     messages.addUnknownError(error)
-  //   } else {
-  //     messages.addMessage(error as AppMessage);
-  //   }
-  // }
+  try {
+    await invoke('save_printer_selection', {
+      printerType: printerTest.type,
+      printerId: printerTest.id,
+    })
+
+    messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
+  } catch (error) {
+    console.error(error)
+
+    if (typeof error === 'string') {
+      messages.addUnknownError(error)
+    } else {
+      messages.addMessage(error as AppMessage);
+    }
+  }
 }
 
 async function refreshAvailablePrinters() {
   try {
     const usbPrinters = await invoke<PrinterInfo[]>('list_usb_devices')
-
-    const deviceClasses = usbPrinters.map((device) => {
-      return {
-        ...device,
-        class: device.class.toString(16),
-        subClass: device.subclass.toString(16),
-      }
-    })
-
-    console.log("Available devices found", deviceClasses)
 
     availableUsbPrinters.value = usbPrinters.sort(function (a, b) {
       const nameA = formatName(a)
@@ -200,16 +202,21 @@ async function refreshAvailablePrinters() {
 
 onMounted(async () => {
   const settingsStore = await load('store.json', { autoSave: false });
-  const device = await settingsStore.get('printer-device')
+  const printerType = await settingsStore.get<PrinterType>('printer-type') || 'None'
+  const printerId = await settingsStore.get<UsbPrinterId>('printer-id')
 
-  console.log("Restored device", device)
+  await refreshAvailablePrinters()
 
-  refreshAvailablePrinters()
+  if (printerType === 'Usb' && printerId) {
+    printerTest.id = availableUsbPrinters.value.find((p) => {
+      return p.product_id == printerId.product_id && p.vendor_id == printerId.vendor_id
+    }) || null
 
-  // if (typeof device === 'object') {
-  //   printerTest.device = device as Device
-  // }
-  //
-  // await refreshAvailableDevices()
+    printerTest.type = printerType
+  } else if (printerType === 'File') {
+    printerTest.type = 'File'
+  } else {
+    printerTest.type = 'None'
+  }
 })
 </script>
