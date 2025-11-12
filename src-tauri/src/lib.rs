@@ -40,12 +40,6 @@ struct AppState {
     db: Db,
 }
 
-// #[cfg(debug_assertions)]
-// type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<ConsoleDriver>>>>;
-//
-// #[cfg(not(debug_assertions))]
-// type PrinterState = Arc<tokio::sync::Mutex<Option<Printer<UsbDriver>>>>;
-
 #[derive(Debug, Serialize, Deserialize)]
 struct UsbDevice {
     vendor_id: u16,
@@ -54,6 +48,19 @@ struct UsbDevice {
     product_name: String,
     class_code: u8,
     sub_class_code: u8,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+enum PrinterType {
+    None,
+    File,
+    Usb,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PrinterId {
+    product_id: u16,
+    vendor_id: u16,
 }
 
 #[tauri::command]
@@ -495,7 +502,7 @@ async fn save_printer_selection(
 ) -> CommandResult<()> {
     info!("Saving printer {:?}, {:?}", printer_type, printer_id);
 
-    let mut new_printer = match (printer_type, printer_id) {
+    let mut new_printer = match (&printer_type, &printer_id) {
         (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::File, _) => {
             // Create printer output file in app data directory
@@ -515,9 +522,11 @@ async fn save_printer_selection(
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    // TODO: save printer settings
-    // let value = serde_json::to_value(device)?;
-    // store.set("printer-device", value);
+    let value = serde_json::to_value(printer_id)?;
+    store.set("printer-id", value);
+
+    let value = serde_json::to_value(printer_type)?;
+    store.set("printer-value", value);
 
     Ok(())
 }
@@ -527,18 +536,6 @@ async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
     list_available_printers()
 }
 
-#[derive(Debug, Deserialize)]
-enum PrinterType {
-    None,
-    File,
-    Usb,
-}
-
-#[derive(Debug, Deserialize)]
-struct PrinterId {
-    product_id: u16,
-    vendor_id: u16,
-}
 
 #[tauri::command]
 async fn test_printer(
@@ -608,25 +605,25 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-#[cfg(debug_assertions)]
-fn setup_printer(_app: &App) -> Option<Printer<ConsoleDriver>> {
-    let driver = ConsoleDriver::open(true);
-    Some(Printer::new(driver, Protocol::default(), None))
-}
-
-#[cfg(not(debug_assertions))]
-fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
+fn setup_printer(app: &App) -> Option<PrinterWrapper> {
     app.get_store("store.json")
-        .and_then(|store| store.get("printer-device"))
-        .and_then(|device| {
-            info!("Already configured printer device path found {}", device);
-            let device = serde_json::from_value::<UsbDevice>(device).ok()?;
+        .and_then(|store| {
+            let printer_type_store = store.get("printer-type");
+            let printer_id = store.get("printer-id");
 
-            UsbDriver::open(device.vendor_id, device.product_id, None).ok()
-        })
-        .map(|driver| {
-            debug!("Existing printer restored");
-            Printer::new(driver, Protocol::default(), None)
+            if let Some(printer_type_store) = printer_type_store {
+                let printer_type = serde_json::from_value::<PrinterType>(printer_type_store).ok_or(PrinterType::None);
+            }
+
+            None
+
+                // info!("Already configured printer device path found {:?} {:?}", printer_type, printer_id);
+                // let printer_type = serde_json::from_value::<PrinterType>(printer_type).ok()?;
+                // let printer_id = serde_json::from_value::<Option<PrinterId>>(printer_id).ok()?;
+
+                // match (printer_type, printer_id) => {
+                //     (None, _) => None,
+                // }
         })
 }
 
@@ -663,9 +660,6 @@ pub fn run() {
 
             let printer = setup_printer(app);
             app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
-
-            let new_printer = setup_new_printer_state();
-            app.manage(new_printer);
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;

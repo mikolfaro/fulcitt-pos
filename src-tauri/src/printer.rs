@@ -118,11 +118,6 @@ pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<Prin
     Ok(PrinterWrapper::Usb(printer))
 }
 
-/// Setup a new printer state (initially None, printer must be configured later)
-pub fn setup_new_printer_state() -> NewPrinterState {
-    Arc::new(Mutex::new(None))
-}
-
 /// List all available USB devices (optionally filtered by printer class)
 ///
 /// Note: USB printer class is typically 7 (Printer), subclass 1 (Printer)
