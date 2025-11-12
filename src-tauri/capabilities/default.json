@@ -8,6 +8,17 @@
   "permissions": [
     "core:default",
     "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA/printer_output.txt"
+        },
+        {
+          "path": "$APPDATA"
+        }
+      ]
+    },
     "log:default",
     "store:default"
   ]

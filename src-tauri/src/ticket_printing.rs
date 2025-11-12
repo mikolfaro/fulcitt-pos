@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use escpos::{driver::Driver, printer::Printer, utils::JustifyMode};
+use escpos::utils::JustifyMode;
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::{CartItem, CommandResult, Product, Sale};
+use crate::{CartItem, CommandResult, PrinterWrapper, Product, Sale};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum FontSize {
@@ -42,15 +42,12 @@ pub(crate) struct PrintingLayout {
     footer: SectionLayout,
 }
 
-pub(crate) fn print_tickets<D>(
-    printer: &mut Printer<D>,
+pub(crate) fn print_tickets(
+    printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
     items: &[(CartItem, Product)],
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     info!("Printing tickets for sale {}", sale.id);
 
     if layout.group_tickets_by_category {
@@ -64,15 +61,12 @@ where
     Ok(())
 }
 
-fn print_split_tickets<D>(
-    printer: &mut Printer<D>,
+fn print_split_tickets(
+    printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
     items: &[(CartItem, Product)],
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     for item in items {
         for i in 0..item.0.quantity {
             info!(
@@ -100,15 +94,12 @@ where
     Ok(())
 }
 
-fn print_grouped_tickets<D>(
-    printer: &mut Printer<D>,
+fn print_grouped_tickets(
+    printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
     items: &[(CartItem, Product)],
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     let mut groups: HashMap<String, Vec<CartItem>> = HashMap::new();
     for item in items.iter() {
         if let Some(sale_items) = groups.get_mut(&item.1.category) {
@@ -134,17 +125,13 @@ where
     Ok(())
 }
 
-
-fn print_header<D>(
-    printer: &mut Printer<D>,
+fn print_header(
+    printer: &mut PrinterWrapper,
     layout: &HeaderLayout,
     _sale: &Sale,
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     let section_layout: SectionLayout = layout.clone().into();
@@ -159,16 +146,13 @@ where
     Ok(())
 }
 
-fn print_body<D>(
-    printer: &mut Printer<D>,
+fn print_body(
+    printer: &mut PrinterWrapper,
     layout: &SectionLayout,
     item: &CartItem,
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     with_layout(printer, layout, |p| {
@@ -181,16 +165,13 @@ where
     Ok(())
 }
 
-fn print_footer<D>(
-    printer: &mut Printer<D>,
+fn print_footer(
+    printer: &mut PrinterWrapper,
     layout: &SectionLayout,
     sale: &Sale,
-) -> CommandResult<()>
-where
-    D: Driver,
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     let sale_time_str = sale.sale_time.format("%d-%m-%Y %H:%M:%S").to_string();
@@ -205,14 +186,13 @@ where
     Ok(())
 }
 
-fn with_layout<'a, D, F>(
-    printer: &'a mut Printer<D>,
+fn with_layout<'a, F>(
+    printer: &'a mut PrinterWrapper,
     layout: &'a SectionLayout,
     func: F,
-) -> CommandResult<&'a mut Printer<D>>
+) -> CommandResult<&'a mut PrinterWrapper>
 where
-    D: Driver,
-    F: FnOnce(&mut Printer<D>) -> CommandResult<()>,
+    F: FnOnce(&mut PrinterWrapper) -> CommandResult<()>,
 {
     match layout.font_size {
         FontSize::Small => printer.size(1, 1)?,

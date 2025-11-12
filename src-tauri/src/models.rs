@@ -64,7 +64,7 @@ pub(crate) struct CartItemWithProduct {
     pub name: String,
     pub category: String,
     pub is_product_deleted: bool,
-    pub price: f64
+    pub price: f64,
 }
 
 impl From<CartItemWithProduct> for (CartItem, Product) {
@@ -81,7 +81,7 @@ impl From<CartItemWithProduct> for (CartItem, Product) {
             name: value.name,
             category: value.category,
             is_deleted: value.is_product_deleted,
-            price: value.price
+            price: value.price,
         };
 
         (item, product)
