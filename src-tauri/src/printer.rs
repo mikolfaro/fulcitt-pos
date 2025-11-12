@@ -1,12 +1,17 @@
 use escpos::{
-    driver::{FileDriver, NativeUsbDriver},
+    driver::{FileDriver, NativeUsbDriver, NetworkDriver},
     printer::Printer,
     utils::{JustifyMode, Protocol},
 };
 use log::info;
 use nusb::{list_devices, MaybeFuture};
 use serde::{Deserialize, Serialize};
-use std::{path::Path, sync::Arc};
+use std::{
+    io::Write,
+    path::Path,
+    sync::Arc,
+    time::Duration,
+};
 use tokio::sync::Mutex;
 
 use crate::errors::CommandResult;
@@ -18,6 +23,8 @@ pub enum PrinterWrapper {
     File(Printer<FileDriver>),
     /// USB ESC/POS thermal printer
     Usb(Printer<NativeUsbDriver>),
+    /// Network ESC/POS rinter
+    Network(Printer<NetworkDriver>),
 }
 
 /// Macro to delegate method calls to both enum variants
@@ -32,6 +39,9 @@ macro_rules! delegate_method {
                 PrinterWrapper::Usb(p) => {
                     p.$method()?;
                 }
+                PrinterWrapper::Network(p) => {
+                    p.$method()?;
+                }
             }
             Ok(())
         }
@@ -44,6 +54,9 @@ macro_rules! delegate_method {
                     p.$method($($arg),+)?;
                 }
                 PrinterWrapper::Usb(p) => {
+                    p.$method($($arg),+)?;
+                }
+                PrinterWrapper::Network(p) => {
                     p.$method($($arg),+)?;
                 }
             }
@@ -111,10 +124,18 @@ pub fn create_file_printer(file_path: &Path) -> CommandResult<PrinterWrapper> {
 
 /// Create a USB printer with the specified vendor and product IDs
 pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<PrinterWrapper> {
-    info!("Setting up printer {:x}:{:x}", vendor_id, product_id);
+    info!("Setting up USB printer {:x}:{:x}", vendor_id, product_id);
     let driver = NativeUsbDriver::open(vendor_id, product_id)?;
     let printer = Printer::new(driver, Protocol::default(), None);
     Ok(PrinterWrapper::Usb(printer))
+}
+
+/// Create a network printer with the specificed IP address
+pub fn create_network_printer(ip_address: String, port: u16) -> CommandResult<PrinterWrapper> {
+    info!("Setting up network printer {:?}", ip_address);
+    let driver = NetworkDriver::open(&ip_address, port, Some(Duration::from_secs(1)))?;
+    let printer = Printer::new(driver, Protocol::default(), None);
+    Ok(PrinterWrapper::Network(printer))
 }
 
 /// List all available USB devices (optionally filtered by printer class)

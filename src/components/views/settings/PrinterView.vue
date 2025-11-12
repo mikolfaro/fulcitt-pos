@@ -19,6 +19,7 @@
             <select class="select w-full" v-model="printerTest.type">
               <option value="None">Nessuna stampate selezionata</option>
               <option value="File">Stampante virtuale</option>
+              <option value="Network">Stampante di rete</option>
               <option value="Usb">Stampante USB</option>
             </select>
           </div>
@@ -67,6 +68,38 @@
                 {{ formatName(option) }}
               </option>
             </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'Network'">
+      <div class="card-body">
+        <h3 class="card-title text-lg">
+          {{ $t('settings-printer-network-printer-title') }}
+        </h3>
+
+        <div class="flex flex-col justify-between">
+          <div class="w-1/3 form-control mb-2">
+            <label class="label">
+              {{ $t('settings-printer-network-printer-address-label') }}
+            </label>
+            <input
+              type="text"
+              class="input input-bordered w-full"
+              v-model="printerTest.networkIp"
+            />
+          </div>
+          <div class="w-1/3 form-control mb-2">
+            <label class="label">
+              {{ $t('settings-printer-network-printer-port-label') }}
+            </label>
+            <input
+              type="number"
+              step="1"
+              class="input input-bordered w-full"
+              v-model="printerTest.networkPort"
+            />
           </div>
         </div>
       </div>
@@ -128,20 +161,28 @@ const messages = useMessagesStore()
 const availableUsbPrinters = ref<PrinterInfo[]>([])
 const printerOutputPath = ref<string>('')
 
-type PrinterType = "None" | "File" | "Usb"
+type PrinterType = "None" | "File" | "Network" | "Usb"
 type UsbPrinterId = {
   vendor_id: number,
   product_id: number,
+}
+type PrinterAddress = {
+  ip: string,
+  port: number,
 }
 
 const printerTest = reactive<{
   text: string,
   type: PrinterType,
-  id: UsbPrinterId | null
+  id: UsbPrinterId | null,
+  networkIp: number | null,
+  networkPort: number | null,
 }>({
   text: $t('settings-printer-test-example', { date: new Date() }),
   type: "None",
   id: null,
+  networkIp: null,
+  networkPort: null,
 })
 
 const formatName = function (printer: PrinterInfo): string {
@@ -166,9 +207,14 @@ async function triggerPrint() {
   }
 
   try {
+    const printerAddress = printerTest.networkIp && printerTest.networkPort
+      ? { ip: printerTest.networkIp, port: printerTest.networkPort }
+      : null
+
     await invoke('test_printer', {
       printerType: printerTest.type,
       printerId: printerTest.id,
+      printerAddress,
       textToPrint: printerTest.text
     })
     messages.addSuccess($t('settings-printer-messages-print-success'))
