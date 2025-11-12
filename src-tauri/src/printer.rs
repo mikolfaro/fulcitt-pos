@@ -52,7 +52,6 @@ macro_rules! delegate_method {
     };
 }
 
-
 /// All methods are delegated to `escpos::printer::Printer`
 impl PrinterWrapper {
     delegate_method!(init);
@@ -123,7 +122,7 @@ pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<Prin
 /// Note: USB printer class is typically 7 (Printer), subclass 1 (Printer)
 /// However, some printers may identify as vendor-specific (class 0xFF),
 /// so we return all devices and let the frontend/user decide.
-pub fn list_available_printers() -> CommandResult<Vec<AvailablePrinter>> {
+pub fn list_available_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
     let device_list = list_devices().wait()?;
 
     let printers: Vec<AvailablePrinter> = device_list
@@ -142,10 +141,10 @@ pub fn list_available_printers() -> CommandResult<Vec<AvailablePrinter>> {
 }
 
 /// List only USB devices that identify as printer class (class 7)
-pub fn list_printer_class_devices() -> CommandResult<Vec<AvailablePrinter>> {
+pub fn list_available_printers() -> CommandResult<Vec<AvailablePrinter>> {
     const USB_CLASS_PRINTER: u8 = 7;
 
-    let all_printers = list_available_printers()?;
+    let all_printers = list_available_usb_devices()?;
 
     Ok(all_printers
         .into_iter()

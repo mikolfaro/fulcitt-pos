@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use escpos::{utils::JustifyMode};
+use escpos::utils::JustifyMode;
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -66,8 +66,7 @@ fn print_split_tickets(
     layout: &PrintingLayout,
     sale: &Sale,
     items: &[(CartItem, Product)],
-) -> CommandResult<()>
-{
+) -> CommandResult<()> {
     for item in items {
         for i in 0..item.0.quantity {
             info!(
@@ -100,8 +99,7 @@ fn print_grouped_tickets(
     layout: &PrintingLayout,
     sale: &Sale,
     items: &[(CartItem, Product)],
-) -> CommandResult<()>
-{
+) -> CommandResult<()> {
     let mut groups: HashMap<String, Vec<CartItem>> = HashMap::new();
     for item in items.iter() {
         if let Some(sale_items) = groups.get_mut(&item.1.category) {
@@ -127,15 +125,13 @@ fn print_grouped_tickets(
     Ok(())
 }
 
-
 fn print_header(
     printer: &mut PrinterWrapper,
     layout: &HeaderLayout,
     _sale: &Sale,
-) -> CommandResult<()>
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     let section_layout: SectionLayout = layout.clone().into();
@@ -154,10 +150,9 @@ fn print_body(
     printer: &mut PrinterWrapper,
     layout: &SectionLayout,
     item: &CartItem,
-) -> CommandResult<()>
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     with_layout(printer, layout, |p| {
@@ -174,10 +169,9 @@ fn print_footer(
     printer: &mut PrinterWrapper,
     layout: &SectionLayout,
     sale: &Sale,
-) -> CommandResult<()>
-{
+) -> CommandResult<()> {
     if !layout.enabled {
-        return Ok(())
+        return Ok(());
     }
 
     let sale_time_str = sale.sale_time.format("%d-%m-%Y %H:%M:%S").to_string();

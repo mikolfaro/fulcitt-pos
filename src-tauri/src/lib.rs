@@ -1,13 +1,7 @@
 use std::sync::Arc;
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
-use escpos::{
-    driver::UsbDriver,
-    printer::Printer,
-    utils::{DebugMode, Protocol},
-};
-use log::info;
-use rusb::{Context, DeviceList};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
@@ -22,11 +16,6 @@ use printer::*;
 use ticket_printing::*;
 use uuid::Uuid;
 
-#[cfg(debug_assertions)]
-use escpos::driver::ConsoleDriver;
-#[cfg(not(debug_assertions))]
-use log::debug;
-
 mod errors;
 mod exports;
 mod intl;
@@ -38,16 +27,6 @@ type Db = SqlitePool;
 #[derive(Clone)]
 struct AppState {
     db: Db,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct UsbDevice {
-    vendor_id: u16,
-    product_id: u16,
-    vendor_name: String,
-    product_name: String,
-    class_code: u8,
-    sub_class_code: u8,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -502,17 +481,22 @@ async fn save_printer_selection(
 ) -> CommandResult<()> {
     info!("Saving printer {:?}, {:?}", printer_type, printer_id);
 
-    let mut new_printer = match (&printer_type, &printer_id) {
+    let new_printer = match (&printer_type, &printer_id) {
         (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::File, _) => {
             // Create printer output file in app data directory
-            let mut print_path = app.path().app_data_dir().expect("Failed to get app_data_dir");
+            let mut print_path = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app_data_dir");
             print_path.push("printer_output.txt");
             info!("Writing printer output to: {:?}", print_path);
             create_file_printer(&print_path)
-        },
+        }
         (PrinterType::Usb, None) => Err(CommandError::PrinterNotConfigured),
-        (PrinterType::Usb, Some(printer_id)) => create_usb_printer(printer_id.vendor_id, printer_id.product_id),
+        (PrinterType::Usb, Some(printer_id)) => {
+            create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+        }
     }?;
 
     let mut mutex_guard = printer_state.lock().await;
@@ -526,16 +510,16 @@ async fn save_printer_selection(
     store.set("printer-id", value);
 
     let value = serde_json::to_value(printer_type)?;
-    store.set("printer-value", value);
+    store.set("printer-type", value);
 
     Ok(())
 }
 
 #[tauri::command]
 async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
-    list_available_printers()
+    // TODO use `list_available_printers` instead
+    list_available_usb_devices()
 }
-
 
 #[tauri::command]
 async fn test_printer(
@@ -553,7 +537,10 @@ async fn test_printer(
         (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::File, _) => {
             // Create printer output file in app data directory
-            let mut print_path = app.path().app_data_dir().expect("Failed to get app_data_dir");
+            let mut print_path = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app_data_dir");
             print_path.push("printer_output.txt");
             info!("Writing printer output to: {:?}", print_path);
             create_file_printer(&print_path)
@@ -606,25 +593,46 @@ async fn setup_db(app: &App) -> Db {
 }
 
 fn setup_printer(app: &App) -> Option<PrinterWrapper> {
-    app.get_store("store.json")
-        .and_then(|store| {
-            let printer_type_store = store.get("printer-type");
-            let printer_id = store.get("printer-id");
+    app.get_store("store.json").and_then(|store| {
+        debug!("Trying to restore saved configs");
 
-            if let Some(printer_type_store) = printer_type_store {
-                let printer_type = serde_json::from_value::<PrinterType>(printer_type_store).ok_or(PrinterType::None);
+        let printer_type_store = store.get("printer-type");
+        let printer_type_store = printer_type_store?;
+        let printer_type = serde_json::from_value::<PrinterType>(printer_type_store);
+        let printer_type = printer_type.unwrap_or(PrinterType::None);
+
+        let printer_id = store
+            .get("printer-store")
+            .and_then(|printer_id_store| {
+                serde_json::from_value::<Option<PrinterId>>(printer_id_store).ok()
+            })
+            .flatten();
+
+        info!(
+            "Already configured printer device path found {:?} {:?}",
+            printer_type, printer_id
+        );
+
+        match (printer_type, printer_id) {
+            (PrinterType::None, _) => None,
+            (PrinterType::File, _) => {
+                let mut print_path = app
+                    .path()
+                    .app_data_dir()
+                    .expect("Failed to get app_data_dir");
+                print_path.push("printer_output.txt");
+
+                create_file_printer(&print_path).ok()
             }
-
-            None
-
-                // info!("Already configured printer device path found {:?} {:?}", printer_type, printer_id);
-                // let printer_type = serde_json::from_value::<PrinterType>(printer_type).ok()?;
-                // let printer_id = serde_json::from_value::<Option<PrinterId>>(printer_id).ok()?;
-
-                // match (printer_type, printer_id) => {
-                //     (None, _) => None,
-                // }
-        })
+            (PrinterType::Usb, None) => {
+                warn!("Found USB printer type in config but no printer ID");
+                None
+            }
+            (PrinterType::Usb, Some(printer_id)) => {
+                create_usb_printer(printer_id.vendor_id, printer_id.product_id).ok()
+            }
+        }
+    })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
