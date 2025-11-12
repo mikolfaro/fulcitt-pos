@@ -177,7 +177,10 @@ fn print_footer(
     let sale_time_str = sale.sale_time.format("%d-%m-%Y %H:%M:%S").to_string();
 
     with_layout(printer, layout, |p| {
-        p.writeln(&format!("#{} - {}", sale.id, sale_time_str))?;
+        match sale.number {
+            Some(number) => p.writeln(&format!("#{} - {}", number, sale_time_str))?,
+            None => p.writeln(&format!("{}", sale_time_str))?,
+        }
 
         Ok(())
     })?
