@@ -157,6 +157,7 @@ pub fn list_available_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
 }
 
 /// List only USB devices that identify as printer class (class 7)
+#[ignore = "IT is yet to be decided if classes are worth being checked"]
 pub fn list_available_printers() -> CommandResult<Vec<AvailablePrinter>> {
     const USB_CLASS_PRINTER: u8 = 7;
 
