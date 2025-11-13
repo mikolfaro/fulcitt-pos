@@ -54,14 +54,15 @@ Features
 - [X] Italian localization
 - [X] Show all invoices and reprint
 - [X] Export sales
+- [X] Linux (AppImage) automated build
 
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
 - [ ] Integrate biome
-- [ ] Linux (AppImage) automated build
 - [ ] Windows automated build
 - [ ] Product deposit (pay/refund mechanic)
 - [ ] Voiding and refunding support
+- [ ] Network sync (p2p)
 
 Known bugs
 
