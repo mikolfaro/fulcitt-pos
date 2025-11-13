@@ -33,6 +33,7 @@ struct AppState {
 enum PrinterType {
     None,
     File,
+    Network,
     Usb,
 }
 
@@ -40,6 +41,12 @@ enum PrinterType {
 struct PrinterId {
     product_id: u16,
     vendor_id: u16,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PrinterAddress {
+    ip: String,
+    port: u16,
 }
 
 #[tauri::command]
@@ -478,12 +485,16 @@ async fn save_printer_selection(
     printer_state: State<'_, NewPrinterState>,
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
+    printer_address: Option<PrinterAddress>,
 ) -> CommandResult<()> {
-    info!("Saving printer {:?}, {:?}", printer_type, printer_id);
+    info!(
+        "Saving printer {:?}, ID {:?}, IP {:?}",
+        printer_type, printer_id, printer_address
+    );
 
-    let new_printer = match (&printer_type, &printer_id) {
-        (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
-        (PrinterType::File, _) => {
+    let new_printer = match (&printer_type, &printer_id, &printer_address) {
+        (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _, _) => {
             // Create printer output file in app data directory
             let mut print_path = app
                 .path()
@@ -493,8 +504,12 @@ async fn save_printer_selection(
             info!("Writing printer output to: {:?}", print_path);
             create_file_printer(&print_path)
         }
-        (PrinterType::Usb, None) => Err(CommandError::PrinterNotConfigured),
-        (PrinterType::Usb, Some(printer_id)) => {
+        (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Network, _, Some(printer_address)) => {
+            create_network_printer(printer_address.ip.to_string(), printer_address.port)
+        }
+        (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id), _) => {
             create_usb_printer(printer_id.vendor_id, printer_id.product_id)
         }
     }?;
@@ -512,6 +527,9 @@ async fn save_printer_selection(
     let value = serde_json::to_value(printer_type)?;
     store.set("printer-type", value);
 
+    let value = serde_json::to_value(printer_address)?;
+    store.set("printer-ip", value);
+
     Ok(())
 }
 
@@ -525,17 +543,18 @@ async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
 async fn test_printer(
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
+    printer_address: Option<PrinterAddress>,
     text_to_print: String,
     app: AppHandle,
 ) -> CommandResult<()> {
     info!(
-        "Attempting to print {:?} on {:?} {:?}",
-        text_to_print, printer_type, printer_id
+        "Attempting to print {:?} on {:?}",
+        text_to_print, printer_type
     );
 
-    let mut printer = match (printer_type, printer_id) {
-        (PrinterType::None, _) => Err(CommandError::PrinterNotConfigured),
-        (PrinterType::File, _) => {
+    let mut printer = match (printer_type, printer_id, printer_address) {
+        (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _, _) => {
             // Create printer output file in app data directory
             let mut print_path = app
                 .path()
@@ -545,8 +564,16 @@ async fn test_printer(
             info!("Writing printer output to: {:?}", print_path);
             create_file_printer(&print_path)
         }
-        (PrinterType::Usb, None) => Err(CommandError::PrinterNotConfigured),
-        (PrinterType::Usb, Some(printer_id)) => {
+        (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Network, _, Some(printer_address)) => {
+            info!(
+                "Test printer: {}:{}",
+                printer_address.ip, printer_address.port
+            );
+            create_network_printer(printer_address.ip.to_string(), printer_address.port)
+        }
+        (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id), _) => {
             create_usb_printer(printer_id.vendor_id, printer_id.product_id)
         }
     }?;
@@ -602,20 +629,27 @@ fn setup_printer(app: &App) -> Option<PrinterWrapper> {
         let printer_type = printer_type.unwrap_or(PrinterType::None);
 
         let printer_id = store
-            .get("printer-store")
+            .get("printer-id")
             .and_then(|printer_id_store| {
                 serde_json::from_value::<Option<PrinterId>>(printer_id_store).ok()
             })
             .flatten();
 
+        let printer_address = store
+            .get("printer-address")
+            .and_then(|printer_address_store| {
+                serde_json::from_value::<Option<PrinterAddress>>(printer_address_store).ok()
+            })
+            .flatten();
+
         info!(
-            "Already configured printer device path found {:?} {:?}",
-            printer_type, printer_id
+            "Already configured printer device path found {:?}, ID {:?}, IP {:?}",
+            printer_type, printer_id, printer_address
         );
 
-        match (printer_type, printer_id) {
-            (PrinterType::None, _) => None,
-            (PrinterType::File, _) => {
+        match (printer_type, printer_id, printer_address) {
+            (PrinterType::None, _, _) => None,
+            (PrinterType::File, _, _) => {
                 let mut print_path = app
                     .path()
                     .app_data_dir()
@@ -624,12 +658,19 @@ fn setup_printer(app: &App) -> Option<PrinterWrapper> {
 
                 create_file_printer(&print_path).ok()
             }
-            (PrinterType::Usb, None) => {
+            (PrinterType::Usb, None, _) => {
                 warn!("Found USB printer type in config but no printer ID");
                 None
             }
-            (PrinterType::Usb, Some(printer_id)) => {
+            (PrinterType::Usb, Some(printer_id), _) => {
                 create_usb_printer(printer_id.vendor_id, printer_id.product_id).ok()
+            }
+            (PrinterType::Network, _, None) => {
+                warn!("Found network printer type in config but no printer IP");
+                None
+            }
+            (PrinterType::Network, _, Some(printer_address)) => {
+                create_network_printer(printer_address.ip, printer_address.port).ok()
             }
         }
     })
