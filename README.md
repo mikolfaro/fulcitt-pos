@@ -63,6 +63,9 @@ Features
 - [ ] Product deposit (pay/refund mechanic)
 - [ ] Voiding and refunding support
 - [ ] Network sync (p2p)
+  - Add created_at/updated_at/device_id to Rust models
+  - Remove UNIQUE constraint on products.name
+  - Add device_id columns to all tables
 
 Known bugs
 

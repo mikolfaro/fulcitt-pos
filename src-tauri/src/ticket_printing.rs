@@ -179,7 +179,7 @@ fn print_footer(
     with_layout(printer, layout, |p| {
         match sale.number {
             Some(number) => p.writeln(&format!("#{} - {}", number, sale_time_str))?,
-            None => p.writeln(&format!("{}", sale_time_str))?,
+            None => p.writeln(&sale_time_str.to_string())?,
         }
 
         Ok(())
