@@ -54,12 +54,14 @@ Features
 - [X] Italian localization
 - [X] Show all invoices and reprint
 - [X] Export sales
+
 - [W] Improve error messages
-- [X] Make error messages disappear after few seconds
 - [ ] Gestire disconnessione della stampante
-- [X] Migrare a UsbDriver
-- [X] Numero scontrino
 - [ ] Integrate biome
+- [ ] Linux (AppImage) automated build
+- [ ] Windows automated build
+- [ ] Product deposit (pay/refund mechanic)
+- [ ] Voiding and refunding support
 
 Known bugs
 
