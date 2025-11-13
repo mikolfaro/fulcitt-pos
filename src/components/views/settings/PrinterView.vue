@@ -84,22 +84,13 @@
             <label class="label">
               {{ $t('settings-printer-network-printer-address-label') }}
             </label>
-            <input
-              type="text"
-              class="input input-bordered w-full"
-              v-model="printerTest.networkIp"
-            />
+            <input type="text" class="input input-bordered w-full" v-model="printerTest.networkIp" />
           </div>
           <div class="w-1/3 form-control mb-2">
             <label class="label">
               {{ $t('settings-printer-network-printer-port-label') }}
             </label>
-            <input
-              type="number"
-              step="1"
-              class="input input-bordered w-full"
-              v-model="printerTest.networkPort"
-            />
+            <input type="number" step="1" class="input input-bordered w-full" v-model="printerTest.networkPort" />
           </div>
         </div>
       </div>
@@ -165,10 +156,6 @@ type PrinterType = "None" | "File" | "Network" | "Usb"
 type UsbPrinterId = {
   vendor_id: number,
   product_id: number,
-}
-type PrinterAddress = {
-  ip: string,
-  port: number,
 }
 
 const printerTest = reactive<{
