@@ -487,7 +487,10 @@ async fn save_printer_selection(
     printer_id: Option<PrinterId>,
     printer_address: Option<PrinterAddress>,
 ) -> CommandResult<()> {
-    info!("Saving printer {:?}, ID {:?}, IP {:?}", printer_type, printer_id, printer_address);
+    info!(
+        "Saving printer {:?}, ID {:?}, IP {:?}",
+        printer_type, printer_id, printer_address
+    );
 
     let new_printer = match (&printer_type, &printer_id, &printer_address) {
         (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
@@ -563,7 +566,10 @@ async fn test_printer(
         }
         (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::Network, _, Some(printer_address)) => {
-            info!("Test printer: {}:{}", printer_address.ip, printer_address.port);
+            info!(
+                "Test printer: {}:{}",
+                printer_address.ip, printer_address.port
+            );
             create_network_printer(printer_address.ip.to_string(), printer_address.port)
         }
         (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),

@@ -6,12 +6,7 @@ use escpos::{
 use log::info;
 use nusb::{list_devices, MaybeFuture};
 use serde::{Deserialize, Serialize};
-use std::{
-    io::Write,
-    path::Path,
-    sync::Arc,
-    time::Duration,
-};
+use std::{path::Path, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 use crate::errors::CommandResult;
@@ -69,21 +64,21 @@ macro_rules! delegate_method {
 impl PrinterWrapper {
     delegate_method!(init);
 
-    delegate_method!(write, text: &str);
+    // delegate_method!(write, text: &str);
 
     delegate_method!(writeln, text: &str);
 
     delegate_method!(justify, mode: JustifyMode);
 
-    delegate_method!(bold, enable: bool);
+    // delegate_method!(bold, enable: bool);
 
     delegate_method!(size, width: u8, height: u8);
 
     delegate_method!(feed);
 
-    delegate_method!(feeds, lines: u8);
+    // delegate_method!(feeds, lines: u8);
 
-    delegate_method!(cut);
+    // delegate_method!(cut);
 
     delegate_method!(print_cut);
 

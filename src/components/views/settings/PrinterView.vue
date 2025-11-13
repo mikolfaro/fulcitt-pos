@@ -17,7 +17,7 @@
               {{ $t('settings-printer-type-selection-label') }}
             </label>
             <select class="select w-full" v-model="printerTest.type">
-              <option value="None">Nessuna stampate selezionata</option>
+              <option value="None">{{ $t('settings-printer-no-printer-selected') }}</option>
               <option value="File">Stampante virtuale</option>
               <option value="Network">Stampante di rete</option>
               <option value="Usb">Stampante USB</option>
@@ -30,7 +30,7 @@
     <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'File'">
       <div class="card-body">
         <h3 class="card-title text-lg">
-          Virtual Printer Output
+          {{ $t('settings-printer-virtual-printer-output-title') }}
         </h3>
 
         <div class="flex flex-col gap-2">
@@ -54,7 +54,7 @@
     <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type === 'Usb'">
       <div class="card-body">
         <h3 class="card-title text-lg">
-          {{ $t('settings.printer-usb-device-selection') }}
+          {{ $t('settings-printer-usb-device-selection') }}
         </h3>
 
         <div class="flex flex-col justify-between">
@@ -259,7 +259,7 @@ async function save() {
 async function openPrinterFile() {
   try {
     await openPath(printerOutputPath.value)
-    messages.addSuccess('Opening printer output file...')
+    messages.addSuccess($t('settings-printer-messages-opening-printer-file'))
   } catch (err) {
     messages.addUnknownError(err)
   }
@@ -269,7 +269,7 @@ async function openPrinterFolder() {
   try {
     const dataDir = await appDataDir()
     await openPath(dataDir)
-    messages.addSuccess('Opening app data folder...')
+    messages.addSuccess($t('settings-printer-messages-opening-app-folder'))
   } catch (err) {
     messages.addUnknownError(err)
   }
