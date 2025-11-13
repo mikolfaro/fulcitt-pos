@@ -1,14 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
-use escpos::{
-    driver::UsbDriver,
-    printer::Printer,
-    utils::{DebugMode, Protocol},
-};
-use log::info;
-use printing::{print_tickets, PrintingLayout};
-use rusb::{Context, DeviceList};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
@@ -19,18 +12,16 @@ use errors::*;
 use exports::*;
 use intl::*;
 use models::*;
+use printer::*;
+use ticket_printing::*;
 use uuid::Uuid;
-
-#[cfg(debug_assertions)]
-use escpos::driver::ConsoleDriver;
-#[cfg(not(debug_assertions))]
-use log::debug;
 
 mod errors;
 mod exports;
 mod intl;
 mod models;
-mod printing;
+mod printer;
+mod ticket_printing;
 
 type Db = SqlitePool;
 #[derive(Clone)]
@@ -38,18 +29,24 @@ struct AppState {
     db: Db,
 }
 
-#[cfg(debug_assertions)]
-type PrinterState = Arc<Mutex<Option<Printer<ConsoleDriver>>>>;
+#[derive(Debug, Deserialize, Serialize)]
+enum PrinterType {
+    None,
+    File,
+    Network,
+    Usb,
+}
 
-#[cfg(not(debug_assertions))]
-type PrinterState = Arc<Mutex<Option<Printer<UsbDriver>>>>;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct UsbDevice {
-    vendor_id: u16,
+#[derive(Debug, Deserialize, Serialize)]
+struct PrinterId {
     product_id: u16,
-    vendor_name: String,
-    product_name: String,
+    vendor_id: u16,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct PrinterAddress {
+    ip: String,
+    port: u16,
 }
 
 #[tauri::command]
@@ -131,7 +128,7 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 async fn process_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
     intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
 ) -> CommandResult<Uuid> {
@@ -143,20 +140,39 @@ async fn process_sale(
         ));
     }
 
+    let mut tx = app_state.db.begin().await?;
+
     let sale_time = Local::now().naive_local();
+    let start_of_day =
+        NaiveDate::from_ymd_opt(sale_time.year(), sale_time.month(), sale_time.day())
+            .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
+            .and_hms_opt(0, 0, 0)
+            .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
+
+    // Get the next sale number for today
+    let next_sale_number: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COALESCE(MAX(number), 0) + 1
+        FROM sales
+        WHERE sale_time >= ?
+        "#,
+    )
+    .bind(start_of_day)
+    .fetch_one(&mut *tx)
+    .await?;
 
     let total_amount: f64 = items
         .iter()
         .map(|item| item.price * item.quantity as f64)
         .sum();
 
-    let mut tx = app_state.db.begin().await?;
     let sale_id: uuid::Uuid = sqlx::query_scalar(
         r#"
-        INSERT INTO sales (id, sale_time, total_amount) VALUES (?, ?, ?) RETURNING id as "id: uuid::Uuid";
+        INSERT INTO sales (id, number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
         "#,
     )
     .bind(Uuid::new_v4())
+    .bind(Some(next_sale_number))
     .bind(sale_time)
     .bind(total_amount)
     .fetch_one(&mut *tx)
@@ -164,12 +180,13 @@ async fn process_sale(
 
     let sale = Sale {
         id: sale_id,
+        number: Some(next_sale_number),
         payment_method: None,
         sale_time,
         total_amount,
     };
 
-    let mut items_with_products: Vec<(CartItem, Product)> = vec!();
+    let mut items_with_products: Vec<(CartItem, Product)> = vec![];
     for item in items {
         let product = sqlx::query_as!(
             Product,
@@ -180,8 +197,8 @@ async fn process_sale(
             "#,
             item.product_id
         )
-            .fetch_one(&mut *tx)
-            .await?;
+        .fetch_one(&mut *tx)
+        .await?;
 
         let quantity = item.quantity;
         let price_at_sale = item.price;
@@ -223,11 +240,10 @@ async fn process_sale(
 
     info!("Created new sale {}", sale_id);
 
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
-    printer.debug_mode(Some(DebugMode::Dec)).init()?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -270,7 +286,7 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
         FROM sales
         WHERE sale_time >= ?
     "#,
@@ -312,12 +328,12 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
 async fn print_last_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
 ) -> CommandResult<()> {
     let last_sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
         FROM sales
         ORDER BY sale_time DESC
         LIMIT 1"#
@@ -330,7 +346,7 @@ async fn print_last_sale(
 
     let items: Vec<(CartItem, Product)> = sqlx::query_as!(
         CartItemWithProduct,
-    r#"
+        r#"
         SELECT
                 sale_items.product_name AS 'name_at_sale',
                 sale_items.price_at_sale,
@@ -346,13 +362,13 @@ async fn print_last_sale(
     "#,
         last_sale.id
     )
-        .fetch_all(&app_state.db)
-        .await?
-        .into_iter()
-        .map(|i| i.into())
-        .collect();
+    .fetch_all(&app_state.db)
+    .await?
+    .into_iter()
+    .map(|i| i.into())
+    .collect();
 
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
@@ -374,7 +390,7 @@ async fn print_last_sale(
 async fn print_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
-    printer_state: State<'_, PrinterState>,
+    printer_state: State<'_, NewPrinterState>,
     sale_id: i64,
 ) -> CommandResult<()> {
     info!("Reprinting tickets of sale {}", sale_id);
@@ -382,7 +398,7 @@ async fn print_sale(
     let sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", sale_time, total_amount, payment_method
+        SELECT id as "id: uuid::Uuid", number, sale_time, total_amount, payment_method
         FROM sales
         WHERE id = ?
         "#,
@@ -410,14 +426,13 @@ async fn print_sale(
     "#,
         sale_id
     )
-        .fetch_all(&app_state.db)
-        .await?
-        .into_iter()
-        .map(|i| i.into())
-        .collect();
+    .fetch_all(&app_state.db)
+    .await?
+    .into_iter()
+    .map(|i| i.into())
+    .collect();
 
-
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     let printer = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
@@ -465,88 +480,110 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn save_printer_device(
+async fn save_printer_selection(
     app: AppHandle,
-    printer_state: State<'_, PrinterState>,
-    device: UsbDevice,
+    printer_state: State<'_, NewPrinterState>,
+    printer_type: PrinterType,
+    printer_id: Option<PrinterId>,
+    printer_address: Option<PrinterAddress>,
 ) -> CommandResult<()> {
-    info!("Saving printer device {:?}", device);
+    info!(
+        "Saving printer {:?}, ID {:?}, IP {:?}",
+        printer_type, printer_id, printer_address
+    );
 
-    #[cfg(debug_assertions)]
-    let driver = ConsoleDriver::open(true);
-    #[cfg(not(debug_assertions))]
-    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
+    let new_printer = match (&printer_type, &printer_id, &printer_address) {
+        (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _, _) => {
+            // Create printer output file in app data directory
+            let mut print_path = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app_data_dir");
+            print_path.push("printer_output.txt");
+            info!("Writing printer output to: {:?}", print_path);
+            create_file_printer(&print_path)
+        }
+        (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Network, _, Some(printer_address)) => {
+            create_network_printer(printer_address.ip.to_string(), printer_address.port)
+        }
+        (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id), _) => {
+            create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+        }
+    }?;
 
-    let new_printer = Printer::new(driver, Protocol::default(), None);
-    let mut mutex_guard = printer_state.lock()?;
+    let mut mutex_guard = printer_state.lock().await;
     *mutex_guard = Some(new_printer);
 
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::StoreSettings)?;
 
-    let value = serde_json::to_value(device)?;
-    store.set("printer-device", value);
+    let value = serde_json::to_value(printer_id)?;
+    store.set("printer-id", value);
+
+    let value = serde_json::to_value(printer_type)?;
+    store.set("printer-type", value);
+
+    let value = serde_json::to_value(printer_address)?;
+    store.set("printer-ip", value);
 
     Ok(())
 }
 
-fn get_string_descriptor(device: &rusb::Device<rusb::Context>, index: Option<u8>) -> Option<String> {
-    if index.is_none() || index == Some(0) {
-        return None;
-    }
-
-    let index = index.expect("Index must be known now");
-
-    let handle = device.open().ok()?;
-    let timeout = std::time::Duration::from_secs(1);
-    let languages = handle.read_languages(timeout).ok()?;
-
-    if let Some(language) = languages.first() {
-        handle.read_string_descriptor(*language, index, timeout).ok()
-    } else {
-        None
-    }
+#[tauri::command]
+async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
+    // TODO use `list_available_printers` instead
+    list_available_usb_devices()
 }
 
 #[tauri::command]
-async fn list_usb_devices(
-) -> CommandResult<Vec<UsbDevice>> {
-    let context = Context::new()?;
-    let devices = DeviceList::new_with_context(context)?;
+async fn test_printer(
+    printer_type: PrinterType,
+    printer_id: Option<PrinterId>,
+    printer_address: Option<PrinterAddress>,
+    text_to_print: String,
+    app: AppHandle,
+) -> CommandResult<()> {
+    info!(
+        "Attempting to print {:?} on {:?}",
+        text_to_print, printer_type
+    );
 
-    let mut usb_devices = Vec::new();
+    let mut printer = match (printer_type, printer_id, printer_address) {
+        (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::File, _, _) => {
+            // Create printer output file in app data directory
+            let mut print_path = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app_data_dir");
+            print_path.push("printer_output.txt");
+            info!("Writing printer output to: {:?}", print_path);
+            create_file_printer(&print_path)
+        }
+        (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Network, _, Some(printer_address)) => {
+            info!(
+                "Test printer: {}:{}",
+                printer_address.ip, printer_address.port
+            );
+            create_network_printer(printer_address.ip.to_string(), printer_address.port)
+        }
+        (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),
+        (PrinterType::Usb, Some(printer_id), _) => {
+            create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+        }
+    }?;
 
-    for device in devices.iter() {
-        let device_desc = device.device_descriptor()?;
-
-        usb_devices.push(UsbDevice {
-            vendor_id: device_desc.vendor_id(),
-            product_id: device_desc.product_id(),
-            vendor_name: get_string_descriptor(&device, device_desc.manufacturer_string_index()).unwrap_or_default(),
-            product_name: get_string_descriptor(&device, device_desc.product_string_index()).unwrap_or_default(),
-        });
-    }
-
-    Ok(usb_devices)
-}
-
-
-#[tauri::command]
-async fn test_print_raw_file(device: UsbDevice, text_to_print: String) -> CommandResult<()> {
-    info!("Attempting to print {:?} on {:?}", text_to_print, device);
-
-    let driver = UsbDriver::open(device.vendor_id, device.product_id, None)?;
-    let mut printer = Printer::new(driver, Protocol::default(), None);
-
-    println!();
-    printer
-        .debug_mode(Some(DebugMode::Dec))
-        .init()?
-        .writeln(&text_to_print)?
-        .feed()?
-        .print_cut()?;
-    println!();
+    info!("Printer created successfully, sending test print...");
+    printer.init()?;
+    printer.writeln(&text_to_print)?;
+    printer.feed()?;
+    printer.print_cut()?;
+    info!("Test print completed successfully");
 
     Ok(())
 }
@@ -582,26 +619,61 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-#[cfg(debug_assertions)]
-fn setup_printer(_app: &App) -> Option<Printer<ConsoleDriver>> {
-    let driver = ConsoleDriver::open(true);
-    Some(Printer::new(driver, Protocol::default(), None))
-}
+fn setup_printer(app: &App) -> Option<PrinterWrapper> {
+    app.get_store("store.json").and_then(|store| {
+        debug!("Trying to restore saved configs");
 
-#[cfg(not(debug_assertions))]
-fn setup_printer(app: &App) -> Option<Printer<UsbDriver>> {
-    app.get_store("store.json")
-        .and_then(|store| store.get("printer-device"))
-        .and_then(|device| {
-            info!("Already configured printer device path found {}", device);
-            let device = serde_json::from_value::<UsbDevice>(device).ok()?;
+        let printer_type_store = store.get("printer-type");
+        let printer_type_store = printer_type_store?;
+        let printer_type = serde_json::from_value::<PrinterType>(printer_type_store);
+        let printer_type = printer_type.unwrap_or(PrinterType::None);
 
-            UsbDriver::open(device.vendor_id, device.product_id, None).ok()
-        })
-        .map(|driver| {
-            debug!("Existing printer restored");
-            Printer::new(driver, Protocol::default(), None)
-        })
+        let printer_id = store
+            .get("printer-id")
+            .and_then(|printer_id_store| {
+                serde_json::from_value::<Option<PrinterId>>(printer_id_store).ok()
+            })
+            .flatten();
+
+        let printer_address = store
+            .get("printer-address")
+            .and_then(|printer_address_store| {
+                serde_json::from_value::<Option<PrinterAddress>>(printer_address_store).ok()
+            })
+            .flatten();
+
+        info!(
+            "Already configured printer device path found {:?}, ID {:?}, IP {:?}",
+            printer_type, printer_id, printer_address
+        );
+
+        match (printer_type, printer_id, printer_address) {
+            (PrinterType::None, _, _) => None,
+            (PrinterType::File, _, _) => {
+                let mut print_path = app
+                    .path()
+                    .app_data_dir()
+                    .expect("Failed to get app_data_dir");
+                print_path.push("printer_output.txt");
+
+                create_file_printer(&print_path).ok()
+            }
+            (PrinterType::Usb, None, _) => {
+                warn!("Found USB printer type in config but no printer ID");
+                None
+            }
+            (PrinterType::Usb, Some(printer_id), _) => {
+                create_usb_printer(printer_id.vendor_id, printer_id.product_id).ok()
+            }
+            (PrinterType::Network, _, None) => {
+                warn!("Found network printer type in config but no printer IP");
+                None
+            }
+            (PrinterType::Network, _, Some(printer_address)) => {
+                create_network_printer(printer_address.ip, printer_address.port).ok()
+            }
+        }
+    })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -624,9 +696,9 @@ pub fn run() {
             print_sale,
             get_print_layout,
             save_print_layout,
-            save_printer_device,
+            save_printer_selection,
             list_usb_devices,
-            test_print_raw_file,
+            test_printer,
         ])
         .setup(|app| {
             app.store("store.json")?;
@@ -636,7 +708,7 @@ pub fn run() {
             app.manage(intl);
 
             let printer = setup_printer(app);
-            app.manage(Arc::new(Mutex::new(printer)));
+            app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
 
             tauri::async_runtime::block_on(async move {
                 let db = setup_db(app).await;

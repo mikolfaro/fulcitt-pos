@@ -50,7 +50,7 @@
             v-for="sale in invoiceSalesData"
             :key="sale.id"
           >
-            <td>{{ sale.id }}</td>
+            <td>{{ sale.number || 'N/A' }}</td>
             <td>{{ formatTime(sale.sale_time) }}</td>
             <td>{{ formatCurrency(sale.total_amount) }}</td>
             <td>-</td>
@@ -97,7 +97,8 @@ interface ItemSale {
 }
 
 interface Sale {
-  id: number,
+  id: string,
+  number: number | null,
   sale_time: Date,
   total_amount: number,
   payment_method: string
