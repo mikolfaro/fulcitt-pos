@@ -129,4 +129,4 @@ jobs:
         name: "Fulcitt POS ${{ env.TAG_NAME }}"
         tag: "${{ env.TAG_NAME }}"
         files:
-          src-tauri/target/**/fulcitt-pos*{AppImage,exe}
+          src-tauri/target/**/fulcitt-pos_*{AppImage,exe}
