@@ -44,7 +44,7 @@ jobs:
           curl \
           wget \
           file \
-          ldd \
+          lld \
           llvm \
           libxdo-dev \
           libssl-dev \
