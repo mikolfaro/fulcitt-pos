@@ -8,6 +8,7 @@ pub(crate) struct UnsavedProduct {
     pub name: String,
     pub category: String,
     pub price: f64,
+    pub has_deposit: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -17,6 +18,7 @@ pub(crate) struct Product {
     pub category: String,
     pub price: f64,
     pub is_deleted: bool,
+    pub has_deposit: bool,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -54,6 +56,25 @@ pub(crate) struct AggregatedSaleItem {
     pub total_value_sold: f64,
 }
 
+#[derive(Debug, Deserialize, FromRow, Serialize)]
+pub(crate) struct Refund {
+    pub id: Uuid,
+    pub number: Option<i64>,
+    pub refund_time: NaiveDateTime,
+    pub total_amount: f64,
+    pub payment_method: Option<String>,
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub(crate) struct RefundItem {
+    pub id: Uuid,
+    pub refund_id: Uuid,
+    pub product_id: Uuid,
+    pub product_name: String,
+    pub quantity: i64,
+    pub price_at_refund: f64,
+}
+
 #[derive(Debug)]
 pub(crate) struct CartItemWithProduct {
     pub quantity: i64,
@@ -65,6 +86,7 @@ pub(crate) struct CartItemWithProduct {
     pub category: String,
     pub is_product_deleted: bool,
     pub price: f64,
+    pub has_deposit: bool,
 }
 
 impl From<CartItemWithProduct> for (CartItem, Product) {
@@ -82,6 +104,7 @@ impl From<CartItemWithProduct> for (CartItem, Product) {
             category: value.category,
             is_deleted: value.is_product_deleted,
             price: value.price,
+            has_deposit: value.has_deposit,
         };
 
         (item, product)

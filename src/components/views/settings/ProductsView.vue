@@ -14,6 +14,7 @@
                 <th>{{ $t('settings-products-product-name') }}</th>
                 <th>{{ $t('settings-products-category') }}</th>
                 <th class="text-right">{{ $t('settings-products-price') }}</th>
+                <th class="text-center">Cauzione</th>
                 <th>{{ $t('settings-products-actions') }}</th>
               </tr>
             </thead>
@@ -52,6 +53,14 @@
                       required
                     />
                   </td>
+                  <td class="text-center">
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-sm"
+                      form="editProduct"
+                      v-model="productToEdit.has_deposit"
+                    />
+                  </td>
                   <td class="flex justify-between">
                     <button
                       type="submit"
@@ -69,6 +78,14 @@
                   <td>{{ product.name }}</td>
                   <td>{{ product.category }}</td>
                   <td class="text-right">{{ formatCurrency(product.price) }}</td>
+                  <td class="text-center">
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-sm"
+                      :checked="product.has_deposit"
+                      disabled
+                    />
+                  </td>
                   <td class="flex justify-between">
                     <button
                       class="btn btn-xs btn-outline btn-primary"
@@ -119,6 +136,14 @@
                     required
                   />
                 </td>
+                <td class="text-center">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    form="addProduct"
+                    v-model="newProduct.has_deposit"
+                  />
+                </td>
                 <td>
                   <button
                     type="submit"
@@ -158,15 +183,17 @@ const existingProducts = ref<Product[]>([]);
 const newProduct = reactive<{
   name: string,
   price: number | null,
-  category: string
-}>({ name: '', category: '', price: null})
+  category: string,
+  has_deposit: boolean
+}>({ name: '', category: '', price: null, has_deposit: false})
 
 const productToEdit = reactive<{
   id: number | null,
   name: string,
   price: number | null,
-  category: string
-}>({ id: null, name: '', category: '', price: null });
+  category: string,
+  has_deposit: boolean
+}>({ id: null, name: '', category: '', price: null, has_deposit: false });
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -197,6 +224,7 @@ const addProduct = async () => {
     newProduct.name = '';
     newProduct.price = null;
     newProduct.category = '';
+    newProduct.has_deposit = false;
   } catch (err: any) {
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
       messages.addInvalidInput(
@@ -224,7 +252,7 @@ const fetchExistingProducts = async () => {
 };
 
 const resetEditForm = () => {
-    Object.assign(productToEdit, { id: null, name: '', price: null, category: '' });
+    Object.assign(productToEdit, { id: null, name: '', price: null, category: '', has_deposit: false });
 };
 
 const openEdit = (product: Product) => {
@@ -234,7 +262,7 @@ const openEdit = (product: Product) => {
 
 const closeEdit = () => {
   resetEditForm();
-  Object.assign(productToEdit, { id: null, name: '', category: '', price: null })
+  Object.assign(productToEdit, { id: null, name: '', category: '', price: null, has_deposit: false })
 };
 
 const doUpdateProduct = async () => {
