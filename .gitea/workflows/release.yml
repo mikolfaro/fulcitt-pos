@@ -33,6 +33,7 @@ jobs:
         cache: false
         rust-src-dir: src-tauri
         toolchain: stable
+        target: x86_64-pc-windows-msvc
 
     - name: Install system dependencies
       run: |
@@ -43,10 +44,13 @@ jobs:
           curl \
           wget \
           file \
+          ldd \
+          llvm \
           libxdo-dev \
           libssl-dev \
           libayatana-appindicator3-dev \
           librsvg2-dev \
+          nsis \
           xdg-utils
 
     - name: Install frontend dependencies
