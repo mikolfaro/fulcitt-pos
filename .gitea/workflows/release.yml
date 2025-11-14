@@ -121,5 +121,4 @@ jobs:
         name: "Fulcitt POS ${{ env.TAG_NAME }}"
         tag: "${{ env.TAG_NAME }}"
         files:
-          - src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
-          - src-tauri/target/x86_64-pc-windows-msvc/release/fulcitt-pos*.exe
+          src-tauri/target/**/fulcitt-pos*{AppImage,exe}
