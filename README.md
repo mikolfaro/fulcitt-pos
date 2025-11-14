@@ -59,7 +59,7 @@ Features
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
 - [ ] Integrate biome
-- [ ] Windows automated build
+- [X] Windows automated build
 - [ ] Product deposit (pay/refund mechanic)
 - [ ] Voiding and refunding support
 - [ ] Network sync (p2p)
