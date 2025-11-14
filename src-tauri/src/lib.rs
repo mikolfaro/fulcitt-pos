@@ -292,17 +292,19 @@ async fn process_transaction(
         .await?;
 
         for item in refund_items {
-            let product = sqlx::query_as!(
-                Product,
-                r#"
-                SELECT id as "id: uuid::Uuid", name, category, price, is_deleted, has_deposit
-                FROM products
-                WHERE id = ?
-                "#,
-                item.product_id
-            )
-            .fetch_one(&mut *tx)
-            .await?;
+            let product_exists: bool =
+                sqlx::query_scalar(r#"SELECT EXISTS FROM products WHERE id = ?"#)
+                    .bind(item.product_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+
+            if !product_exists {
+                return Err(CommandError::InvalidInput(
+                    intl_state
+                        .t("pos-messages-product-does-not-exist")?
+                        .to_string(),
+                ));
+            }
 
             let quantity = item.quantity;
             let price_at_refund = item.price;
