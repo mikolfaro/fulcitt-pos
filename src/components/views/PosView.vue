@@ -7,24 +7,26 @@
   </div>
   <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
     <div class="w-3/5 flex flex-col gap-4">
-      <div class="flex-grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto">
-        <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-title') }}</h2>
-        <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
-          <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
-          <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <div
-              v-for="product in productsInCategory"
-              :aria-disabled="cart.isLocked"
-              :key="product.id"
-              class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-              @click="!cart.isLocked && addToCart(product)"
-            >
-              <div class="card-body items-center text-center p-3">
-                <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
-                <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
+      <div class="flex flex-col flex-grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto justify-between">
+        <div>
+          <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-title') }}</h2>
+          <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
+            <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
+            <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div v-for="product in productsInCategory" :aria-disabled="cart.isLocked" :key="product.id"
+                class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
+                @click="!cart.isLocked && addToCart(product)">
+                <div class="card-body items-center text-center p-3">
+                  <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
+                  <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-refunds-title') }}</h2>
         </div>
       </div>
       <div>
@@ -63,10 +65,7 @@
               <td>{{ formatCurrency(item.price) }}</td>
               <td>{{ formatCurrency(item.price * item.quantity) }}</td>
               <td>
-                <button
-                  class="btn btn-xs btn-error"
-                  @click="removeFromCart(item)"
-                >X</button>
+                <button class="btn btn-xs btn-error" @click="removeFromCart(item)">X</button>
               </td>
             </tr>
           </tbody>
@@ -77,7 +76,7 @@
           <span>Subtotal:</span>
           <span>{{ formatCurrency(cart.subTotal) }}</span>
         </div -->
-         <div class="flex justify-between font-bold text-lg mb-2">
+        <div class="flex justify-between font-bold text-lg mb-2">
           <span>{{ $t('pos-recap-total') }}</span>
           <span>{{ formatCurrency(cart.total) }}</span>
         </div>
@@ -172,11 +171,12 @@ const groupedProducts = computed<Record<string, Product[]>>(() => {
     groups[category].push(product);
     return groups;
   }, {});
- });
+});
 </script>
 
 <style scoped>
-.table td, .table th {
+.table td,
+.table th {
   white-space: nowrap;
 }
 </style>

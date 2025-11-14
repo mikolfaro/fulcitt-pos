@@ -152,11 +152,14 @@ async fn process_transaction(
     let mut tx = app_state.db.begin().await?;
 
     let transaction_time = Local::now().naive_local();
-    let start_of_day =
-        NaiveDate::from_ymd_opt(transaction_time.year(), transaction_time.month(), transaction_time.day())
-            .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
-            .and_hms_opt(0, 0, 0)
-            .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
+    let start_of_day = NaiveDate::from_ymd_opt(
+        transaction_time.year(),
+        transaction_time.month(),
+        transaction_time.day(),
+    )
+    .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
+    .and_hms_opt(0, 0, 0)
+    .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
 
     let mut sale_uuid: Option<Uuid> = None;
     let mut sale_for_printing: Option<Sale> = None;
@@ -393,11 +396,9 @@ async fn process_sale(
     .await?;
 
     // Return the sale_uuid, or error if no sale was created
-    transaction
-        .sale_uuid
-        .ok_or(CommandError::InvalidInput(
-            "No sale was created".to_string(),
-        ))
+    transaction.sale_uuid.ok_or(CommandError::InvalidInput(
+        "No sale was created".to_string(),
+    ))
 }
 
 #[tauri::command]
