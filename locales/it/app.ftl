@@ -25,6 +25,7 @@ pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
 
 pos-products-title = Prodotti
+pos-products-refunds-title = Rimborso cauzioni
 
 pos-process-payment-button = Completa pagamento
 
