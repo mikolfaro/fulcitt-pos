@@ -4,7 +4,7 @@ use chrono::{Datelike, Local, NaiveDate, Utc};
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
-use tauri::{App, AppHandle, Manager, State};
+use tauri::{AppHandle, Builder, Manager, Runtime, State};
 use tauri_plugin_store::StoreExt;
 use unic_langid::langid;
 
@@ -133,8 +133,8 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 }
 
 #[tauri::command]
-async fn process_transaction(
-    app: AppHandle,
+async fn process_transaction<R: Runtime>(
+    app: tauri::AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
     intl_state: State<'_, Intl>,
@@ -379,8 +379,8 @@ async fn process_transaction(
 }
 
 #[tauri::command]
-async fn process_sale(
-    app: AppHandle,
+async fn process_sale<R: Runtime>(
+    app: AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
     intl_state: State<'_, Intl>,
@@ -470,8 +470,8 @@ async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn print_last_sale(
-    app: AppHandle,
+async fn print_last_sale<R: Runtime>(
+    app: AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
 ) -> CommandResult<()> {
@@ -534,8 +534,8 @@ async fn print_last_sale(
 }
 
 #[tauri::command]
-async fn print_sale(
-    app: AppHandle,
+async fn print_sale<R: Runtime>(
+    app: AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
     sale_id: i64,
@@ -600,7 +600,7 @@ async fn print_sale(
 }
 
 #[tauri::command]
-async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
+async fn get_print_layout<R: Runtime>(app: AppHandle<R>) -> CommandResult<PrintingLayout> {
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::LoadSettings)?;
@@ -615,7 +615,10 @@ async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
 }
 
 #[tauri::command]
-async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
+async fn save_print_layout<R: Runtime>(
+    app: AppHandle<R>,
+    layout: PrintingLayout,
+) -> CommandResult<()> {
     info!("Saving updated layout {:?}", layout);
 
     let store = app
@@ -629,8 +632,8 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn save_printer_selection(
-    app: AppHandle,
+async fn save_printer_selection<R: Runtime>(
+    app: AppHandle<R>,
     printer_state: State<'_, NewPrinterState>,
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
@@ -689,12 +692,12 @@ async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
 }
 
 #[tauri::command]
-async fn test_printer(
+async fn test_printer<R: Runtime>(
+    app: AppHandle<R>,
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
     printer_address: Option<PrinterAddress>,
     text_to_print: String,
-    app: AppHandle,
 ) -> CommandResult<()> {
     info!(
         "Attempting to print {:?} on {:?}",
@@ -737,7 +740,7 @@ async fn test_printer(
     Ok(())
 }
 
-async fn setup_db(app: &App) -> Db {
+async fn setup_db<R: Runtime>(app: &tauri::App<R>) -> Db {
     let mut path = app.path().app_data_dir().expect("Failed to get data_dir");
     if let Err(err) = std::fs::create_dir_all(path.clone()) {
         panic!("Error creating directory {}", err);
@@ -768,7 +771,7 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-fn setup_printer(app: &App) -> Option<PrinterWrapper> {
+fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<PrinterWrapper> {
     app.get_store("store.json").and_then(|store| {
         debug!("Trying to restore saved configs");
 
@@ -825,9 +828,8 @@ fn setup_printer(app: &App) -> Option<PrinterWrapper> {
     })
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
+pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R> {
+    builder
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -867,6 +869,11 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    create_app(Builder::default()).run(|_, _| {})
 }
