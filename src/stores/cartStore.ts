@@ -15,6 +15,9 @@ export const useCartStore = defineStore('cart', {
     total(state) {
       return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
         - state.refundItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    },
+    isEmpty(state) {
+      return state.items.length === 0 && state.refundItems.length === 0
     }
   },
   actions: {
@@ -73,6 +76,6 @@ export const useCartStore = defineStore('cart', {
     },
     unlock() {
       this.isLocked = false
-    }
+    },
   }
 });

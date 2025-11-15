@@ -20,7 +20,7 @@ const cart = useCartStore()
 const messages = useMessagesStore()
 
 function startPayment() {
-  if (cart.items.length > 0) {
+  if (!cart.isEmpty) {
     cart.lock()
 
     router.push("/checkout")

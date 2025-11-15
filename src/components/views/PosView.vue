@@ -103,7 +103,7 @@
         </div -->
         <div class="flex justify-between font-bold text-lg mb-2">
           <span>{{ $t('pos-recap-total') }}</span>
-          <span>{{ formatCurrency(cart.total) }}</span>
+          <span :class="{ 'text-secondary': cart.total < 0 }">{{ formatCurrency(cart.total) }}</span>
         </div>
         <router-view></router-view>
       </div>
