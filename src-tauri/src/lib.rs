@@ -1,7 +1,6 @@
-use std::sync::Arc;
+use std::path::Path;
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
-use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{AppHandle, Builder, Manager, Runtime, State};
@@ -18,15 +17,21 @@ use uuid::Uuid;
 
 mod errors;
 mod exports;
-mod intl;
+pub mod intl;
 mod models;
-mod printer;
+pub mod printer;
 mod ticket_printing;
+
+#[cfg(not(test))]
+use log::{debug, info, warn}; // Use log crate when building application
+
+#[cfg(test)]
+use std::{println as debug, println as info, println as warn};
 
 type Db = SqlitePool;
 #[derive(Clone)]
-struct AppState {
-    db: Db,
+pub struct AppState {
+    pub db: Db,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -740,13 +745,12 @@ async fn test_printer<R: Runtime>(
     Ok(())
 }
 
-async fn setup_db<R: Runtime>(app: &tauri::App<R>) -> Db {
-    let mut path = app.path().app_data_dir().expect("Failed to get data_dir");
-    if let Err(err) = std::fs::create_dir_all(path.clone()) {
+pub async fn setup_db(path: &Path) -> Db {
+    if let Err(err) = std::fs::create_dir_all(path) {
         panic!("Error creating directory {}", err);
     }
 
-    path.push("app.db");
+    let path = path.join("app.db");
 
     Sqlite::create_database(
         format!(
@@ -759,7 +763,7 @@ async fn setup_db<R: Runtime>(app: &tauri::App<R>) -> Db {
     .expect("Failed to create database");
 
     let db = SqlitePoolOptions::new()
-        .connect(path.to_str().unwrap())
+        .connect(path.to_str().expect("Invalid data_dir path"))
         .await
         .expect("Failed to connect to database");
 
@@ -828,6 +832,11 @@ fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<PrinterWrapper> {
     })
 }
 
+pub fn setup_intl() -> Intl {
+    let langid_it = langid!("it");
+    Intl::try_new(langid_it).expect("Failed to load localization")
+}
+
 pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R> {
     builder
         .plugin(tauri_plugin_log::Builder::new().build())
@@ -853,24 +862,25 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             test_printer,
         ])
         .setup(|app| {
-            app.store("store.json")?;
+            app.store("store.json").expect("Config store not available");
 
-            let langid_it = langid!("it");
-            let intl = Intl::try_new(langid_it).expect("Failed to load localization");
+            let intl = setup_intl();
             app.manage(intl);
 
             let printer = setup_printer(app);
-            app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
+            app.manage(tokio::sync::Mutex::new(printer));
 
             tauri::async_runtime::block_on(async move {
-                let db = setup_db(app).await;
+                println!("Creating DB");
+                let path = app.path().app_data_dir().expect("Failed to get data_dir");
+                let db = setup_db(path.as_ref()).await;
                 app.manage(AppState { db });
             });
 
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while running tauri application")
+        .expect("error while creating tauri application")
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

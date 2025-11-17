@@ -2,7 +2,7 @@ use serde::Serialize;
 
 #[derive(thiserror::Error, Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
-pub(crate) enum CommandError {
+pub enum CommandError {
     #[error("Database error {0}")]
     Database(String),
 

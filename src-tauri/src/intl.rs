@@ -6,12 +6,12 @@ use unic_langid::LanguageIdentifier;
 
 use crate::{CommandError, CommandResult};
 
-pub(crate) struct Intl {
+pub struct Intl {
     bundle: FluentBundle<FluentResource>,
 }
 
 impl Intl {
-    pub(crate) fn try_new(langid: LanguageIdentifier) -> CommandResult<Self> {
+    pub fn try_new(langid: LanguageIdentifier) -> CommandResult<Self> {
         let ftl_string = "hello-world = Ciao, cane!".to_owned();
         let res = FluentResource::try_new(ftl_string).or_else(|(res, errors)| {
             error!(
@@ -31,6 +31,7 @@ impl Intl {
         Ok(Self { bundle })
     }
 
+    #[cfg(not(test))]
     pub(crate) fn t(&self, id: &str) -> CommandResult<Cow<'_, str>> {
         let msg = self.bundle.get_message(id).expect("Message doesn't exist.");
 
@@ -40,5 +41,10 @@ impl Intl {
         let value = self.bundle.format_pattern(pattern, None, &mut errors);
 
         Ok(value)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn t(&self, id: &str) -> CommandResult<String> {
+        Ok(id.to_string())
     }
 }

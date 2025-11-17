@@ -20,7 +20,7 @@ pos-menu-title = POS
 
 pos-messages-empty-cart = Nessun prodotto
 pos-messages-loading-products = Caricamento prodotti...
-pos-messages-cannot-process-sale-with-no-items = Nessun prodotto nel carrello
+pos-messages-cannot-process-transaction-with-no-items = Nessun prodotto nel carrello
 pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
 
