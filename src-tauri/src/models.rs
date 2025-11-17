@@ -36,15 +36,15 @@ pub(crate) struct Sale {
     pub payment_method: Option<String>,
 }
 
-#[derive(Debug, FromRow, Serialize)]
-pub(crate) struct SaleItem {
-    pub id: Uuid,
-    pub sale_id: Uuid,
-    pub product_id: Uuid,
-    pub product_name: String,
-    pub quantity: i64,
-    pub price_at_sale: f64,
-}
+// #[derive(Debug, FromRow, Serialize)]
+// pub(crate) struct SaleItem {
+//     pub id: Uuid,
+//     pub sale_id: Uuid,
+//     pub product_id: Uuid,
+//     pub product_name: String,
+//     pub quantity: i64,
+//     pub price_at_sale: f64,
+// }
 
 #[derive(Debug, FromRow, Serialize)]
 pub(crate) struct AggregatedSaleItem {
