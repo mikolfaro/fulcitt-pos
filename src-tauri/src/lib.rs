@@ -5,12 +5,11 @@ use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
+use tauri_plugin_opener::open_path;
 use tauri_plugin_store::StoreExt;
-use unic_langid::langid;
 
 use errors::*;
 use exports::*;
-use intl::*;
 use models::*;
 use printer::*;
 use ticket_printing::*;
@@ -18,7 +17,6 @@ use uuid::Uuid;
 
 mod errors;
 mod exports;
-mod intl;
 mod models;
 mod printer;
 mod ticket_printing;
@@ -129,14 +127,11 @@ async fn process_sale(
     app: AppHandle,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
-    intl_state: State<'_, Intl>,
     items: Vec<CartItem>,
 ) -> CommandResult<Uuid> {
     if items.is_empty() {
         return Err(CommandError::InvalidInput(
-            intl_state
-                .t("pos-messages-cannot-process-sale-with-no-items")?
-                .to_string(),
+            "pos-messages-cannot-process-sale-with-no-items".to_string(),
         ));
     }
 
@@ -205,16 +200,12 @@ async fn process_sale(
 
         if quantity <= 0 {
             return Err(CommandError::InvalidInput(
-                intl_state
-                    .t("pos-messages-invalid-quantity-for-product")?
-                    .to_string(), // quantity, item.product_id
+                "pos-messages-invalid-quantity-for-product".to_string(),
             ));
         }
         if price_at_sale < 0.0 {
             return Err(CommandError::InvalidInput(
-                intl_state
-                    .t("pos-messages-invalid-price-for-product")?
-                    .to_string(), // price_at_sale, item.product_id
+                "pos-messages-invalid-price-for-product".to_string(),
             ));
         }
 
@@ -318,10 +309,17 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
+async fn export_sales(app: AppHandle, app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    export_sales_report(app_state.db.clone(), "/home/mikol/export.xlsx").await
+    let file_path = app.path().home_dir().unwrap();
+    let file_path = file_path.join("export.xlsx");
+
+    export_sales_report(app_state.db.clone(), &file_path).await?;
+
+    open_path(file_path, None::<&str>).unwrap();
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -702,11 +700,6 @@ pub fn run() {
         ])
         .setup(|app| {
             app.store("store.json")?;
-
-            let langid_it = langid!("it");
-            let intl = Intl::try_new(langid_it).expect("Failed to load localization");
-            app.manage(intl);
-
             let printer = setup_printer(app);
             app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
 
