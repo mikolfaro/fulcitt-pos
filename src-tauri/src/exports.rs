@@ -4,7 +4,7 @@ use log::debug;
 use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{Pool, Sqlite};
 
-use crate::{CommandResult, Sale, SaleItem};
+use crate::{CommandResult, Sale};
 
 #[derive(Debug)]
 struct SaleSummary {
