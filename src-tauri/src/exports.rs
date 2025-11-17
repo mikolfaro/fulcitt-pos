@@ -1,16 +1,63 @@
+use std::path::PathBuf;
+
+use log::debug;
 use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{Pool, Sqlite};
 
-use crate::{CommandResult, Sale, SaleItem};
+use crate::{CommandResult, Sale};
+
+#[derive(Debug)]
+struct SaleSummary {
+    product_name: String,
+    price_at_sale: f64,
+    quantity: i64,
+}
 
 pub(crate) async fn export_sales_report(
     db: Pool<Sqlite>,
-    report_file_path: &str,
+    report_file_path: &PathBuf,
 ) -> CommandResult<()> {
-    let mut invoices_worksheet = Worksheet::new();
-    invoices_worksheet.set_name("reports-export-xslx-invoices-tab-title")?;
+    let currency_format = Format::new().set_num_format("#,##0.00 €");
+
     let mut products_worksheet = Worksheet::new();
-    products_worksheet.set_name("reports-export-xslx-invoices-details-tab-title")?;
+    products_worksheet.set_name("venduto")?;
+
+    let sale_summaries = sqlx::query_as!(
+        SaleSummary,
+        r#"
+        SELECT product_name, price_at_sale, SUM(quantity) as quantity FROM sale_items GROUP BY product_id, price_at_sale;
+        "#,
+    )
+        .fetch_all(&db)
+        .await?;
+
+    products_worksheet.write_row(0, 0, vec!["Nome", "Quantità", "Prezzo unitario", "Totale"])?;
+
+    for (i, sale_summary) in sale_summaries.into_iter().enumerate() {
+        let i: u32 = i.try_into().unwrap();
+
+        debug!("Product line {:?}", sale_summary);
+
+        products_worksheet.write(i + 1, 0, sale_summary.product_name)?;
+        products_worksheet.write_with_format(
+            i + 1,
+            1,
+            sale_summary.price_at_sale,
+            &currency_format,
+        )?;
+
+        products_worksheet.write(i + 1, 2, sale_summary.quantity)?;
+        products_worksheet.write_with_format(
+            i + 1,
+            3,
+            sale_summary.price_at_sale * sale_summary.quantity as f64,
+            &currency_format,
+        )?;
+    }
+
+    // Invoices worksheet
+    let mut invoices_worksheet = Worksheet::new();
+    invoices_worksheet.set_name("scontrini")?;
 
     let sales = sqlx::query_as!(
         Sale,
@@ -23,17 +70,10 @@ pub(crate) async fn export_sales_report(
         .fetch_all(&db)
         .await?;
 
-    invoices_worksheet.write_row(0, 0, vec!["ID", "Data", "Metodo di pagamento", "Importo"])?;
-    products_worksheet.write_row(
+    invoices_worksheet.write_row(
         0,
         0,
-        vec![
-            "ID scontrino",
-            "Prodotto",
-            "Q.tà",
-            "Costo unitario",
-            "Totale",
-        ],
+        vec!["Numero", "Data", "Metodo di pagamento", "Importo"],
     )?;
 
     let currency_format = Format::new().set_num_format("#,##0.00 €");
@@ -41,53 +81,20 @@ pub(crate) async fn export_sales_report(
     for (i, sale) in sales.into_iter().enumerate() {
         let i: u32 = i.try_into().unwrap();
 
-        invoices_worksheet.write(i + 1, 0, sale.id.to_string())?;
+        invoices_worksheet.write(i + 1, 0, sale.number)?;
         invoices_worksheet.write(
             i + 1,
             1,
             sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string(),
         )?;
-        invoices_worksheet.write(i + 1, 3, sale.payment_method)?;
-        invoices_worksheet.write_with_format(i + 1, 2, sale.total_amount, &currency_format)?;
-
-        let item_sales = sqlx::query_as!(
-            SaleItem,
-            r#"
-            SELECT id as "id: uuid::Uuid",
-                sale_id as "sale_id: uuid::Uuid",
-                product_id as "product_id: uuid::Uuid",
-                product_name,
-                quantity,
-                price_at_sale
-            FROM sale_items
-            WHERE sale_id = ?
-            "#,
-            sale.id
-        )
-        .fetch_all(&db)
-        .await?;
-
-        let mut j = 1;
-        for item in item_sales.into_iter() {
-            products_worksheet.write(j, 0, item.sale_id.to_string())?;
-            products_worksheet.write(j, 1, item.product_name)?;
-            products_worksheet.write(j, 2, item.quantity)?;
-            products_worksheet.write_with_format(j, 3, item.price_at_sale, &currency_format)?;
-            products_worksheet.write_formula_with_format(
-                j,
-                4,
-                format!("=C{}*D{}", j + 1, j + 1).as_str(),
-                &currency_format,
-            )?;
-
-            j += 1;
-        }
+        invoices_worksheet.write(i + 1, 2, sale.payment_method)?;
+        invoices_worksheet.write_with_format(i + 1, 3, sale.total_amount, &currency_format)?;
     }
 
     let mut workbook = Workbook::new();
-    workbook.push_worksheet(invoices_worksheet);
     workbook.push_worksheet(products_worksheet);
-    workbook.save(report_file_path)?;
+    workbook.push_worksheet(invoices_worksheet);
+    workbook.save(report_file_path.as_path())?;
 
     Ok(())
 }
