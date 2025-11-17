@@ -13,8 +13,8 @@
         <thead>
           <tr>
             <th>{{ $t('reports-sales-by-product-product-name') }}</th>
-            <th>{{ $t('reports-sales-by-product-quantity-sold') }}</th>
-            <th>{{ $t('reports-sales-by-product-value-sold') }}</th>
+            <th class="text-right">{{ $t('reports-sales-by-product-quantity-sold') }}</th>
+            <th class="text-right">{{ $t('reports-sales-by-product-value-sold') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -23,8 +23,8 @@
             :key="item.product_id"
           >
             <td>{{ item.product_name }}</td>
-            <td>{{ item.total_quantity_sold }}</td>
-            <td>{{ formatCurrency(item.total_value_sold) }}</td>
+            <td class="text-right">{{ item.total_quantity_sold }}</td>
+            <td class="text-right">{{ formatCurrency(item.total_value_sold) }}</td>
           </tr>
         </tbody>
       </table>
@@ -38,9 +38,9 @@
       <table class="table table-zebra w-full">
         <thead>
           <tr>
-            <th>{{ $t('reports-today-sales-invoice-number') }}</th>
+            <th class="text-right">{{ $t('reports-today-sales-invoice-number') }}</th>
             <th>{{ $t('reports-today-sales-sales-time') }}</th>
-            <th>{{ $t('reports-today-sales-amount-sold') }}</th>
+            <th class="text-right">{{ $t('reports-today-sales-amount-sold') }}</th>
             <th>{{ $t('reports-today-sales-payment-method') }}</th>
             <th></th>
           </tr>
@@ -50,9 +50,9 @@
             v-for="sale in invoiceSalesData"
             :key="sale.id"
           >
-            <td>{{ sale.number || 'N/A' }}</td>
+            <td class="text-right">{{ sale.number || 'N/A' }}</td>
             <td>{{ formatTime(sale.sale_time) }}</td>
-            <td>{{ formatCurrency(sale.total_amount) }}</td>
+            <td class="text-right">{{ formatCurrency(sale.total_amount) }}</td>
             <td>-</td>
             <td>
               <button
@@ -173,6 +173,15 @@ onMounted(async function () {
 
     invoiceSalesData.value = data.map(function (sale) {
       return { ...sale, sale_time: new Date(sale.sale_time) }
+    }).sort(function (a, b) {
+      // Sort by date DESC (most recent first)
+      if (a.sale_time.getTime() !== b.sale_time.getTime()) {
+        return b.sale_time.getTime() - a.sale_time.getTime()
+      }
+      // If dates are equal, sort by sale number DESC
+      const aNum = a.number ?? 0
+      const bNum = b.number ?? 0
+      return bNum - aNum
     })
   } catch (err) {
     messages.addUnknownError(err)
