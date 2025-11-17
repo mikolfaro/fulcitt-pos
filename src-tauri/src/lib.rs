@@ -5,6 +5,7 @@ use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
 use tauri::{App, AppHandle, Manager, State};
+use tauri_plugin_opener::open_path;
 use tauri_plugin_store::StoreExt;
 
 use errors::*;
@@ -308,10 +309,17 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn export_sales(app_state: State<'_, AppState>) -> CommandResult<()> {
+async fn export_sales(app: AppHandle, app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
-    export_sales_report(app_state.db.clone(), "/home/mikol/export.xlsx").await
+    let file_path = app.path().home_dir().unwrap();
+    let file_path = file_path.join("export.xlsx");
+
+    export_sales_report(app_state.db.clone(), &file_path).await?;
+
+    open_path(file_path, None::<&str>).unwrap();
+
+    Ok(())
 }
 
 #[tauri::command]
