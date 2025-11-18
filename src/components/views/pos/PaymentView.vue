@@ -73,10 +73,15 @@ async function processPayment() {
   }
 
   try {
-    const items = cart.items.map((item) => {
+    const saleItems = cart.items.map((item) => {
       return { ...item, product_id: item.id }
     })
-    await invoke('process_sale', { items })
+
+    const refundItems = cart.refundItems.map((item) => {
+      return { ...item, product_id: item.id }
+    })
+
+    await invoke('process_transaction', { saleItems, refundItems })
 
     cart.clear()
     cart.unlock()

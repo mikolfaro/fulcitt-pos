@@ -289,7 +289,7 @@ async fn process_transaction<R: Runtime>(
 
         for item in refund_items {
             let product_exists: bool =
-                sqlx::query_scalar(r#"SELECT EXISTS FROM products WHERE id = ?"#)
+                sqlx::query_scalar(r#"SELECT EXISTS (SELECT 1 FROM products WHERE id = ?)"#)
                     .bind(item.product_id)
                     .fetch_one(&mut *tx)
                     .await?;
