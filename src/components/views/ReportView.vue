@@ -37,7 +37,7 @@
           <tr>
             <th>{{ $t('reports-refunds-product-name') }}</th>
             <th class="text-right">{{ $t('reports-refunds-quantity-refunded') }}</th>
-            <th class="text-right">{{ $t('reports-refunds--value-refunded') }}</th>
+            <th class="text-right">{{ $t('reports-refunds-value-refunded') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -179,7 +179,7 @@ onMounted(async function () {
   try {
     const { sales, refunds } = await invoke<{ sales: ItemSale[], refund: ItemSale[] }>('get_transactions_recap')
     productSalesData.value = sales.sort(sortByProductName)
-    refundsData.vale = refunds.sort(sortByProductName)
+    refundsData.value = refunds.sort(sortByProductName)
 
     loading.value = false
   } catch (err) {

@@ -25,7 +25,7 @@
           </div>
         </div>
 
-        <div>
+        <div v-if="refundableProducts.length">
           <h3 class="text-xl font-bold mb-4">{{ $t('pos-products-refunds-title') }}</h3>
           <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             <div v-for="product in refundableProducts" :key="product.id" :aria-disabled="cart.isLocked"

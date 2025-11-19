@@ -71,6 +71,11 @@ reports-today-sales-payment-method = Metodo di pagamento
 reports-today-sales-reprint-tickets-button = Ristampa vendita
 reports-today-sales-sales-time = Orario vendita
 
+reports-refunds-title = Resi cauzioni
+reports-refunds-product-name = Prodotto
+reports-refunds-quantity-refunded = Quantità
+reports-refunds-value-refunded = Importo rimborsato
+
 ## Settings
 
 settings-menu-title = Impostazioni
