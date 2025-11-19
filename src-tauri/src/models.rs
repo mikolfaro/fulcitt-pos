@@ -65,15 +65,15 @@ pub(crate) struct Refund {
     pub payment_method: Option<String>,
 }
 
-#[derive(Debug, FromRow, Serialize)]
-pub(crate) struct RefundItem {
-    pub id: Uuid,
-    pub refund_id: Uuid,
-    pub product_id: Uuid,
-    pub product_name: String,
-    pub quantity: i64,
-    pub price_at_refund: f64,
-}
+// #[derive(Debug, FromRow, Serialize)]
+// pub(crate) struct RefundItem {
+//     pub id: Uuid,
+//     pub refund_id: Uuid,
+//     pub product_id: Uuid,
+//     pub product_name: String,
+//     pub quantity: i64,
+//     pub price_at_refund: f64,
+// }
 
 #[derive(Debug)]
 pub(crate) struct CartItemWithProduct {
