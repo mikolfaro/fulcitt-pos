@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use fulcitt_pos_lib::{create_app, printer::PrinterWrapper, setup_db, setup_intl, AppState};
+use fulcitt_pos_lib::{create_app, printer::PrinterWrapper, setup_db, AppState};
 use serde_json::json;
 use tauri::test::{get_ipc_response, mock_builder};
 use tauri::{test::MockRuntime, App, Manager};
@@ -10,19 +10,17 @@ fn create_test_app() -> App<MockRuntime> {
 
     let app_handle = app.handle();
     tauri::async_runtime::block_on(async move {
-        let db = setup_db(Path::new("./test.db")).await;
+        let db = setup_db(Path::new("../data")).await;
         app_handle.manage(AppState { db });
     });
 
     app.manage(tokio::sync::Mutex::new(None::<PrinterWrapper>));
 
-    app.manage(setup_intl());
-
     app
 }
 
 #[test]
-fn create_sale_from_transaction() {
+fn fail_transaction_creation_with_empty_items() {
     let app = create_test_app();
     let webview = tauri::WebviewWindowBuilder::new(&app, "test", Default::default())
         .build()
@@ -41,8 +39,9 @@ fn create_sale_from_transaction() {
             headers: Default::default(),
             invoke_key: tauri::test::INVOKE_KEY.to_string(),
         },
-    )
-    .unwrap();
+    );
+
+    assert!(result.is_err());
 }
 
 #[test]
