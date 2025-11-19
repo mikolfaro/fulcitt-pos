@@ -4,14 +4,20 @@ import { CartItem, Product } from "../lib";
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
+    refundItems: [] as CartItem[],
     isLocked: false
-  }) ,
+  }),
   getters: {
     subTotal(state) {
-      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+        - state.refundItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     },
     total(state) {
-      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+        - state.refundItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    },
+    isEmpty(state) {
+      return state.items.length === 0 && state.refundItems.length === 0
     }
   },
   actions: {
@@ -37,14 +43,39 @@ export const useCartStore = defineStore('cart', {
         this.items = this.items.filter(item => item.id !== itemToBeRemoved.id)
       }
     },
+    addRefundItem(newItem: Product | CartItem, quantity: number) {
+      const existingRefundItem = this.refundItems.find(item => item.id === newItem.id);
+      if (existingRefundItem) {
+        existingRefundItem.quantity += quantity;
+      } else {
+        this.refundItems.push({ ...newItem, quantity: 1 });
+      }
+
+      console.log(this.refundItems)
+    },
+    removeRefundItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
+      if (quantity) {
+        const existingRefundItem = this.refundItems.find(item => item.id === itemToBeRemoved.id);
+        if (existingRefundItem) {
+          if (existingRefundItem.quantity > quantity) {
+            existingRefundItem.quantity -= quantity
+          } else {
+            this.refundItems = this.refundItems.filter(item => item.id !== itemToBeRemoved.id)
+          }
+        }
+      } else {
+        this.refundItems = this.refundItems.filter(item => item.id !== itemToBeRemoved.id)
+      }
+    },
     clear() {
       this.items = []
+      this.refundItems = []
     },
     lock() {
       this.isLocked = true
     },
     unlock() {
       this.isLocked = false
-    }
+    },
   }
 });

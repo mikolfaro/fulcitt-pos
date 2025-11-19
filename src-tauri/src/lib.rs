@@ -1,10 +1,9 @@
-use std::sync::Arc;
+use std::path::Path;
 
 use chrono::{Datelike, Local, NaiveDate, Utc};
-use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool};
-use tauri::{App, AppHandle, Manager, State};
+use tauri::{AppHandle, Builder, Manager, Runtime, State};
 use tauri_plugin_opener::open_path;
 use tauri_plugin_store::StoreExt;
 
@@ -18,13 +17,19 @@ use uuid::Uuid;
 mod errors;
 mod exports;
 mod models;
-mod printer;
+pub mod printer;
 mod ticket_printing;
+
+#[cfg(not(test))]
+use log::{debug, info, warn}; // Use log crate when building application
+
+#[cfg(test)]
+use std::{println as debug, println as info, println as warn};
 
 type Db = SqlitePool;
 #[derive(Clone)]
-struct AppState {
-    db: Db,
+pub struct AppState {
+    pub db: Db,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -47,12 +52,18 @@ struct PrinterAddress {
     port: u16,
 }
 
+#[derive(Debug, Serialize)]
+struct Transaction {
+    sale_uuid: Option<Uuid>,
+    refund_uuid: Option<Uuid>,
+}
+
 #[tauri::command]
 async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Product>> {
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
+        SELECT id as "id: uuid::Uuid", name, category, price, is_deleted, has_deposit
         FROM products
         WHERE is_deleted = 0
     "#
@@ -70,15 +81,16 @@ async fn create_product(
 ) -> CommandResult<()> {
     sqlx::query(
         r#"
-        INSERT INTO products(id, name, price, category, is_deleted)
-        VALUES ($1, $2, $3, $4, 0)
-        ON CONFLICT(name) DO UPDATE SET price = $3, category = $4, is_deleted = 0
+        INSERT INTO products(id, name, price, category, is_deleted, has_deposit)
+        VALUES ($1, $2, $3, $4, 0, $5)
+        ON CONFLICT(name) DO UPDATE SET price = $3, category = $4, is_deleted = 0, has_deposit = $5
     "#,
     )
     .bind(Uuid::new_v4())
     .bind(&product.name)
     .bind(product.price)
     .bind(&product.category)
+    .bind(product.has_deposit)
     .execute(&app_state.db)
     .await?;
 
@@ -92,13 +104,14 @@ async fn update_product(product: Product, app_state: State<'_, AppState>) -> Com
     sqlx::query(
         r#"
         UPDATE products
-        SET name = ?, price = ?, category = ?
+        SET name = ?, price = ?, category = ?, has_deposit = ?
         WHERE id = ?
     "#,
     )
     .bind(product.name)
     .bind(product.price)
     .bind(product.category)
+    .bind(product.has_deposit)
     .bind(product.id)
     .execute(&app_state.db)
     .await?;
@@ -123,135 +136,271 @@ async fn delete_product(product: Product, app_state: State<'_, AppState>) -> Com
 }
 
 #[tauri::command]
-async fn process_sale(
-    app: AppHandle,
+async fn process_transaction<R: Runtime>(
+    app: tauri::AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
-    items: Vec<CartItem>,
-) -> CommandResult<Uuid> {
-    if items.is_empty() {
+    sale_items: Vec<CartItem>,
+    refund_items: Vec<CartItem>,
+) -> CommandResult<Transaction> {
+    if sale_items.is_empty() && refund_items.is_empty() {
         return Err(CommandError::InvalidInput(
-            "pos-messages-cannot-process-sale-with-no-items".to_string(),
+            "pos-messages-cannot-process-transaction-with-no-items".to_string(),
         ));
     }
 
     let mut tx = app_state.db.begin().await?;
 
-    let sale_time = Local::now().naive_local();
-    let start_of_day =
-        NaiveDate::from_ymd_opt(sale_time.year(), sale_time.month(), sale_time.day())
-            .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
-            .and_hms_opt(0, 0, 0)
-            .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
-
-    // Get the next sale number for today
-    let next_sale_number: i64 = sqlx::query_scalar(
-        r#"
-        SELECT COALESCE(MAX(number), 0) + 1
-        FROM sales
-        WHERE sale_time >= ?
-        "#,
+    let transaction_time = Local::now().naive_local();
+    let start_of_day = NaiveDate::from_ymd_opt(
+        transaction_time.year(),
+        transaction_time.month(),
+        transaction_time.day(),
     )
-    .bind(start_of_day)
-    .fetch_one(&mut *tx)
-    .await?;
+    .ok_or(CommandError::InvalidInput("Invalid date".to_string()))?
+    .and_hms_opt(0, 0, 0)
+    .ok_or(CommandError::InvalidInput("Invalid time".to_string()))?;
 
-    let total_amount: f64 = items
-        .iter()
-        .map(|item| item.price * item.quantity as f64)
-        .sum();
+    let mut sale_uuid: Option<Uuid> = None;
+    let mut sale_for_printing: Option<Sale> = None;
+    let mut sale_items_for_printing: Vec<(CartItem, Product)> = vec![];
 
-    let sale_id: uuid::Uuid = sqlx::query_scalar(
-        r#"
-        INSERT INTO sales (id, number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
-        "#,
-    )
-    .bind(Uuid::new_v4())
-    .bind(Some(next_sale_number))
-    .bind(sale_time)
-    .bind(total_amount)
-    .fetch_one(&mut *tx)
-    .await?;
-
-    let sale = Sale {
-        id: sale_id,
-        number: Some(next_sale_number),
-        payment_method: None,
-        sale_time,
-        total_amount,
-    };
-
-    let mut items_with_products: Vec<(CartItem, Product)> = vec![];
-    for item in items {
-        let product = sqlx::query_as!(
-            Product,
+    // Process sale items if any
+    if !sale_items.is_empty() {
+        // Get the next sale number for today
+        let next_sale_number: i64 = sqlx::query_scalar(
             r#"
-            SELECT id as "id: uuid::Uuid", name, category, price, is_deleted
-            FROM products
-            WHERE id = ?
+            SELECT COALESCE(MAX(number), 0) + 1
+            FROM sales
+            WHERE sale_time >= ?
             "#,
-            item.product_id
         )
+        .bind(start_of_day)
         .fetch_one(&mut *tx)
         .await?;
 
-        let quantity = item.quantity;
-        let price_at_sale = item.price;
+        let total_amount: f64 = sale_items
+            .iter()
+            .map(|item| item.price * item.quantity as f64)
+            .sum();
 
-        if quantity <= 0 {
-            return Err(CommandError::InvalidInput(
-                "pos-messages-invalid-quantity-for-product".to_string(),
-            ));
-        }
-        if price_at_sale < 0.0 {
-            return Err(CommandError::InvalidInput(
-                "pos-messages-invalid-price-for-product".to_string(),
-            ));
-        }
-
-        sqlx::query(
+        let sale_id: Uuid = sqlx::query_scalar(
             r#"
-            INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, price_at_sale)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO sales (id, number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
             "#,
         )
         .bind(Uuid::new_v4())
-        .bind(sale_id)
-        .bind(item.product_id)
-        .bind(&item.name)
-        .bind(quantity)
-        .bind(price_at_sale)
-        .execute(&mut *tx)
+        .bind(Some(next_sale_number))
+        .bind(transaction_time)
+        .bind(total_amount)
+        .fetch_one(&mut *tx)
         .await?;
 
-        items_with_products.push((item, product));
+        let sale = Sale {
+            id: sale_id,
+            number: Some(next_sale_number),
+            payment_method: None,
+            sale_time: transaction_time,
+            total_amount,
+        };
+
+        for item in sale_items {
+            let product = sqlx::query_as!(
+                Product,
+                r#"
+                SELECT id as "id: uuid::Uuid", name, category, price, is_deleted, has_deposit
+                FROM products
+                WHERE id = ?
+                "#,
+                item.product_id
+            )
+            .fetch_one(&mut *tx)
+            .await?;
+
+            let quantity = item.quantity;
+            let price_at_sale = item.price;
+
+            if quantity <= 0 {
+                return Err(CommandError::InvalidInput(
+                    "pos-messages-invalid-quantity-for-product".to_string(),
+                ));
+            }
+            if price_at_sale < 0.0 {
+                return Err(CommandError::InvalidInput(
+                    "pos-messages-invalid-price-for-product".to_string(),
+                ));
+            }
+
+            sqlx::query(
+                r#"
+                INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, price_at_sale)
+                VALUES (?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(Uuid::new_v4())
+            .bind(sale_id)
+            .bind(item.product_id)
+            .bind(&item.name)
+            .bind(quantity)
+            .bind(price_at_sale)
+            .execute(&mut *tx)
+            .await?;
+
+            sale_items_for_printing.push((item, product));
+        }
+
+        sale_uuid = Some(sale_id);
+        sale_for_printing = Some(sale);
+        info!("Created new sale {}", sale_id);
+    }
+
+    let mut refund_uuid: Option<Uuid> = None;
+
+    // Process refund items if any
+    if !refund_items.is_empty() {
+        // Get the next refund number for today
+        let next_refund_number: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COALESCE(MAX(number), 0) + 1
+            FROM refunds
+            WHERE refund_time >= ?
+            "#,
+        )
+        .bind(start_of_day)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        let total_amount: f64 = refund_items
+            .iter()
+            .map(|item| item.price * item.quantity as f64)
+            .sum();
+
+        let refund_id: Uuid = sqlx::query_scalar(
+            r#"
+            INSERT INTO refunds (id, number, refund_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
+            "#,
+        )
+        .bind(Uuid::new_v4())
+        .bind(Some(next_refund_number))
+        .bind(transaction_time)
+        .bind(total_amount)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        for item in refund_items {
+            let product_exists: bool =
+                sqlx::query_scalar(r#"SELECT EXISTS (SELECT 1 FROM products WHERE id = ?)"#)
+                    .bind(item.product_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+
+            if !product_exists {
+                return Err(CommandError::InvalidInput(
+                    "pos-messages-product-does-not-exist".to_string(),
+                ));
+            }
+
+            let quantity = item.quantity;
+            let price_at_refund = item.price;
+
+            if quantity <= 0 {
+                return Err(CommandError::InvalidInput(
+                    "pos-messages-invalid-quantity-for-product".to_string(),
+                ));
+            }
+
+            if price_at_refund < 0.0 {
+                return Err(CommandError::InvalidInput(
+                    "pos-messages-invalid-price-for-product".to_string(),
+                ));
+            }
+
+            sqlx::query(
+                r#"
+                INSERT INTO refund_items (id, refund_id, product_id, product_name, quantity, price_at_refund)
+                VALUES (?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(Uuid::new_v4())
+            .bind(refund_id)
+            .bind(item.product_id)
+            .bind(&item.name)
+            .bind(quantity)
+            .bind(price_at_refund)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        refund_uuid = Some(refund_id);
+        info!("Created new refund {}", refund_id);
     }
 
     tx.commit().await?;
 
-    info!("Created new sale {}", sale_id);
+    // Print receipt for sale if exists (for now, only handle sale printing)
+    if let (Some(sale), items) = (sale_for_printing, sale_items_for_printing) {
+        // Filter out deposit products from printing
+        let items_to_print: Vec<(CartItem, Product)> = items
+            .into_iter()
+            .filter(|(_, product)| !product.has_deposit)
+            .collect();
 
-    let mut mutex_guard = printer_state.lock().await;
-    let printer = mutex_guard
-        .as_mut()
-        .ok_or(CommandError::PrinterNotConfigured)?;
+        if !items_to_print.is_empty() {
+            let mut mutex_guard = printer_state.lock().await;
+            let printer = mutex_guard
+                .as_mut()
+                .ok_or(CommandError::PrinterNotConfigured)?;
 
-    let store = app.get_store("store.json").unwrap();
-    let some_store = store.get("ticket-layout");
-    let layout = if let Some(store) = some_store {
-        serde_json::from_value::<PrintingLayout>(store)?
-    } else {
-        PrintingLayout::default()
-    };
+            let store = app.get_store("store.json").unwrap();
+            let some_store = store.get("ticket-layout");
+            let layout = if let Some(store) = some_store {
+                serde_json::from_value::<PrintingLayout>(store)?
+            } else {
+                PrintingLayout::default()
+            };
 
-    print_tickets(printer, &layout, &sale, &items_with_products)?;
+            print_tickets(printer, &layout, &sale, &items_to_print)?;
+        }
+    }
 
-    Ok(sale_id)
+    Ok(Transaction {
+        sale_uuid,
+        refund_uuid,
+    })
 }
 
 #[tauri::command]
-async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<AggregatedSaleItem>> {
-    let item_sales = sqlx::query_as::<_, AggregatedSaleItem>(
+async fn process_sale<R: Runtime>(
+    app: AppHandle<R>,
+    app_state: State<'_, AppState>,
+    printer_state: State<'_, NewPrinterState>,
+    items: Vec<CartItem>,
+) -> CommandResult<Uuid> {
+    // Wrapper for backward compatibility - calls process_transaction with empty refund_items
+    let transaction = process_transaction(
+        app,
+        app_state,
+        printer_state,
+        items,
+        vec![], // empty refund_items
+    )
+    .await?;
+
+    // Return the sale_uuid, or error if no sale was created
+    transaction.sale_uuid.ok_or(CommandError::InvalidInput(
+        "No sale was created".to_string(),
+    ))
+}
+
+#[derive(Serialize)]
+struct Recap {
+    sales: Vec<AggregatedSaleItem>,
+    refunds: Vec<AggregatedSaleItem>,
+}
+
+#[tauri::command]
+async fn get_transactions_recap(app_state: State<'_, AppState>) -> CommandResult<Recap> {
+    let sales = sqlx::query_as::<_, AggregatedSaleItem>(
         r#"
             SELECT id,
                 product_id,
@@ -265,7 +414,21 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<Ag
     .fetch_all(&app_state.db)
     .await?;
 
-    Ok(item_sales)
+    let refunds = sqlx::query_as::<_, AggregatedSaleItem>(
+        r#"
+            SELECT id,
+                product_id,
+                product_name,
+                SUM(quantity) AS total_quantity_sold,
+                SUM(quantity * price_at_refund) AS total_value_sold
+            FROM refund_items
+            GROUP BY product_id;
+        "#,
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    Ok(Recap { sales, refunds })
 }
 
 #[tauri::command]
@@ -299,6 +462,12 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
         .execute(&mut *tx)
         .await?;
     sqlx::query!("DELETE FROM sales").execute(&mut *tx).await?;
+    sqlx::query!("DELETE FROM refund_items")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!("DELETE FROM refunds")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query!("DELETE FROM products WHERE is_deleted = 1")
         .execute(&mut *tx)
         .await?;
@@ -309,7 +478,10 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-async fn export_sales(app: AppHandle, app_state: State<'_, AppState>) -> CommandResult<()> {
+async fn export_sales<R: Runtime>(
+    app: AppHandle<R>,
+    app_state: State<'_, AppState>,
+) -> CommandResult<()> {
     info!("Exporting to XLSX");
 
     let file_path = app.path().home_dir().unwrap();
@@ -323,8 +495,8 @@ async fn export_sales(app: AppHandle, app_state: State<'_, AppState>) -> Command
 }
 
 #[tauri::command]
-async fn print_last_sale(
-    app: AppHandle,
+async fn print_last_sale<R: Runtime>(
+    app: AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
 ) -> CommandResult<()> {
@@ -353,7 +525,8 @@ async fn print_last_sale(
                 products.category,
                 products.name,
                 products.price,
-                products.is_deleted AS 'is_product_deleted'
+                products.is_deleted AS 'is_product_deleted',
+                products.has_deposit
         FROM sale_items
             JOIN products ON sale_items.product_id = products.id
         WHERE sale_id = ?
@@ -364,6 +537,7 @@ async fn print_last_sale(
     .await?
     .into_iter()
     .map(|i| i.into())
+    .filter(|(_, product): &(CartItem, Product)| !product.has_deposit)
     .collect();
 
     let mut mutex_guard = printer_state.lock().await;
@@ -385,8 +559,8 @@ async fn print_last_sale(
 }
 
 #[tauri::command]
-async fn print_sale(
-    app: AppHandle,
+async fn print_sale<R: Runtime>(
+    app: AppHandle<R>,
     app_state: State<'_, AppState>,
     printer_state: State<'_, NewPrinterState>,
     sale_id: i64,
@@ -417,7 +591,8 @@ async fn print_sale(
                 products.category,
                 products.name,
                 products.price,
-                products.is_deleted AS 'is_product_deleted'
+                products.is_deleted AS 'is_product_deleted',
+                products.has_deposit
             FROM sale_items
                 JOIN products ON sale_items.product_id = products.id
             WHERE sale_id = ?
@@ -428,6 +603,7 @@ async fn print_sale(
     .await?
     .into_iter()
     .map(|i| i.into())
+    .filter(|(_, product): &(CartItem, Product)| !product.has_deposit)
     .collect();
 
     let mut mutex_guard = printer_state.lock().await;
@@ -449,7 +625,7 @@ async fn print_sale(
 }
 
 #[tauri::command]
-async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
+async fn get_print_layout<R: Runtime>(app: AppHandle<R>) -> CommandResult<PrintingLayout> {
     let store = app
         .get_store("store.json")
         .ok_or(CommandError::LoadSettings)?;
@@ -464,7 +640,10 @@ async fn get_print_layout(app: AppHandle) -> CommandResult<PrintingLayout> {
 }
 
 #[tauri::command]
-async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandResult<()> {
+async fn save_print_layout<R: Runtime>(
+    app: AppHandle<R>,
+    layout: PrintingLayout,
+) -> CommandResult<()> {
     info!("Saving updated layout {:?}", layout);
 
     let store = app
@@ -478,8 +657,8 @@ async fn save_print_layout(layout: PrintingLayout, app: AppHandle) -> CommandRes
 }
 
 #[tauri::command]
-async fn save_printer_selection(
-    app: AppHandle,
+async fn save_printer_selection<R: Runtime>(
+    app: AppHandle<R>,
     printer_state: State<'_, NewPrinterState>,
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
@@ -538,12 +717,12 @@ async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
 }
 
 #[tauri::command]
-async fn test_printer(
+async fn test_printer<R: Runtime>(
+    app: AppHandle<R>,
     printer_type: PrinterType,
     printer_id: Option<PrinterId>,
     printer_address: Option<PrinterAddress>,
     text_to_print: String,
-    app: AppHandle,
 ) -> CommandResult<()> {
     info!(
         "Attempting to print {:?} on {:?}",
@@ -586,13 +765,12 @@ async fn test_printer(
     Ok(())
 }
 
-async fn setup_db(app: &App) -> Db {
-    let mut path = app.path().app_data_dir().expect("Failed to get data_dir");
-    if let Err(err) = std::fs::create_dir_all(path.clone()) {
+pub async fn setup_db(path: &Path) -> Db {
+    if let Err(err) = std::fs::create_dir_all(path) {
         panic!("Error creating directory {}", err);
     }
 
-    path.push("app.db");
+    let path = path.join("app.db");
 
     Sqlite::create_database(
         format!(
@@ -605,7 +783,7 @@ async fn setup_db(app: &App) -> Db {
     .expect("Failed to create database");
 
     let db = SqlitePoolOptions::new()
-        .connect(path.to_str().unwrap())
+        .connect(path.to_str().expect("Invalid data_dir path"))
         .await
         .expect("Failed to connect to database");
 
@@ -617,7 +795,7 @@ async fn setup_db(app: &App) -> Db {
     db
 }
 
-fn setup_printer(app: &App) -> Option<PrinterWrapper> {
+fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<PrinterWrapper> {
     app.get_store("store.json").and_then(|store| {
         debug!("Trying to restore saved configs");
 
@@ -674,9 +852,8 @@ fn setup_printer(app: &App) -> Option<PrinterWrapper> {
     })
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
+pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R> {
+    builder
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -687,7 +864,8 @@ pub fn run() {
             delete_product,
             clear_sales_data,
             process_sale,
-            get_sales_recap,
+            process_transaction,
+            get_transactions_recap,
             get_today_sales,
             export_sales,
             print_last_sale,
@@ -700,16 +878,24 @@ pub fn run() {
         ])
         .setup(|app| {
             app.store("store.json")?;
+
             let printer = setup_printer(app);
-            app.manage(Arc::new(tokio::sync::Mutex::new(printer)));
+            app.manage(tokio::sync::Mutex::new(printer));
 
             tauri::async_runtime::block_on(async move {
-                let db = setup_db(app).await;
+                println!("Creating DB");
+                let path = app.path().app_data_dir().expect("Failed to get data_dir");
+                let db = setup_db(path.as_ref()).await;
                 app.manage(AppState { db });
             });
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while creating tauri application")
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    create_app(Builder::default()).run(|_, _| {})
 }

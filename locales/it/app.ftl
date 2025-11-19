@@ -20,11 +20,12 @@ pos-menu-title = POS
 
 pos-messages-empty-cart = Nessun prodotto
 pos-messages-loading-products = Caricamento prodotti...
-pos-messages-cannot-process-sale-with-no-items = Nessun prodotto nel carrello
+pos-messages-cannot-process-transaction-with-no-items = Nessun prodotto nel carrello
 pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
 
 pos-products-title = Prodotti
+pos-products-refunds-title = Rimborso cauzioni
 
 pos-process-payment-button = Completa pagamento
 
@@ -69,6 +70,11 @@ reports-today-sales-amount-sold = Importo venduto
 reports-today-sales-payment-method = Metodo di pagamento
 reports-today-sales-reprint-tickets-button = Ristampa vendita
 reports-today-sales-sales-time = Orario vendita
+
+reports-refunds-title = Resi cauzioni
+reports-refunds-product-name = Prodotto
+reports-refunds-quantity-refunded = Quantità
+reports-refunds-value-refunded = Importo rimborsato
 
 ## Settings
 

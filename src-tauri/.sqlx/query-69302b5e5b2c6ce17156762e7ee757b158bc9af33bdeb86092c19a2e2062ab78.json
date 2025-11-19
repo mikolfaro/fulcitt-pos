@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM refund_items",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "69302b5e5b2c6ce17156762e7ee757b158bc9af33bdeb86092c19a2e2062ab78"
+}

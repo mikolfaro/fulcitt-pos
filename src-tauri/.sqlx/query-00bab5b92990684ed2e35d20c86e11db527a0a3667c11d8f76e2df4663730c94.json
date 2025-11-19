@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT id as \"id: uuid::Uuid\", sale_time, total_amount, payment_method\n        FROM sales\n        ORDER BY sale_time DESC\n        ",
+  "query": "\n        SELECT id as \"id: uuid::Uuid\", number as \"number: i64\", refund_time, total_amount, payment_method\n        FROM refunds\n        ORDER BY refund_time DESC\n        ",
   "describe": {
     "columns": [
       {
@@ -9,18 +9,23 @@
         "type_info": "Text"
       },
       {
-        "name": "sale_time",
+        "name": "number: i64",
         "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "refund_time",
+        "ordinal": 2,
         "type_info": "Datetime"
       },
       {
         "name": "total_amount",
-        "ordinal": 2,
+        "ordinal": 3,
         "type_info": "Float"
       },
       {
         "name": "payment_method",
-        "ordinal": 3,
+        "ordinal": 4,
         "type_info": "Text"
       }
     ],
@@ -29,10 +34,11 @@
     },
     "nullable": [
       false,
+      true,
       false,
       false,
       true
     ]
   },
-  "hash": "12c86306a076ea4512712f81d9328a28a15e619a52b7207caefbf9d2ab4327d2"
+  "hash": "00bab5b92990684ed2e35d20c86e11db527a0a3667c11d8f76e2df4663730c94"
 }

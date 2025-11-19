@@ -3,42 +3,29 @@
     <span>{{ $t('pos-recap-amount-payed') }}</span>
     <span>{{ formatCurrency(amount) }}</span>
   </div>
-  <div
-    v-if="amount >= cart.total"
-    class="flex justify-between font-bold text-lg mb-4"
-  >
+  <div v-if="amount >= cart.total" class="flex justify-between font-bold text-lg mb-4">
     <span>{{ $t('pos-recap-change') }}</span>
     <span>{{ formatCurrency(amount - cart.total) }}</span>
   </div>
-  <div
-    v-else
-    class="flex justify-between font-bold text-lg mb-4"
-  >
+  <div v-else class="flex justify-between font-bold text-lg mb-4">
     <span>{{ $t('pos-recap-amount-due') }}</span>
     <span class="text-error">{{ formatCurrency(cart.total - amount) }}</span>
   </div>
 
   <div class="grid grid-cols-3 gap-2">
-    <button v-for="digit in digits"
-      :value="digit"
-      class="btn"
-      @click="type(digit)"
-    >
+    <button v-for="digit in digits" :value="digit" class="btn" @click="type(digit)">
       {{ digit }}
     </button>
 
     <a class="btn" @click="type('.')">.</a>
     <a class="btn" @click="type(0)">0</a>
-    <a class="btn" @click="undoType()"><-</a>
+    <a class="btn" @click="undoType()">&lt;-</a>
   </div>
 
   <button class="btn btn-success w-full mt-4" @click="processPayment">
     {{ $t('pos-process-payment-button') }}
   </button>
-  <button
-    class="btn btn-outline btn-error w-full mt-2"
-    @click="cancelPayment"
-  >
+  <button class="btn btn-outline btn-error w-full mt-2" @click="cancelPayment">
     {{ $t('pos-cancel-payment-button') }}
   </button>
 </template>
@@ -80,16 +67,21 @@ function undoType() {
 }
 
 async function processPayment() {
-  if (cart.items.length === 0) {
+  if (cart.isEmpty) {
     messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
     return;
   }
 
   try {
-    const items = cart.items.map((item) => {
+    const saleItems = cart.items.map((item) => {
       return { ...item, product_id: item.id }
     })
-    await invoke('process_sale', { items })
+
+    const refundItems = cart.refundItems.map((item) => {
+      return { ...item, product_id: item.id }
+    })
+
+    await invoke('process_transaction', { saleItems, refundItems })
 
     cart.clear()
     cart.unlock()

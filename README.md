@@ -55,12 +55,12 @@ Features
 - [X] Show all invoices and reprint
 - [X] Export sales
 - [X] Linux (AppImage) automated build
+- [X] Windows automated build
+- [X] Product deposit (pay/refund mechanic)
 
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
 - [ ] Integrate biome
-- [X] Windows automated build
-- [ ] Product deposit (pay/refund mechanic)
 - [ ] Voiding and refunding support
 - [ ] Network sync (p2p)
   - Add created_at/updated_at/device_id to Rust models
@@ -69,6 +69,4 @@ Features
 
 Known bugs
 
-- [X] On startup the printer is not configured, even though trying to print works
-- [X] Date times are not local in: tickets, reprint tickets and reports page
-- [ ] Build requires `NO_STRIP=true` on Linux see [tauri/issues/8929](https://github.com/tauri-apps/tauri/issues/8929)
+- [ ] Disconnect/reconnect USB printer may break connection
