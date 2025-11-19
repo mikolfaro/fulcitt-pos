@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { AppMessage } from "../lib";
 
 type Messages = {[key: number]: AppMessage}
+type UnknownMessage = string | {message ?: string, type ?: string }
 
 export const useMessagesStore = defineStore('messages', {
   state: () => ({
@@ -27,20 +28,25 @@ export const useMessagesStore = defineStore('messages', {
     addSuccess(message: string) {
       this.addMessage({ type: 'Success', message }, 5)
     },
-    addUnknownError(message: any) {
+    addUnknownError(message: UnknownMessage) {
+      let parsedMessage;
+
       if (typeof message === "string") {
-        message = { type: 'Unknown', message }
+        parsedMessage = { type: 'Unknown', message }
       } else if (typeof message === "object") {
         if (message?.message && message?.type) {
-          message = message as AppMessage
+          parsedMessage = message as AppMessage
         } else if (message?.type) {
-          message = { type: message.type, message: '' }
+          parsedMessage = { type: message.type, message: '' }
         }
-      } else {
-        message = { type: 'Unknown', message }
       }
 
-      this.addMessage(message)
+      if (!parsedMessage) {
+        console.error("Unknown message", message)
+        parsedMessage = { type: 'Unknown', message: 'Unknown message' }
+      }
+
+      this.addMessage(parsedMessage)
     },
     removeMessage(index: number) {
       delete this.messages[index]

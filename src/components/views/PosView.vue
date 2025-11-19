@@ -136,7 +136,7 @@ const formatCurrency = (value: number) => {
 onMounted(async () => {
   try {
     await fetchProducts();
-  } catch (err: any) {
+  } catch (err) {
     console.error("Database initialization/loading failed:", err);
     messages.addUnknownError(err)
   } finally {
@@ -148,10 +148,19 @@ onMounted(async () => {
 const fetchProducts = async () => {
   try {
     const products = await listProducts();
+    products.sort((a: Product, b: Product) => {
+      if (a.name < b.name) {
+        return -1
+      } else if (a.name > b.name) {
+        return 1
+      } else {
+        return 0
+      }
+    })
 
     availableProducts.value = products;
     refundableProducts.value = products.filter((product) => product.has_deposit)
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error fetching products:", err);
     messages.addUnknownError(err)
   }
@@ -198,15 +207,7 @@ const printLastSale = async () => {
 }
 
 const groupedProducts = computed<Record<string, Product[]>>(() => {
-  const sortedProducts = availableProducts.value.sort((a: Product, b: Product) => {
-    if (a.name < b.name) {
-      return -1
-    } else if (a.name > b.name) {
-      return 1
-    } else {
-      return 0
-    }
-  })
+  const sortedProducts = availableProducts.value
 
   return sortedProducts.reduce((groups: Record<string, Product[]>, product: Product) => {
     const category = product.category || 'Uncategorized'; // Default category if none provided

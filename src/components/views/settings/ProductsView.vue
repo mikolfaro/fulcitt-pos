@@ -225,7 +225,7 @@ const addProduct = async () => {
     newProduct.price = null;
     newProduct.category = '';
     newProduct.has_deposit = false;
-  } catch (err: any) {
+  } catch (err) {
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
       messages.addInvalidInput(
         `Error: A product with the name "${newProduct.name}" already exists.`
@@ -243,7 +243,7 @@ const fetchExistingProducts = async () => {
   try {
     const products = await listProducts();
     existingProducts.value = products;
-  } catch (err: any) {
+  } catch (err) {
     messages.addMessage({ type: 'DataLoading', message: `Failed to fetch products: ${err.message || err}`});
     existingProducts.value = [];
   } finally {
@@ -280,7 +280,7 @@ const doUpdateProduct = async () => {
     await fetchExistingProducts();
     closeEdit();
 
-  } catch (err: any) {
+  } catch (err) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
       messages.addInvalidInput(`Error: Another product likely exists with the name "${productToEdit.name}".`);
@@ -297,7 +297,7 @@ const doDeleteProduct = async (productToDelete: Product) => {
     await deleteProduct(productToDelete)
     messages.addSuccess($t('settings-products-messages-product-deleted'));
     await fetchExistingProducts();
-  } catch (err: any) {
+  } catch (err) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
     if (err.message?.toLowerCase().includes('unique constraint failed')) {
       messages.addInvalidInput(`Error: Another product likely exists with the name "${productToDelete.name}".`);
