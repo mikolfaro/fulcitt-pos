@@ -6,7 +6,7 @@ use escpos::{
 use log::info;
 use nusb::{list_devices, MaybeFuture};
 use serde::{Deserialize, Serialize};
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{path::Path, time::Duration};
 use tokio::sync::Mutex;
 
 use crate::errors::CommandResult;
@@ -97,7 +97,7 @@ pub struct AvailablePrinter {
 }
 
 /// Thread-safe printer state for use in Tauri
-pub type NewPrinterState = Arc<Mutex<Option<PrinterWrapper>>>;
+pub type NewPrinterState = Mutex<Option<PrinterWrapper>>;
 
 /// Create a file printer that writes to the specified path
 /// Use this for testing/debugging - output will be written to the file

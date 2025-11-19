@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT product_name, price_at_sale, SUM(quantity) as quantity FROM (\n            SELECT product_id, product_name, price_at_sale, quantity FROM sale_items\n            UNION ALL\n            SELECT product_id, product_name, price_at_refund as price_at_sale, -quantity as quantity FROM refund_items\n        )\n        GROUP BY product_id, price_at_sale\n        HAVING SUM(quantity) != 0\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "price_at_sale",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4179c5de913009fb5599869dbe8c3294542aaa33c07a9c3fe68a58763a246412"
+}

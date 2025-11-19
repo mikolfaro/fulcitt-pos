@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT id as \"id: uuid::Uuid\", name, category, price, is_deleted\n        FROM products\n        WHERE is_deleted = 0\n    ",
+  "query": "\n        SELECT id as \"id: uuid::Uuid\", name, category, price, is_deleted, has_deposit\n        FROM products\n        WHERE is_deleted = 0\n    ",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,11 @@
         "name": "is_deleted",
         "ordinal": 4,
         "type_info": "Bool"
+      },
+      {
+        "name": "has_deposit",
+        "ordinal": 5,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -37,8 +42,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "8072a0aaed82fb4c1430714872c90d37ec0522031b742c3dc8444e13fc3c2672"
+  "hash": "d7a371f4d4c70b35755ec0b40359e89933f3a23ef6d0f68e94652263dc0df683"
 }
