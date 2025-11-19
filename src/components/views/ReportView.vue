@@ -150,6 +150,7 @@ const clearHistory = async () => {
 
     productSalesData.value = []
     invoiceSalesData.value = []
+    refundsData.value = []
   } catch (err) {
     messages.addUnknownError(err)
   }

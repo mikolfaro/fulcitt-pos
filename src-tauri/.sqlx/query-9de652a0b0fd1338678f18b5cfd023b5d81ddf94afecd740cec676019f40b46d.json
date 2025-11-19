@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT\n                sale_items.product_name AS \"name_at_sale\",\n                sale_items.price_at_sale,\n                sale_items.quantity,\n                products.id AS \"product_id: uuid::Uuid\",\n                products.category,\n                products.name,\n                products.price,\n                products.is_deleted AS 'is_product_deleted'\n            FROM sale_items\n                JOIN products ON sale_items.product_id = products.id\n            WHERE sale_id = ?\n    ",
+  "query": "\n            SELECT\n                sale_items.product_name AS \"name_at_sale\",\n                sale_items.price_at_sale,\n                sale_items.quantity,\n                products.id AS \"product_id: uuid::Uuid\",\n                products.category,\n                products.name,\n                products.price,\n                products.is_deleted AS 'is_product_deleted',\n                products.has_deposit\n            FROM sale_items\n                JOIN products ON sale_items.product_id = products.id\n            WHERE sale_id = ?\n    ",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,11 @@
         "name": "is_product_deleted",
         "ordinal": 7,
         "type_info": "Bool"
+      },
+      {
+        "name": "has_deposit",
+        "ordinal": 8,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -55,8 +60,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "c0c61aa63b1edaa0ea646e2c25db8d90f258d79c3f783f3063b971b787612163"
+  "hash": "9de652a0b0fd1338678f18b5cfd023b5d81ddf94afecd740cec676019f40b46d"
 }

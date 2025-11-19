@@ -462,6 +462,8 @@ async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
         .execute(&mut *tx)
         .await?;
     sqlx::query!("DELETE FROM sales").execute(&mut *tx).await?;
+    sqlx::query!("DELETE FROM refund_items").execute(&mut *tx).await?;
+    sqlx::query!("DELETE FROM refunds").execute(&mut *tx).await?;
     sqlx::query!("DELETE FROM products WHERE is_deleted = 1")
         .execute(&mut *tx)
         .await?;
