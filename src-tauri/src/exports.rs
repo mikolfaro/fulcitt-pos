@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use log::debug;
 use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
@@ -15,7 +15,7 @@ struct SaleSummary {
 
 pub(crate) async fn export_sales_report(
     db: Pool<Sqlite>,
-    report_file_path: &PathBuf,
+    report_file_path: &Path,
 ) -> CommandResult<()> {
     let currency_format = Format::new().set_num_format("#,##0.00 €");
 
@@ -135,7 +135,7 @@ pub(crate) async fn export_sales_report(
     workbook.push_worksheet(products_worksheet);
     workbook.push_worksheet(invoices_worksheet);
     workbook.push_worksheet(refunds_worksheet);
-    workbook.save(report_file_path.as_path())?;
+    workbook.save(report_file_path)?;
 
     Ok(())
 }
