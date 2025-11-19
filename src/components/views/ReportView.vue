@@ -18,10 +18,30 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="item in productSalesData"
-            :key="item.product_id"
-          >
+          <tr v-for="item in productSalesData" :key="item.product_id">
+            <td>{{ item.product_name }}</td>
+            <td class="text-right">{{ item.total_quantity_sold }}</td>
+            <td class="text-right">{{ formatCurrency(item.total_value_sold) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="overflow-x-auto pb-8">
+      <h2 class="pb-4">
+        {{ $t('reports-refunds-title') }}
+      </h2>
+
+      <table class="table table-zebra w-full">
+        <thead>
+          <tr>
+            <th>{{ $t('reports-refunds-product-name') }}</th>
+            <th class="text-right">{{ $t('reports-refunds-quantity-refunded') }}</th>
+            <th class="text-right">{{ $t('reports-refunds--value-refunded') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in refundsData" :key="item.product_id">
             <td>{{ item.product_name }}</td>
             <td class="text-right">{{ item.total_quantity_sold }}</td>
             <td class="text-right">{{ formatCurrency(item.total_value_sold) }}</td>
@@ -46,19 +66,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="sale in invoiceSalesData"
-            :key="sale.id"
-          >
+          <tr v-for="sale in invoiceSalesData" :key="sale.id">
             <td class="text-right">{{ sale.number || 'N/A' }}</td>
             <td>{{ formatTime(sale.sale_time) }}</td>
             <td class="text-right">{{ formatCurrency(sale.total_amount) }}</td>
             <td>-</td>
             <td>
-              <button
-                class="btn btn-xs btn-outline btn-primary"
-                @click="printTicket(sale)"
-              >
+              <button class="btn btn-xs btn-outline btn-primary" @click="printTicket(sale)">
                 {{ $t('reports-today-sales-reprint-tickets-button') }}
               </button>
             </td>
@@ -109,6 +123,7 @@ const { $t } = useFluent()
 const messages = useMessagesStore()
 const loading = ref<boolean>(true)
 const productSalesData = ref<ItemSale[]>([])
+const refundsData = ref<ItemSale[]>([])
 const invoiceSalesData = ref<Sale[]>([])
 
 const currencyFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' })
@@ -149,18 +164,22 @@ const exportXlsx = async () => {
   }
 }
 
+interface WithProductName { product_name: string }
+const sortByProductName = (a: WithProductName, b: WithProductName) => {
+  if (a.product_name < b.product_name) {
+    return -1
+  } else if (a.product_name > b.product_name) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
 onMounted(async function () {
   try {
-    const data = await invoke<ItemSale[]>('get_sales_recap')
-    productSalesData.value = data.sort(function (a, b) {
-      if (a.product_name < b.product_name) {
-        return -1
-      } else if (a.product_name > b.product_name) {
-        return 1
-      } else {
-        return 0
-      }
-    })
+    const { sales, refunds } = await invoke<{ sales: ItemSale[], refund: ItemSale[] }>('get_transactions_recap')
+    productSalesData.value = sales.sort(sortByProductName)
+    refundsData.vale = refunds.sort(sortByProductName)
 
     loading.value = false
   } catch (err) {
@@ -168,7 +187,7 @@ onMounted(async function () {
   }
 
   try {
-    type DeserializedSale = Omit<Sale, 'sale_time'> & {sale_time: string};
+    type DeserializedSale = Omit<Sale, 'sale_time'> & { sale_time: string };
     const data = await invoke<DeserializedSale[]>("get_today_sales")
 
     invoiceSalesData.value = data.map(function (sale) {

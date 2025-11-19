@@ -392,9 +392,15 @@ async fn process_sale<R: Runtime>(
     ))
 }
 
+#[derive(Serialize)]
+struct Recap {
+    sales: Vec<AggregatedSaleItem>,
+    refunds: Vec<AggregatedSaleItem>,
+}
+
 #[tauri::command]
-async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<AggregatedSaleItem>> {
-    let item_sales = sqlx::query_as::<_, AggregatedSaleItem>(
+async fn get_transactions_recap(app_state: State<'_, AppState>) -> CommandResult<Recap> {
+    let sales = sqlx::query_as::<_, AggregatedSaleItem>(
         r#"
             SELECT id,
                 product_id,
@@ -408,7 +414,21 @@ async fn get_sales_recap(app_state: State<'_, AppState>) -> CommandResult<Vec<Ag
     .fetch_all(&app_state.db)
     .await?;
 
-    Ok(item_sales)
+    let refunds = sqlx::query_as::<_, AggregatedSaleItem>(
+        r#"
+            SELECT id,
+                product_id,
+                product_name,
+                SUM(quantity) AS total_quantity_sold,
+                SUM(quantity * price_at_refund) AS total_value_sold
+            FROM refund_items
+            GROUP BY product_id;
+        "#,
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    Ok(Recap { sales, refunds })
 }
 
 #[tauri::command]
@@ -839,7 +859,7 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             clear_sales_data,
             process_sale,
             process_transaction,
-            get_sales_recap,
+            get_transactions_recap,
             get_today_sales,
             export_sales,
             print_last_sale,
