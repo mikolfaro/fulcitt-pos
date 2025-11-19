@@ -178,7 +178,7 @@ const sortByProductName = (a: WithProductName, b: WithProductName) => {
 
 onMounted(async function () {
   try {
-    const { sales, refunds } = await invoke<{ sales: ItemSale[], refund: ItemSale[] }>('get_transactions_recap')
+    const { sales, refunds } = await invoke<{ sales: ItemSale[], refunds: ItemSale[] }>('get_transactions_recap')
     productSalesData.value = sales.sort(sortByProductName)
     refundsData.value = refunds.sort(sortByProductName)
 
