@@ -225,14 +225,8 @@ const addProduct = async () => {
     newProduct.price = null;
     newProduct.category = '';
     newProduct.has_deposit = false;
-  } catch (err) {
-    if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInvalidInput(
-        `Error: A product with the name "${newProduct.name}" already exists.`
-      );
-    } else {
+  } catch (err: unknown) {
       messages.addMessage(err as AppMessage)
-    }
   } finally {
     isAdding.value = false;
   }
@@ -243,8 +237,9 @@ const fetchExistingProducts = async () => {
   try {
     const products = await listProducts();
     existingProducts.value = products;
-  } catch (err) {
-    messages.addMessage({ type: 'DataLoading', message: `Failed to fetch products: ${err.message || err}`});
+  } catch (err: unknown) {
+    console.error("Failed to fetch products", err)
+    messages.addMessage({ type: 'DataLoading', message: `Errore durante il caricamento dei prodotti`});
     existingProducts.value = [];
   } finally {
     isLoadingProducts.value = false;
@@ -280,13 +275,9 @@ const doUpdateProduct = async () => {
     await fetchExistingProducts();
     closeEdit();
 
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
-    if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInvalidInput(`Error: Another product likely exists with the name "${productToEdit.name}".`);
-    } else {
-      messages.addMessage(err as AppMessage)
-    }
+    messages.addMessage(err as AppMessage)
   } finally {
     isUpdating.value = false;
   }
@@ -297,13 +288,9 @@ const doDeleteProduct = async (productToDelete: Product) => {
     await deleteProduct(productToDelete)
     messages.addSuccess($t('settings-products-messages-product-deleted'));
     await fetchExistingProducts();
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
-    if (err.message?.toLowerCase().includes('unique constraint failed')) {
-      messages.addInvalidInput(`Error: Another product likely exists with the name "${productToDelete.name}".`);
-    } else {
-      messages.addMessage(err as AppMessage);
-    }
+    messages.addMessage(err as AppMessage);
   }
 }
 </script>

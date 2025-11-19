@@ -2,7 +2,34 @@ import { defineStore } from "pinia";
 import { AppMessage } from "../lib";
 
 type Messages = {[key: number]: AppMessage}
-type UnknownMessage = string | {message ?: string, type ?: string }
+
+function toErrorMessage(message: unknown): AppMessage {
+  if (message === null) {
+    return { type: "UnknownError", message: "Errore sconosciuto" }
+  }
+
+  if (typeof message === "string") {
+    return { type: "GenericError", message }
+  }
+
+  if (typeof message !== "object") {
+    return {
+      type: "UnknownError",
+      message: JSON.stringify(message)
+    }
+  }
+
+    const type: string =
+      ("type" in message && message.type === "string")
+        ? message.type
+        : "UnknownError"
+    const messageStr: string =
+      ("message" in message && message.message === "string")
+        ? message.message
+        : JSON.stringify(message)
+
+    return { type, message: messageStr }
+}
 
 export const useMessagesStore = defineStore('messages', {
   state: () => ({
@@ -28,24 +55,8 @@ export const useMessagesStore = defineStore('messages', {
     addSuccess(message: string) {
       this.addMessage({ type: 'Success', message }, 5)
     },
-    addUnknownError(message: UnknownMessage) {
-      let parsedMessage;
-
-      if (typeof message === "string") {
-        parsedMessage = { type: 'Unknown', message }
-      } else if (typeof message === "object") {
-        if (message?.message && message?.type) {
-          parsedMessage = message as AppMessage
-        } else if (message?.type) {
-          parsedMessage = { type: message.type, message: '' }
-        }
-      }
-
-      if (!parsedMessage) {
-        console.error("Unknown message", message)
-        parsedMessage = { type: 'Unknown', message: 'Unknown message' }
-      }
-
+    addUnknownError(message: unknown) {
+      const parsedMessage = toErrorMessage(message)
       this.addMessage(parsedMessage)
     },
     removeMessage(index: number) {
