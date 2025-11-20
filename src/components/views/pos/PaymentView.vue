@@ -13,7 +13,12 @@
   </div>
 
   <div class="grid grid-cols-3 gap-2">
-    <button v-for="digit in digits" :value="digit" class="btn" @click="type(digit)">
+    <button
+      v-for="digit in digits"
+      :value="digit"
+      class="btn" @click="type(digit)"
+      :key="digit"
+    >
       {{ digit }}
     </button>
 

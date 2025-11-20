@@ -11,6 +11,7 @@
         class="tab [--tab-border-color:oklch(var(--bc)/0.2)]"
         active-class="tab-active"
         :to="r.to"
+        :key="r.name"
       >
         {{ r.name }}
       </router-link>
