@@ -226,9 +226,14 @@ async function save() {
       return;
     }
 
+    const printerAddress = printerTest.networkIp && printerTest.networkPort
+      ? { ip: printerTest.networkIp, port: printerTest.networkPort }
+      : null
+
     await invoke('save_printer_selection', {
       printerType: printerTest.type,
       printerId: printerTest.id,
+      printerAddress,
     })
 
     messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
