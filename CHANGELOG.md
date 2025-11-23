@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Improve CI script (caching)
+- Fix network printer configs restore
 
 ## [0.8.4] - 2025-11-21
 ### Fixed
