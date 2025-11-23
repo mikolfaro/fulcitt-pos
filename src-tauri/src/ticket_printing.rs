@@ -162,6 +162,21 @@ fn print_body(
     })?
     .feed()?;
 
+    let mut price_layout = layout.clone();
+    price_layout.font_size = match price_layout.font_size {
+        FontSize::Large => FontSize::Normal,
+        FontSize::Normal => FontSize::Small,
+        FontSize::Small => FontSize::Small,
+    };
+
+    with_layout(printer, layout, |p| {
+        let price = format!("€ {:.2}", item.price).replace(".", ",");
+        p.writeln(price.as_ref())?;
+
+        Ok(())
+    })?
+    .feed()?;
+
     Ok(())
 }
 
