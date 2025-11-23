@@ -57,21 +57,21 @@
 </template>
 
 <script setup lang="ts">
-import { useFluent } from 'fluent-vue'
-import { useMessagesStore } from '../../../stores/messagesStore'
-import { useUiSettings } from '../../../stores/uiSettings'
+import { useFluent } from "fluent-vue";
+import { useMessagesStore } from "../../../stores/messagesStore";
+import { useUiSettings } from "../../../stores/uiSettings";
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
-const { state: uiSettings, save: saveSettings } = useUiSettings()
+const { $t } = useFluent();
+const messages = useMessagesStore();
+const { state: uiSettings, save: saveSettings } = useUiSettings();
 
 async function save() {
   try {
-    await saveSettings()
-    messages.addSuccess($t('settings-ui-messages-settings-saved'))
+    await saveSettings();
+    messages.addSuccess($t("settings-ui-messages-settings-saved"));
   } catch (error) {
-    console.error('Error saving UI settings:', error)
-    messages.addUnknownError(error)
+    console.error("Error saving UI settings:", error);
+    messages.addUnknownError(error);
   }
 }
 </script>

@@ -12,7 +12,7 @@
       <a role="tab" class="tab [--tab-border-color:oklch(var(--bc)/0.2)] grow border-b!"></a>
     </div>
 
-    <div class="bg-base-100 border border-base-300 border-t-0 rounded-b-box p-6 min-h-[400px]">
+    <div class="bg-base-100 border border-base-300 border-t-0 rounded-b-box p-6 min-h-100">
       <router-view v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
           <keep-alive>
@@ -24,16 +24,16 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { useFluent } from 'fluent-vue';
+import { useFluent } from "fluent-vue";
 
-const { $t } = useFluent()
+const { $t } = useFluent();
 
 const subRoutes = [
-  { name: $t('settings-products-menu-title'), to: "/settings" },
-  { name: $t('settings-layout-menu-title'), to: "/settings/layout" },
-  { name: $t('settings-printer-menu-title'), to: "/settings/printer" },
-  { name: $t('settings-ui-menu-title'), to: '/settings/ui' },
-]
+  { name: $t("settings-products-menu-title"), to: "/settings" },
+  { name: $t("settings-layout-menu-title"), to: "/settings/layout" },
+  { name: $t("settings-printer-menu-title"), to: "/settings/printer" },
+  { name: $t("settings-ui-menu-title"), to: "/settings/ui" },
+];
 </script>
 
 <style>

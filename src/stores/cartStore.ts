@@ -1,28 +1,38 @@
 import { defineStore } from "pinia";
 import { CartItem, Product } from "../lib";
 
-export const useCartStore = defineStore('cart', {
+export const useCartStore = defineStore("cart", {
   state: () => ({
     items: [] as CartItem[],
     refundItems: [] as CartItem[],
-    isLocked: false
+    isLocked: false,
   }),
   getters: {
     subTotal(state) {
-      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-        - state.refundItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return (
+        state.items.reduce((sum, item) => sum + item.price * item.quantity, 0) -
+        state.refundItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        )
+      );
     },
     total(state) {
-      return state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-        - state.refundItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return (
+        state.items.reduce((sum, item) => sum + item.price * item.quantity, 0) -
+        state.refundItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        )
+      );
     },
     isEmpty(state) {
-      return state.items.length === 0 && state.refundItems.length === 0
-    }
+      return state.items.length === 0 && state.refundItems.length === 0;
+    },
   },
   actions: {
     addItem(newItem: Product | CartItem, quantity: number) {
-      const existingItem = this.items.find(item => item.id === newItem.id);
+      const existingItem = this.items.find((item) => item.id === newItem.id);
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
@@ -31,20 +41,28 @@ export const useCartStore = defineStore('cart', {
     },
     removeItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
       if (quantity) {
-        const existingItem = this.items.find(item => item.id === itemToBeRemoved.id);
+        const existingItem = this.items.find(
+          (item) => item.id === itemToBeRemoved.id,
+        );
         if (existingItem) {
           if (existingItem.quantity > quantity) {
-            existingItem.quantity -= quantity
+            existingItem.quantity -= quantity;
           } else {
-            this.items = this.items.filter(item => item.id !== itemToBeRemoved.id)
+            this.items = this.items.filter(
+              (item) => item.id !== itemToBeRemoved.id,
+            );
           }
         }
       } else {
-        this.items = this.items.filter(item => item.id !== itemToBeRemoved.id)
+        this.items = this.items.filter(
+          (item) => item.id !== itemToBeRemoved.id,
+        );
       }
     },
     addRefundItem(newItem: Product | CartItem, quantity: number) {
-      const existingRefundItem = this.refundItems.find(item => item.id === newItem.id);
+      const existingRefundItem = this.refundItems.find(
+        (item) => item.id === newItem.id,
+      );
       if (existingRefundItem) {
         existingRefundItem.quantity += quantity;
       } else {
@@ -53,27 +71,33 @@ export const useCartStore = defineStore('cart', {
     },
     removeRefundItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
       if (quantity) {
-        const existingRefundItem = this.refundItems.find(item => item.id === itemToBeRemoved.id);
+        const existingRefundItem = this.refundItems.find(
+          (item) => item.id === itemToBeRemoved.id,
+        );
         if (existingRefundItem) {
           if (existingRefundItem.quantity > quantity) {
-            existingRefundItem.quantity -= quantity
+            existingRefundItem.quantity -= quantity;
           } else {
-            this.refundItems = this.refundItems.filter(item => item.id !== itemToBeRemoved.id)
+            this.refundItems = this.refundItems.filter(
+              (item) => item.id !== itemToBeRemoved.id,
+            );
           }
         }
       } else {
-        this.refundItems = this.refundItems.filter(item => item.id !== itemToBeRemoved.id)
+        this.refundItems = this.refundItems.filter(
+          (item) => item.id !== itemToBeRemoved.id,
+        );
       }
     },
     clear() {
-      this.items = []
-      this.refundItems = []
+      this.items = [];
+      this.refundItems = [];
     },
     lock() {
-      this.isLocked = true
+      this.isLocked = true;
     },
     unlock() {
-      this.isLocked = false
+      this.isLocked = false;
     },
-  }
+  },
 });

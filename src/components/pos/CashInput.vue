@@ -35,51 +35,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useFluent } from 'fluent-vue';
-import { useCartStore } from '../../stores/cartStore';
-import { useMessagesStore } from '../../stores/messagesStore';
+import { ref } from "vue";
+import { useFluent } from "fluent-vue";
+import { useCartStore } from "../../stores/cartStore";
+import { useMessagesStore } from "../../stores/messagesStore";
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
-const cart = useCartStore()
-const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
-const typedAmount = ref<string>('')
+const { $t } = useFluent();
+const messages = useMessagesStore();
+const cart = useCartStore();
+const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3];
+const typedAmount = ref<string>("");
 const amount = ref<number>(0);
 
 const emit = defineEmits<{
-  (e: 'processCashPayment', payedAmount: number): void,
-  (e: 'reopenCart'): void
-}>()
+  (e: "processCashPayment", payedAmount: number): void;
+  (e: "reopenCart"): void;
+}>();
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-}
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+};
 
 function type(digit: number | string) {
-  typedAmount.value += digit.toString()
-  amount.value = parseFloat(typedAmount.value)
+  typedAmount.value += digit.toString();
+  amount.value = parseFloat(typedAmount.value);
 }
 
 function undoType() {
   if (typedAmount.value.length > 1) {
-    typedAmount.value = typedAmount.value.slice(0, -1)
-    amount.value = parseFloat(typedAmount.value)
+    typedAmount.value = typedAmount.value.slice(0, -1);
+    amount.value = parseFloat(typedAmount.value);
   } else {
-    typedAmount.value = ''
-    amount.value = 0
+    typedAmount.value = "";
+    amount.value = 0;
   }
 }
 
 function processPayment() {
   if (amount.value < cart.total) {
-    messages.addMessage({ type: 'InvalidInput', message: $t('pos-messages-insufficient-amount') })
+    messages.addMessage({
+      type: "InvalidInput",
+      message: $t("pos-messages-insufficient-amount"),
+    });
   } else {
-    emit('processCashPayment', amount.value)
+    emit("processCashPayment", amount.value);
   }
 }
 
 function reopenCart() {
-  emit('reopenCart')
+  emit("reopenCart");
 }
 </script>

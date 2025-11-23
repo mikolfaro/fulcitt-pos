@@ -128,92 +128,99 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
-import { appDataDir } from '@tauri-apps/api/path'
-import { openPath } from '@tauri-apps/plugin-opener'
-import { load } from '@tauri-apps/plugin-store'
-import { onMounted, reactive, ref } from 'vue'
-import { useFluent } from 'fluent-vue'
-import { useMessagesStore } from '../../../stores/messagesStore'
-import { AppMessage } from '../../../lib'
+import { invoke } from "@tauri-apps/api/core";
+import { appDataDir } from "@tauri-apps/api/path";
+import { openPath } from "@tauri-apps/plugin-opener";
+import { load } from "@tauri-apps/plugin-store";
+import { useFluent } from "fluent-vue";
+import { onMounted, reactive, ref } from "vue";
+import { AppMessage } from "../../../lib";
+import { useMessagesStore } from "../../../stores/messagesStore";
 
 interface PrinterInfo {
-  vendor_id: number,
-  product_id: number,
-  class: number,
-  subclass: number,
-  manufacturer: string,
-  product: string,
+  vendor_id: number;
+  product_id: number;
+  class: number;
+  subclass: number;
+  manufacturer: string;
+  product: string;
 }
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
+const { $t } = useFluent();
+const messages = useMessagesStore();
 
-const availableUsbPrinters = ref<PrinterInfo[]>([])
-const printerOutputPath = ref<string>('')
+const availableUsbPrinters = ref<PrinterInfo[]>([]);
+const printerOutputPath = ref<string>("");
 
-type PrinterType = "None" | "File" | "Network" | "Usb"
+type PrinterType = "None" | "File" | "Network" | "Usb";
 type UsbPrinterId = {
-  vendor_id: number,
-  product_id: number,
-}
+  vendor_id: number;
+  product_id: number;
+};
 type NetworkPrinterAddress = {
-  ip: string,
-  port: number,
-}
+  ip: string;
+  port: number;
+};
 
 const printerTest = reactive<{
-  text: string,
-  type: PrinterType,
-  id: UsbPrinterId | null,
-  networkIp: string | null,
-  networkPort: number | null,
+  text: string;
+  type: PrinterType;
+  id: UsbPrinterId | null;
+  networkIp: string | null;
+  networkPort: number | null;
 }>({
-  text: $t('settings-printer-test-example', { date: new Date() }),
+  text: $t("settings-printer-test-example", { date: new Date() }),
   type: "None",
   id: null,
   networkIp: null,
   networkPort: null,
-})
+});
 
 const formatName = function (printer: PrinterInfo): string {
-  const name = [printer.manufacturer, printer.product].join(' ')
-  const vendorId = printer.vendor_id.toString(16).padStart(4, "0")
-  const productId = printer.product_id.toString(16).padStart(4, "0")
-  return `${name} (${vendorId}:${productId})`.trim()
-}
+  const name = [printer.manufacturer, printer.product].join(" ");
+  const vendorId = printer.vendor_id.toString(16).padStart(4, "0");
+  const productId = printer.product_id.toString(16).padStart(4, "0");
+  return `${name} (${vendorId}:${productId})`.trim();
+};
 
 async function triggerPrint() {
-  if (printerTest.type === 'None') {
-    messages.addInvalidInput($t('settings-printer-messages-no-printer-selected'));
+  if (printerTest.type === "None") {
+    messages.addInvalidInput(
+      $t("settings-printer-messages-no-printer-selected"),
+    );
     return;
-  } else if (printerTest.type === 'Usb' && !printerTest.id) {
-    messages.addInvalidInput($t('settings-printer-messages-usb-device-not-selected'));
+  } else if (printerTest.type === "Usb" && !printerTest.id) {
+    messages.addInvalidInput(
+      $t("settings-printer-messages-usb-device-not-selected"),
+    );
     return;
   }
 
   if (!printerTest.text) {
-    messages.addInvalidInput($t('settings-printer-messages-no-text-to-print'));
+    messages.addInvalidInput($t("settings-printer-messages-no-text-to-print"));
     return;
   }
 
   try {
-    const printerAddress = printerTest.networkIp && printerTest.networkPort
-      ? { ip: printerTest.networkIp, port: printerTest.networkPort }
-      : null
+    const printerAddress =
+      printerTest.networkIp && printerTest.networkPort
+        ? { ip: printerTest.networkIp, port: printerTest.networkPort }
+        : null;
 
-    await invoke('test_printer', {
+    await invoke("test_printer", {
       printerType: printerTest.type,
       printerId: printerTest.id,
       printerAddress,
-      textToPrint: printerTest.text
-    })
-    messages.addSuccess($t('settings-printer-messages-print-success'))
+      textToPrint: printerTest.text,
+    });
+    messages.addSuccess($t("settings-printer-messages-print-success"));
 
-    printerTest.text = $t('settings-printer-test-example', { date: new Date() })
+    printerTest.text = $t("settings-printer-test-example", {
+      date: new Date(),
+    });
   } catch (error) {
-    if (typeof error === 'string') {
-      messages.addUnknownError(error)
+    if (typeof error === "string") {
+      messages.addUnknownError(error);
     } else {
       messages.addMessage(error as AppMessage);
     }
@@ -222,30 +229,35 @@ async function triggerPrint() {
 
 async function save() {
   try {
-    if (printerTest.type === 'None') {
-      messages.addInvalidInput($t('settings-printer-messages-no-printer-selected'));
+    if (printerTest.type === "None") {
+      messages.addInvalidInput(
+        $t("settings-printer-messages-no-printer-selected"),
+      );
       return;
-    } else if (printerTest.type === 'Usb' && !printerTest.id) {
-      messages.addInvalidInput($t('settings-printer-messages-usb-device-not-selected'));
+    } else if (printerTest.type === "Usb" && !printerTest.id) {
+      messages.addInvalidInput(
+        $t("settings-printer-messages-usb-device-not-selected"),
+      );
       return;
     }
 
-    const printerAddress = printerTest.networkIp && printerTest.networkPort
-      ? { ip: printerTest.networkIp, port: printerTest.networkPort }
-      : null
+    const printerAddress =
+      printerTest.networkIp && printerTest.networkPort
+        ? { ip: printerTest.networkIp, port: printerTest.networkPort }
+        : null;
 
-    await invoke('save_printer_selection', {
+    await invoke("save_printer_selection", {
       printerType: printerTest.type,
       printerId: printerTest.id,
       printerAddress,
-    })
+    });
 
-    messages.addSuccess($t('settings-printer-messages-printer-device-saved'))
+    messages.addSuccess($t("settings-printer-messages-printer-device-saved"));
   } catch (error) {
-    console.error(error)
+    console.error(error);
 
-    if (typeof error === 'string') {
-      messages.addUnknownError(error)
+    if (typeof error === "string") {
+      messages.addUnknownError(error);
     } else {
       messages.addMessage(error as AppMessage);
     }
@@ -254,76 +266,81 @@ async function save() {
 
 async function openPrinterFile() {
   try {
-    await openPath(printerOutputPath.value)
-    messages.addSuccess($t('settings-printer-messages-opening-printer-file'))
+    await openPath(printerOutputPath.value);
+    messages.addSuccess($t("settings-printer-messages-opening-printer-file"));
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 }
 
 async function openPrinterFolder() {
   try {
-    const dataDir = await appDataDir()
-    await openPath(dataDir)
-    messages.addSuccess($t('settings-printer-messages-opening-app-folder'))
+    const dataDir = await appDataDir();
+    await openPath(dataDir);
+    messages.addSuccess($t("settings-printer-messages-opening-app-folder"));
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 }
 
 async function refreshAvailablePrinters() {
   try {
-    const usbPrinters = await invoke<PrinterInfo[]>('list_usb_devices')
+    const usbPrinters = await invoke<PrinterInfo[]>("list_usb_devices");
 
     availableUsbPrinters.value = usbPrinters.sort(function (a, b) {
-      const nameA = formatName(a)
-      const nameB = formatName(b)
+      const nameA = formatName(a);
+      const nameB = formatName(b);
 
       if (nameA < nameB) {
-        return -1
+        return -1;
       } else if (nameA > nameB) {
-        return 1
+        return 1;
       } else {
-        return 0
+        return 0;
       }
-    })
+    });
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 }
 
 onMounted(async () => {
   // Set up printer output path
-  const dataDir = await appDataDir()
-  printerOutputPath.value = `${dataDir}/printer_output.txt`
+  const dataDir = await appDataDir();
+  printerOutputPath.value = `${dataDir}/printer_output.txt`;
 
-  const settingsStore = await load('store.json', {
+  const settingsStore = await load("store.json", {
     autoSave: false,
     defaults: {
-      printerType: 'None',
-      printerId: null
+      printerType: "None",
+      printerId: null,
     },
   });
-  const printerType = await settingsStore.get<PrinterType>('printer-type')
-  const printerId = await settingsStore.get<UsbPrinterId>('printer-id')
-  const printerAddress = await settingsStore.get<NetworkPrinterAddress>('printer-address')
+  const printerType = await settingsStore.get<PrinterType>("printer-type");
+  const printerId = await settingsStore.get<UsbPrinterId>("printer-id");
+  const printerAddress =
+    await settingsStore.get<NetworkPrinterAddress>("printer-address");
 
-  await refreshAvailablePrinters()
+  await refreshAvailablePrinters();
 
-  if (printerType === 'Usb' && printerId) {
-    printerTest.id = availableUsbPrinters.value.find((p) => {
-      return p.product_id == printerId.product_id && p.vendor_id == printerId.vendor_id
-    }) || null
+  if (printerType === "Usb" && printerId) {
+    printerTest.id =
+      availableUsbPrinters.value.find((p) => {
+        return (
+          p.product_id == printerId.product_id &&
+          p.vendor_id == printerId.vendor_id
+        );
+      }) || null;
 
-    printerTest.type = printerType
-  } else if (printerType === 'Network' && printerAddress) {
-    printerTest.type = 'Network'
-    printerTest.networkIp = printerAddress.ip
-    printerTest.networkPort = printerAddress.port
-  } else if (printerType === 'File') {
-    printerTest.type = 'File'
+    printerTest.type = printerType;
+  } else if (printerType === "Network" && printerAddress) {
+    printerTest.type = "Network";
+    printerTest.networkIp = printerAddress.ip;
+    printerTest.networkPort = printerAddress.port;
+  } else if (printerType === "File") {
+    printerTest.type = "File";
   } else {
-    printerTest.type = 'None'
+    printerTest.type = "None";
   }
-})
+});
 </script>

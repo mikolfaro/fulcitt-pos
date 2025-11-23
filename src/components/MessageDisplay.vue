@@ -16,34 +16,34 @@
 </template>
 
 <script setup lang="ts">
-import { useFluent } from 'fluent-vue'
-import { useMessagesStore } from '../stores/messagesStore'
+import { useFluent } from "fluent-vue";
+import { useMessagesStore } from "../stores/messagesStore";
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
+const { $t } = useFluent();
+const messages = useMessagesStore();
 
 function getAlertType(type: string) {
   switch (type) {
-    case 'InvalidInput':
-      return 'alert-warning'
-    case 'Database':
-    case 'Printer':
-    case 'Internal':
-    case 'MutexPoisoned':
-      return 'alert-error'
-    case 'Success':
-      return 'alert-success'
+    case "InvalidInput":
+      return "alert-warning";
+    case "Database":
+    case "Printer":
+    case "Internal":
+    case "MutexPoisoned":
+      return "alert-error";
+    case "Success":
+      return "alert-success";
     default:
-      console.warn("Unknown error", type)
-      return 'alert-error'
+      console.warn("Unknown error", type);
+      return "alert-error";
   }
 }
 
 function getTitle(type: string) {
-  return $t(`app-message-generic-${type}`)
+  return $t(`app-message-generic-${type}`);
 }
 
 function dismissMessage(index: number) {
-  messages.removeMessage(index)
+  messages.removeMessage(index);
 }
 </script>

@@ -10,5 +10,7 @@
 }
 
 @plugin "daisyui" {
-  themes: dark --default, light --preferslight;
+  themes:
+    dark --default,
+    light --preferslight;
 }
