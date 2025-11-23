@@ -705,7 +705,7 @@ async fn save_printer_selection<R: Runtime>(
     store.set("printer-type", value);
 
     let value = serde_json::to_value(printer_address)?;
-    store.set("printer-ip", value);
+    store.set("printer-address", value);
 
     Ok(())
 }

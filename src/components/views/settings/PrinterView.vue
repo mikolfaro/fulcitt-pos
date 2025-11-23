@@ -157,12 +157,16 @@ type UsbPrinterId = {
   vendor_id: number,
   product_id: number,
 }
+type NetworkPrinterAddress = {
+  ip: string,
+  port: number,
+}
 
 const printerTest = reactive<{
   text: string,
   type: PrinterType,
   id: UsbPrinterId | null,
-  networkIp: number | null,
+  networkIp: string | null,
   networkPort: number | null,
 }>({
   text: $t('settings-printer-test-example', { date: new Date() }),
@@ -293,9 +297,16 @@ onMounted(async () => {
   const dataDir = await appDataDir()
   printerOutputPath.value = `${dataDir}/printer_output.txt`
 
-  const settingsStore = await load('store.json', { autoSave: false });
-  const printerType = await settingsStore.get<PrinterType>('printer-type') || 'None'
+  const settingsStore = await load('store.json', {
+    autoSave: false,
+    defaults: {
+      printerType: 'None',
+      printerId: null
+    },
+  });
+  const printerType = await settingsStore.get<PrinterType>('printer-type')
   const printerId = await settingsStore.get<UsbPrinterId>('printer-id')
+  const printerAddress = await settingsStore.get<NetworkPrinterAddress>('printer-address')
 
   await refreshAvailablePrinters()
 
@@ -305,6 +316,10 @@ onMounted(async () => {
     }) || null
 
     printerTest.type = printerType
+  } else if (printerType === 'Network' && printerAddress) {
+    printerTest.type = 'Network'
+    printerTest.networkIp = printerAddress.ip
+    printerTest.networkPort = printerAddress.port
   } else if (printerType === 'File') {
     printerTest.type = 'File'
   } else {
