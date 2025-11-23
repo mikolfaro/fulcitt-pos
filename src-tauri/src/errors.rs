@@ -60,14 +60,6 @@ impl From<nusb::Error> for CommandError {
     }
 }
 
-impl From<rusb::Error> for CommandError {
-    fn from(err: rusb::Error) -> Self {
-        log::error!("USB error occurred {:?}", err);
-
-        CommandError::Usb(err.to_string())
-    }
-}
-
 impl From<rust_xlsxwriter::XlsxError> for CommandError {
     fn from(err: rust_xlsxwriter::XlsxError) -> Self {
         log::error!("XLSX manipulation occurred {:?}", err);

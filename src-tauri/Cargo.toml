@@ -1,6 +1,6 @@
 [package]
 name = "fulcitt-pos"
-version = "0.8.4"
+version = "0.8.5"
 description = "Minimal POS used by Gruppo Fulcitt"
 authors = ["Mikol Faro <mikol.faro@proton.me>"]
 edition = "2021"
@@ -24,7 +24,7 @@ dotenvy = "0.15.7"
 escpos = { version = "0.15.2", features = ["native_usb", "usb"] }
 fluent-bundle = "0.16.0"
 log = "0.4.27"
-rusb = "0.9.4"
+nusb = { version = "0.2.1", features = ["tokio"] }
 rust_xlsxwriter = { version = "0.87.0", features = ["chrono", "serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -38,7 +38,6 @@ tauri-plugin-opener = "2"
 tauri-plugin-store = "2"
 thiserror = "2.0.12"
 tokio = { version = "1.48.0", features = ["sync"] }
-nusb = { version = "0.2.1", features = ["tokio"] }
 
 [dev-dependencies]
 tauri = { version = "2", features = ["test"] }
