@@ -1483,7 +1483,6 @@ dependencies = [
  "fluent-bundle",
  "log",
  "nusb 0.2.1",
- "rusb",
  "rust_xlsxwriter",
  "serde",
  "serde_json",
