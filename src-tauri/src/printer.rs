@@ -1,7 +1,7 @@
 use escpos::{
     driver::{FileDriver, NativeUsbDriver, NetworkDriver},
     printer::Printer,
-    utils::{JustifyMode, Protocol},
+    utils::{Encoder, JustifyMode, PageCode, Protocol},
 };
 use log::info;
 use nusb::{list_devices, MaybeFuture};
@@ -83,6 +83,9 @@ impl PrinterWrapper {
     delegate_method!(print_cut);
 
     delegate_method!(reset_size);
+
+    delegate_method!(page_code, code: PageCode);
+    delegate_method!(custom, cmd: &[u8]);
 }
 
 /// USB device information for printer enumeration
@@ -129,7 +132,8 @@ pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<Prin
 pub fn create_network_printer(ip_address: String, port: u16) -> CommandResult<PrinterWrapper> {
     info!("Setting up network printer {:?}", ip_address);
     let driver = NetworkDriver::open(&ip_address, port, Some(Duration::from_secs(1)))?;
-    let printer = Printer::new(driver, Protocol::default(), None);
+    let protocol = Protocol::new(Encoder::new(encoding_rs::UTF_8));
+    let printer = Printer::new(driver, protocol, None);
     Ok(PrinterWrapper::Network(printer))
 }
 

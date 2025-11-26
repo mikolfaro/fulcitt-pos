@@ -1479,6 +1479,7 @@ version = "0.8.5"
 dependencies = [
  "chrono",
  "dotenvy",
+ "encoding_rs",
  "escpos",
  "fluent-bundle",
  "log",

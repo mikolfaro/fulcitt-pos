@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Improve CI script (caching)
+### Fixed
+- Fix € symbol in Windows tickets
 
 ## [0.8.5]
 ### Added
