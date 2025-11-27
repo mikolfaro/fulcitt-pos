@@ -93,7 +93,11 @@
                 <span class="px-2">{{ item.quantity }}</span>
                 <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
               </td>
-              <td>{{ item.name }} ({{ "Rimborso cauzione" }})</td>
+              <td>
+                {{ item.name }}
+                <span v-if="itemHasDeposit(item)">({{ "Rimborso cauzione" }})</span>
+                <span v-else>({{ "Storno" }})</span>
+              </td>
               <td>{{ formatCurrency(-1.0 * item.price) }}</td>
               <td>{{ formatCurrency(-1.0 * item.price * item.quantity) }}</td>
               <td>
@@ -174,8 +178,13 @@ const fetchProducts = async () => {
   }
 };
 
+const itemHasDeposit = (item: CartItem) => {
+  return refundableProducts.value.find((p: Product) => {
+    return item.id === p.id
+  })?.has_deposit
+}
+
 const addToCart = (product: Product) => {
-  console.log("Add item", refundModeActive.value, product.name);
   if (refundModeActive.value) {
     cart.addRefundItem(product, 1);
   } else {
