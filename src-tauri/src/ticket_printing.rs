@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use escpos::utils::JustifyMode;
+use escpos::utils::{JustifyMode, PageCode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -169,8 +169,11 @@ fn print_body(
         FontSize::Small => FontSize::Small,
     };
 
-    with_layout(printer, layout, |p| {
-        let price = format!("€ {:.2}", item.price).replace(".", ",");
+    with_layout(printer, &price_layout, |p| {
+        p.page_code(PageCode::PC858)?;
+        p.custom(&[0xD5])?;
+
+        let price = format!("{:.2}", item.price).replace(".", ",");
         p.writeln(price.as_ref())?;
 
         Ok(())
