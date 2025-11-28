@@ -12,6 +12,7 @@ pos-cart-product-name = Prodotto
 pos-cart-unit-price = Prezzo
 pos-cart-quantity = Q.tà
 pos-cart-title = Ordine attuale
+pos-cart-toggle-refund-mode = Attiva storno
 pos-cart-total-price = Totale
 
 pos-cancel-payment-button = Annulla pagamento

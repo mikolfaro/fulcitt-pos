@@ -1,7 +1,7 @@
 {
   "name": "fulcitt-pos",
   "private": true,
-  "version": "0.8.5",
+  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -35,8 +35,8 @@
     "@vue/eslint-config-typescript": "^14.6.0",
     "daisyui": "^5.5.5",
     "eslint": "^9.39.1",
-    "typescript": "~5.6.3",
+    "typescript": "~5.9.3",
     "vite": "^6.4.1",
-    "vue-tsc": "^2.2.12"
+    "vue-tsc": "^3.1.5"
   }
 }

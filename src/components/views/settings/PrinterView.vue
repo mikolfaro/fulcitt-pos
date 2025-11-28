@@ -96,7 +96,7 @@
       </div>
     </div>
 
-    <div class="card bg-base-200 shadow-md mt-8" v-id="printerTest.type !== 'None'">
+    <div class="card bg-base-200 shadow-md mt-8" v-if="printerTest.type !== 'None'">
       <div class="card-body">
         <h3 class="card-title text-lg">
           {{ $t('settings-printer-test-printer-title') }}

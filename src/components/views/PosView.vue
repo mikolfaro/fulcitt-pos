@@ -7,7 +7,7 @@
   </div>
   <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
     <div class="w-3/5 flex flex-col gap-4">
-      <div class="flex flex-col flex-grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto justify-between">
+      <div class="flex flex-col grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto justify-between">
         <div>
           <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-title') }}</h2>
           <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
@@ -15,7 +15,7 @@
             <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               <div v-for="product in productsInCategory" :aria-disabled="cart.isLocked" :key="product.id"
                 class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-                @click="!cart.isLocked && addToCart(product)">
+                :class="{ 'text-secondary': refundModeActive }" @click="!cart.isLocked && addToCart(product)">
                 <div class="card-body items-center text-center p-3">
                   <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
                   <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
@@ -40,16 +40,23 @@
         </div>
       </div>
 
-      <div>
-        <a class="btn btn-primary" @click="printLastSale()">
+      <div class="flex flex-row justify-between">
+        <button class="btn btn-primary" @click="printLastSale()">
           {{ $t('pos-reprint-tickets-button') }}
-        </a>
+        </button>
+
+        <fieldset class="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-2">
+          <label class="label">
+            <input type="checkbox" class="toggle toggle-error" v-model="refundModeActive" />
+            {{ $t('pos-cart-toggle-refund-mode') }}
+          </label>
+        </fieldset>
       </div>
     </div>
 
     <div class="w-2/5 bg-base-100 rounded-box shadow-lg p-4 flex flex-col">
       <h2 class="text-xl font-bold mb-4">{{ $t('pos-cart-title') }}</h2>
-      <div class="flex-grow overflow-y-auto mb-4">
+      <div class="grow overflow-y-auto mb-4">
         <table class="table table-zebra w-full">
           <thead>
             <tr>
@@ -86,7 +93,11 @@
                 <span class="px-2">{{ item.quantity }}</span>
                 <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
               </td>
-              <td>{{ item.name }} ({{ "Rimborso cauzione" }})</td>
+              <td>
+                {{ item.name }}
+                <span v-if="itemHasDeposit(item)">({{ "Rimborso cauzione" }})</span>
+                <span v-else>({{ "Storno" }})</span>
+              </td>
               <td>{{ formatCurrency(-1.0 * item.price) }}</td>
               <td>{{ formatCurrency(-1.0 * item.price * item.quantity) }}</td>
               <td>
@@ -128,6 +139,7 @@ const { $t } = useFluent();
 const cart = useCartStore();
 const messages = useMessagesStore()
 const isLoading = ref(true);
+const refundModeActive = defineModel<boolean>({ default: false })
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -166,8 +178,18 @@ const fetchProducts = async () => {
   }
 };
 
+const itemHasDeposit = (item: CartItem) => {
+  return refundableProducts.value.find((p: Product) => {
+    return item.id === p.id
+  })?.has_deposit
+}
+
 const addToCart = (product: Product) => {
-  cart.addItem(product, 1);
+  if (refundModeActive.value) {
+    cart.addRefundItem(product, 1);
+  } else {
+    cart.addItem(product, 1);
+  }
 };
 
 const incrementQuantity = (item: CartItem) => {

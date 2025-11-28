@@ -20,7 +20,7 @@ pub(crate) async fn export_sales_report(
     let currency_format = Format::new().set_num_format("#,##0.00 €");
 
     let mut products_worksheet = Worksheet::new();
-    products_worksheet.set_name("venduto")?;
+    products_worksheet.set_name("venduto netto")?;
 
     let sale_summaries = sqlx::query_as!(
         SaleSummary,
@@ -99,7 +99,7 @@ pub(crate) async fn export_sales_report(
 
     // Refunds worksheet
     let mut refunds_worksheet = Worksheet::new();
-    refunds_worksheet.set_name("rimborsi")?;
+    refunds_worksheet.set_name("rimborsi e storni")?;
 
     let refunds = sqlx::query_as!(
         Refund,
