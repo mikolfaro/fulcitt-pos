@@ -151,3 +151,19 @@ settings-products-save-product-button = Salva
 settings-products-title = Prodotti
 
 settings-title = Impostazioni
+
+settings-ui-menu-title = Interfaccia
+settings-ui-title = Interfaccia utente
+
+settings-ui-theme-label = Tema
+settings-ui-theme-dark = Scuro
+settings-ui-theme-light = Chiaro
+settings-ui-theme-system = Sistema
+
+settings-ui-zoom-label = Livello zoom
+settings-ui-zoom-small = Piccolo
+settings-ui-zoom-normal = Normale
+settings-ui-zoom-large = Grande
+
+settings-ui-save-button = Salva
+settings-ui-messages-settings-saved = Impostazioni interfaccia salvate
