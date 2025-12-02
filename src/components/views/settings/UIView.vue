@@ -57,71 +57,18 @@
 </template>
 
 <script setup lang="ts">
-import { load } from '@tauri-apps/plugin-store'
-import { onMounted, reactive, watch } from 'vue'
+import { onMounted } from 'vue'
 import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../../stores/messagesStore'
+import { useUiSettings } from '../../../stores/uiSettings'
 
 const { $t } = useFluent()
 const messages = useMessagesStore()
-
-type Theme = 'dark' | 'light' | 'system'
-type ZoomLevel = '90' | '100' | '110'
-
-interface UISettings {
-  theme: Theme
-  zoom: ZoomLevel
-}
-
-const uiSettings = reactive<UISettings>({
-  theme: 'system',
-  zoom: '100'
-})
-
-const applyTheme = (theme: Theme) => {
-  const html = document.documentElement
-
-  if (theme === 'system') {
-    // Check system preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    html.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-  } else {
-    html.setAttribute('data-theme', theme)
-  }
-}
-
-const applyZoom = (zoom: ZoomLevel) => {
-  const body = document.body
-  body.style.zoom = `${zoom}%`
-}
-
-// Watch for changes and apply them immediately
-watch(() => uiSettings.theme, (newTheme) => {
-  applyTheme(newTheme)
-})
-
-watch(() => uiSettings.zoom, (newZoom) => {
-  applyZoom(newZoom)
-})
-
-// Listen for system theme changes
-const setupSystemThemeListener = () => {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', () => {
-    if (uiSettings.theme === 'system') {
-      applyTheme('system')
-    }
-  })
-}
+const { state: uiSettings, load: loadSettings, save: saveSettings } = useUiSettings()
 
 async function save() {
   try {
-    const settingsStore = await load('store.json', { autoSave: false })
-
-    await settingsStore.set('ui-theme', uiSettings.theme)
-    await settingsStore.set('ui-zoom', uiSettings.zoom)
-    await settingsStore.save()
-
+    await saveSettings()
     messages.addSuccess($t('settings-ui-messages-settings-saved'))
   } catch (error) {
     console.error('Error saving UI settings:', error)
@@ -131,29 +78,7 @@ async function save() {
 
 onMounted(async () => {
   try {
-    const settingsStore = await load('store.json', {
-      autoSave: false,
-      defaults: {
-        'ui-theme': 'system',
-        'ui-zoom': '100'
-      }
-    })
-
-    const savedTheme = await settingsStore.get<Theme>('ui-theme')
-    const savedZoom = await settingsStore.get<ZoomLevel>('ui-zoom')
-
-    if (savedTheme) {
-      uiSettings.theme = savedTheme
-      applyTheme(savedTheme)
-    }
-
-    if (savedZoom) {
-      uiSettings.zoom = savedZoom
-      applyZoom(savedZoom)
-    }
-
-    // Setup listener for system theme changes
-    setupSystemThemeListener()
+    await loadSettings()
   } catch (error) {
     console.error('Error loading UI settings:', error)
   }
