@@ -75,12 +75,4 @@ async function save() {
     messages.addUnknownError(error)
   }
 }
-
-onMounted(async () => {
-  try {
-    await loadSettings()
-  } catch (error) {
-    console.error('Error loading UI settings:', error)
-  }
-})
 </script>
