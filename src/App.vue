@@ -10,6 +10,18 @@
 </template>
 
 <script lang="ts" setup>
+import { onBeforeMount, onMounted } from 'vue'
+import { useUiSettings } from './stores/uiSettings'
 import MessageDisplay from './components/MessageDisplay.vue';
 import NavBar from './components/NavBar.vue';
+
+const uiSettings = useUiSettings();
+
+onBeforeMount(async () => {
+  try {
+    await uiSettings.load()
+  } catch (error) {
+    console.error('Error loading UI settings:', error)
+  }
+})
 </script>

@@ -4,27 +4,21 @@
       {{ $t('settings-title') }}
     </h1>
 
-    <div role="tablist" class="tabs tabs-lifted mb-[-1px]">
-      <router-link
-        v-for="r in subRoutes"
-        role="tab"
-        class="tab [--tab-border-color:oklch(var(--bc)/0.2)]"
-        active-class="tab-active"
-        :to="r.to"
-        :key="r.name"
-      >
+    <div role="tablist" class="tabs tabs-lifted -mb-px-1">
+      <router-link v-for="r in subRoutes" role="tab" class="tab [--tab-border-color:oklch(var(--bc)/0.2)]"
+        active-class="tab-active" :to="r.to" :key="r.name">
         {{ r.name }}
       </router-link>
-      <a role="tab" class="tab [--tab-border-color:oklch(var(--bc)/0.2)] flex-grow !border-b"></a>
+      <a role="tab" class="tab [--tab-border-color:oklch(var(--bc)/0.2)] grow border-b!"></a>
     </div>
 
     <div class="bg-base-100 border border-base-300 border-t-0 rounded-b-box p-6 min-h-[400px]">
       <router-view v-slot="{ Component, route }">
-         <transition name="fade" mode="out-in">
-            <keep-alive>
-              <component :is="Component" :key="route.name" />
-            </keep-alive>
-         </transition>
+        <transition name="fade" mode="out-in">
+          <keep-alive>
+            <component :is="Component" :key="route.name" />
+          </keep-alive>
+        </transition>
       </router-view>
     </div>
   </div>
@@ -38,6 +32,7 @@ const subRoutes = [
   { name: $t('settings-products-menu-title'), to: "/settings" },
   { name: $t('settings-layout-menu-title'), to: "/settings/layout" },
   { name: $t('settings-printer-menu-title'), to: "/settings/printer" },
+  { name: $t('settings-ui-menu-title'), to: '/settings/ui' },
 ]
 </script>
 
@@ -54,6 +49,6 @@ const subRoutes = [
 
 .tab.tab-active {
   border-bottom-color: transparent !important;
-  background-color: oklch(var(--b1)/var(--tw-bg-opacity,1));
+  background-color: oklch(var(--b1)/var(--tw-bg-opacity, 1));
 }
 </style>
