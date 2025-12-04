@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onBeforeMount, onMounted } from 'vue'
+import { onBeforeMount } from 'vue'
 import { useUiSettings } from './stores/uiSettings'
 import MessageDisplay from './components/MessageDisplay.vue';
 import NavBar from './components/NavBar.vue';
