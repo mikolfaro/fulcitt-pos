@@ -91,7 +91,13 @@ export const useUiSettings = function () {
 
   const save = async () => {
     try {
-      const settingsStore = await loadStore('store.json', { autoSave: false })
+      const settingsStore = await loadStore('store.json', {
+        autoSave: false,
+        defaults: {
+          'ui-theme': 'system',
+          'ui-zoom': '100',
+        },
+      })
 
       await settingsStore.set('ui-theme', state.theme)
       await settingsStore.set('ui-zoom', state.zoom)

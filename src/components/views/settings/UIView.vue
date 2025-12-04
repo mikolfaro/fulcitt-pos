@@ -57,14 +57,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useFluent } from 'fluent-vue'
 import { useMessagesStore } from '../../../stores/messagesStore'
 import { useUiSettings } from '../../../stores/uiSettings'
 
 const { $t } = useFluent()
 const messages = useMessagesStore()
-const { state: uiSettings, load: loadSettings, save: saveSettings } = useUiSettings()
+const { state: uiSettings, save: saveSettings } = useUiSettings()
 
 async function save() {
   try {
