@@ -1,4 +1,4 @@
-name: CI Checks
+name: CI Lint/formatting checks
 
 on:
   push:
