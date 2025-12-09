@@ -91,7 +91,7 @@ pub(crate) async fn export_sales_report(
         invoices_worksheet.write(
             i + 1,
             1,
-            sale.sale_time.format("%Y-%M-%d %H:%m:%S").to_string(),
+            sale.sale_time.format("%Y-%m-%d %H:%M:%S").to_string(),
         )?;
         invoices_worksheet.write(i + 1, 2, sale.payment_method)?;
         invoices_worksheet.write_with_format(i + 1, 3, sale.total_amount, &currency_format)?;
@@ -125,7 +125,7 @@ pub(crate) async fn export_sales_report(
         refunds_worksheet.write(
             i + 1,
             1,
-            refund.refund_time.format("%Y-%M-%d %H:%m:%S").to_string(),
+            refund.refund_time.format("%Y-%m-%d %H:%M:%S").to_string(),
         )?;
         refunds_worksheet.write(i + 1, 2, refund.payment_method)?;
         refunds_worksheet.write_with_format(i + 1, 3, refund.total_amount, &currency_format)?;
