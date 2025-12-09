@@ -48,15 +48,10 @@ Network printer support can be added later for cross-platform compatibility with
 
 Features
 
-- [X] Improve invoice layout
-- [X] Allow printing selection
-- [X] Clear sales history
-- [X] Italian localization
-- [X] Show all invoices and reprint
-- [X] Export sales
-- [X] Linux (AppImage) automated build
-- [X] Windows automated build
-- [X] Product deposit (pay/refund mechanic)
+- [ ] Better zoom
+- [ ] Move cash input to the left
+- [ ] Add 'POS Payment' button
+- [ ] Sort products by category and then by name
 
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
@@ -66,6 +61,16 @@ Features
   - Add created_at/updated_at/device_id to Rust models
   - Remove UNIQUE constraint on products.name
   - Add device_id columns to all tables
+
+- [X] Improve invoice layout
+- [X] Allow printing selection
+- [X] Clear sales history
+- [X] Italian localization
+- [X] Show all invoices and reprint
+- [X] Export sales
+- [X] Linux (AppImage) automated build
+- [X] Windows automated build
+- [X] Product deposit (pay/refund mechanic)
 
 Known bugs
 
