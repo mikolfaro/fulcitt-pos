@@ -1,0 +1,5 @@
+[advisories]
+ignore = [
+  # RSA vulnerability in `rust-crypto`, coming from `sqlx-mysql` that is not used
+  "RUSTSEC-2023-0071",
+]
