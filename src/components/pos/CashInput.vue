@@ -13,12 +13,7 @@
   </div>
 
   <div class="grid grid-cols-3 gap-2">
-    <button
-      v-for="digit in digits"
-      :value="digit"
-      class="btn" @click="type(digit)"
-      :key="digit"
-    >
+    <button v-for="digit in digits" :value="digit" class="btn" @click="type(digit)" :key="digit">
       {{ digit }}
     </button>
 
@@ -40,9 +35,9 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { invoke } from '@tauri-apps/api/core';
 import { useFluent } from 'fluent-vue';
-import { useCartStore } from '../../../stores/cartStore';
-import { useMessagesStore } from '../../../stores/messagesStore';
-import { AppMessage } from '../../../lib';
+import { useCartStore } from '../../stores/cartStore';
+import { useMessagesStore } from '../../stores/messagesStore';
+import { AppMessage } from '../../lib';
 
 const router = useRouter()
 const { $t } = useFluent()
@@ -70,32 +65,6 @@ function undoType() {
     amount.value = 0
   }
 }
-
-async function processPayment() {
-  if (cart.isEmpty) {
-    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
-    return;
-  }
-
-  try {
-    const saleItems = cart.items.map((item) => {
-      return { ...item, product_id: item.id }
-    })
-
-    const refundItems = cart.refundItems.map((item) => {
-      return { ...item, product_id: item.id }
-    })
-
-    await invoke('process_transaction', { saleItems, refundItems })
-
-    cart.clear()
-    cart.unlock()
-
-    router.push("/")
-  } catch (err) {
-    messages.addMessage(err as AppMessage)
-  }
-};
 
 function cancelPayment() {
   cart.clear()

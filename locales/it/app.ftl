@@ -38,6 +38,8 @@ pos-recap-total = Totale
 
 pos-reprint-tickets-button = Ristampa ultima vendita
 pos-start-payment-button = Pagamento
+pos-start-payment-card-button = Carta
+pos-start-payment-cash-button = Contanti
 
 ## Reports
 

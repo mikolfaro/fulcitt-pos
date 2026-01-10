@@ -7,37 +7,27 @@
   </div>
   <div v-else class="flex h-full p-4 space-x-4 bg-base-200">
     <div class="w-3/5 flex flex-col gap-4">
-      <div class="flex flex-col grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto justify-between">
+      <div v-if="orderCreation"
+        class="flex flex-col grow bg-base-100 rounded-box shadow-lg p-4 overflow-y-auto justify-between">
         <div>
           <h2 class="text-xl font-bold mb-4">{{ $t('pos-products-title') }}</h2>
           <div v-for="(productsInCategory, category) in groupedProducts" :key="category" class="mb-6">
             <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">{{ category }}</h3>
-            <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              <div v-for="product in productsInCategory" :aria-disabled="cart.isLocked" :key="product.id"
-                class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-                :class="{ 'text-secondary': refundModeActive }" @click="!cart.isLocked && addToCart(product)">
-                <div class="card-body items-center text-center p-3">
-                  <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
-                  <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
-                </div>
-              </div>
-            </div>
+
+            <ProductsList :products="productsInCategory" :allowAddToCart="!cart.isLocked"
+              :refundModeActive="refundModeActive" @addToCart="(p: Product) => addToCart(p)" />
           </div>
         </div>
 
         <div v-if="refundableProducts.length">
           <h3 class="text-xl font-bold mb-4">{{ $t('pos-products-refunds-title') }}</h3>
-          <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <div v-for="product in refundableProducts" :key="product.id" :aria-disabled="cart.isLocked"
-              class="card text-secondary bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
-              @click="!cart.isLocked && addToRefundCart(product)">
-              <div class="card-body items-center text-center p-3">
-                <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
-                <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
-              </div>
-            </div>
-          </div>
+
+          <ProductsList :products="refundableProducts" :allowAddToCart="!cart.isLocked" :refundModeActive="true"
+            @addToCart="(p: Product) => addToRefundCart(p)" />
         </div>
+      </div>
+      <div v-else>
+        <CashInput @startCardPayment="startCardPayment" @startCashPayment="startCashPayment" />
       </div>
 
       <div class="flex flex-row justify-between">
@@ -116,7 +106,8 @@
           <span>{{ $t('pos-recap-total') }}</span>
           <span :class="{ 'text-secondary': cart.total < 0 }">{{ formatCurrency(cart.total) }}</span>
         </div>
-        <router-view></router-view>
+
+        <CheckoutSelection @startCardPayment="startCardPayment" @startCashPayment="startCashPayment" />
       </div>
     </div>
   </div>
@@ -127,10 +118,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { ref, computed, onMounted } from 'vue';
 import { useFluent } from 'fluent-vue';
 
+import type { AppMessage } from '../../lib';
 import { CartItem, Product } from '../../lib';
 import { listProducts } from '../../repositories';
 import { useCartStore } from '../../stores/cartStore';
 import { useMessagesStore } from '../../stores/messagesStore';
+import ProductsList from '../ProductsList.vue';
+import CheckoutSelection from '../pos/CheckoutSelection.vue';
+import OrderRecap from '../pos/OrderRecap.vue';
+import CashInput from '../pos/CashInput.vue';
 
 const availableProducts = ref<Product[]>([]);
 const refundableProducts = ref<Product[]>([]);
@@ -140,6 +136,7 @@ const cart = useCartStore();
 const messages = useMessagesStore()
 const isLoading = ref(true);
 const refundModeActive = defineModel<boolean>({ default: false })
+const orderCreation = true
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -240,6 +237,37 @@ const groupedProducts = computed<Record<string, Product[]>>(() => {
     return groups;
   }, {});
 });
+
+const startCardPayment = async function () {
+  await processPayment()
+}
+
+const startCashPayment = async function () {
+}
+
+const processPayment = async function () {
+  if (cart.isEmpty) {
+    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
+    return;
+  }
+
+  try {
+    const saleItems = cart.items.map((item) => {
+      return { ...item, product_id: item.id }
+    })
+
+    const refundItems = cart.refundItems.map((item) => {
+      return { ...item, product_id: item.id }
+    })
+
+    await invoke('process_transaction', { saleItems, refundItems })
+
+    cart.clear()
+    cart.unlock()
+  } catch (err) {
+    messages.addMessage(err as AppMessage)
+  }
+}
 </script>
 
 <style scoped>
