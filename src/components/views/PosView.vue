@@ -107,7 +107,8 @@
           <span :class="{ 'text-secondary': cart.total < 0 }">{{ formatCurrency(cart.total) }}</span>
         </div>
 
-        <CheckoutSelection @startCardPayment="startCardPayment" @startCashPayment="startCashPayment" />
+        <CheckoutSelection @startCardPayment="startCardPayment" @startCashPayment="startCashPayment"
+          @cancelOrder="cancelOrder" />
       </div>
     </div>
   </div>
@@ -135,8 +136,8 @@ const { $t } = useFluent();
 const cart = useCartStore();
 const messages = useMessagesStore()
 const isLoading = ref(true);
-const refundModeActive = defineModel<boolean>({ default: false })
-const orderCreation = true
+const refundModeActive = ref<boolean>(false)
+const orderCreation = ref<boolean>(true)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -243,6 +244,12 @@ const startCardPayment = async function () {
 }
 
 const startCashPayment = async function () {
+  orderCreation.value = false
+}
+
+const cancelOrder = async function () {
+  cart.clear()
+  orderCreation.value = true
 }
 
 const processPayment = async function () {
@@ -264,6 +271,8 @@ const processPayment = async function () {
 
     cart.clear()
     cart.unlock()
+
+    orderCreation.value = true
   } catch (err) {
     messages.addMessage(err as AppMessage)
   }

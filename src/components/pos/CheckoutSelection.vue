@@ -8,20 +8,20 @@
       {{ $t("pos-start-payment-cash-button") }}
     </button>
 
-    <button class="btn btn-outline btn-error" @click="cart.clear()">
-      {{ $t('pos-clear-cart-button') }}</button>
+    <button class="btn btn-outline btn-error" @click="emit('cancelOrder')">
+      {{ $t('pos-clear-cart-button') }}
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useFluent } from 'fluent-vue'
-import { useCartStore } from '../../stores/cartStore'
 
 const { $t } = useFluent()
-const cart = useCartStore()
 
 const emit = defineEmits<{
   (e: 'startCardPayment'): void
   (e: 'startCashPayment'): void
+  (e: 'cancelOrder'): void
 }>()
 </script>
