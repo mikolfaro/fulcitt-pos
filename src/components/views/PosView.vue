@@ -30,7 +30,8 @@
         <CashInput @startCardPayment="startCardPayment" @startCashPayment="startCashPayment" />
       </div>
 
-      <div class="flex flex-row justify-between">
+
+      <div v-if="orderCreation" class="flex flex-row justify-between">
         <button class="btn btn-primary" @click="printLastSale()">
           {{ $t('pos-reprint-tickets-button') }}
         </button>

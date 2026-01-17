@@ -1,5 +1,9 @@
 <template>
   <div class="flex justify-between font-bold text-lg mb-2">
+    <span>{{ $t('pos-recap-total') }}</span>
+    <span :class="{ 'text-secondary': cart.total < 0 }">{{ formatCurrency(cart.total) }}</span>
+  </div>
+  <div class="flex justify-between font-bold text-lg mb-2">
     <span>{{ $t('pos-recap-amount-payed') }}</span>
     <span>{{ formatCurrency(amount) }}</span>
   </div>
@@ -25,8 +29,8 @@
   <button class="btn btn-success w-full mt-4" @click="processPayment">
     {{ $t('pos-process-payment-button') }}
   </button>
-  <button class="btn btn-outline btn-error w-full mt-2" @click="cancelPayment">
-    {{ $t('pos-cancel-payment-button') }}
+  <button class="btn btn-outline btn-error w-full mt-2" @click="reopenCart">
+    {{ $t('pos-reopen-cart-button') }}
   </button>
 </template>
 
@@ -38,6 +42,7 @@ import { useFluent } from 'fluent-vue';
 import { useCartStore } from '../../stores/cartStore';
 import { useMessagesStore } from '../../stores/messagesStore';
 import { AppMessage } from '../../lib';
+import { addEmitHelper } from 'typescript';
 
 const router = useRouter()
 const { $t } = useFluent()
@@ -46,6 +51,11 @@ const cart = useCartStore()
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3]
 const typedAmount = ref<string>('')
 const amount = ref<number>(0);
+
+const emit = defineEmits<{
+  (e: 'processCashPayment', payedAmount: number): void,
+  (e: 'reopenCart'): void
+}>()
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -66,10 +76,15 @@ function undoType() {
   }
 }
 
-function cancelPayment() {
-  cart.clear()
-  cart.unlock()
+function processPayment() {
+  if (amount.value < cart.total) {
+    messages.addMessage({ type: 'InvalidInput', message: $t('pos-messages-insufficient-amount') })
+  } else {
+    emit('processCashPayment', amount.value)
+  }
+}
 
-  router.push("/")
+function reopenCart() {
+  emit('reopenCart')
 }
 </script>

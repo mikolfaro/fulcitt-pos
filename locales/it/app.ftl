@@ -15,7 +15,7 @@ pos-cart-title = Ordine attuale
 pos-cart-toggle-refund-mode = Attiva storno
 pos-cart-total-price = Totale
 
-pos-cancel-payment-button = Annulla pagamento
+pos-reopen-cart-button = Riapri ordine
 pos-clear-cart-button = Cancella ordine
 pos-menu-title = POS
 
@@ -24,6 +24,7 @@ pos-messages-loading-products = Caricamento prodotti...
 pos-messages-cannot-process-transaction-with-no-items = Nessun prodotto nel carrello
 pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
+pos-messages-insufficient-amount = Importo pagato insufficiente
 
 pos-products-title = Prodotti
 pos-products-refunds-title = Rimborso cauzioni
