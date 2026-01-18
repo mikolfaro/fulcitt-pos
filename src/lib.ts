@@ -20,7 +20,7 @@ export interface AppMessage {
   message: string
 }
 
-export enum PaymentType {
+export enum PaymentMethod {
   Card = 'Card',
   Cash = 'Cash'
 }

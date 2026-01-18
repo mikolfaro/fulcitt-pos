@@ -73,7 +73,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useFluent } from 'fluent-vue';
 
 import type { AppMessage } from '../../lib';
-import { CartItem, PaymentType, Product } from '../../lib';
+import { CartItem, PaymentMethod, Product } from '../../lib';
 import { listProducts } from '../../repositories';
 import { useCartStore } from '../../stores/cartStore';
 import { useMessagesStore } from '../../stores/messagesStore';
@@ -164,7 +164,7 @@ const groupedProducts = computed<Record<string, Product[]>>(() => {
 });
 
 const startCardPayment = async function () {
-  await processPayment(PaymentType.Card)
+  await processPayment(PaymentMethod.Card)
 }
 
 const startCashPayment = async function () {
@@ -177,10 +177,10 @@ const cancelOrder = async function () {
 }
 
 const processCashPayment = async function () {
-  await processPayment(PaymentType.Cash)
+  await processPayment(PaymentMethod.Cash)
 }
 
-const processPayment = async function (paymentType: PaymentType) {
+const processPayment = async function (paymentMethod: PaymentMethod) {
   if (cart.isEmpty) {
     messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
     return;
@@ -195,7 +195,7 @@ const processPayment = async function (paymentType: PaymentType) {
       return { ...item, product_id: item.id }
     })
 
-    await invoke('process_transaction', { saleItems, refundItems, paymentType })
+    await invoke('process_transaction', { saleItems, refundItems, paymentMethod })
 
     cart.clear()
     cart.unlock()

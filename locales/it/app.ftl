@@ -63,6 +63,9 @@ reports-messages-loading-data = Caricamento dati...
 reports-messages-no-data-available = Nessun dato sulle vendite disponibile
 reports-messages-export-xlsx-completed = Report esportato
 
+reports-payment-method-card = Carta
+reports-payment-method-cash = Contanti
+
 reports-sales-by-product-title = Prodotti venduti
 reports-sales-by-product-product-name = Prodotto
 reports-sales-by-product-quantity-sold = Qtà venduta

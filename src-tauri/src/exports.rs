@@ -4,6 +4,7 @@ use log::debug;
 use rust_xlsxwriter::{workbook::Workbook, worksheet::Worksheet, Format};
 use sqlx::{Pool, Sqlite};
 
+use crate::models::PaymentMethod;
 use crate::{CommandResult, Refund, Sale};
 
 #[derive(Debug)]
@@ -68,7 +69,7 @@ pub(crate) async fn export_sales_report(
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
+        SELECT id as "id: _", number as "number: i64", sale_time, total_amount, payment_method as "payment_method: _"
         FROM sales
         ORDER BY sale_time DESC
         "#,
@@ -93,7 +94,13 @@ pub(crate) async fn export_sales_report(
             1,
             sale.sale_time.format("%Y-%m-%d %H:%M:%S").to_string(),
         )?;
-        invoices_worksheet.write(i + 1, 2, sale.payment_method)?;
+
+        match sale.payment_method {
+            Some(PaymentMethod::Card) => invoices_worksheet.write(i + 1, 2, "Carta")?,
+            Some(PaymentMethod::Cash) => invoices_worksheet.write(i + 1, 2, "Contanti")?,
+            None => &invoices_worksheet,
+        };
+
         invoices_worksheet.write_with_format(i + 1, 3, sale.total_amount, &currency_format)?;
     }
 
@@ -104,13 +111,13 @@ pub(crate) async fn export_sales_report(
     let refunds = sqlx::query_as!(
         Refund,
         r#"
-        SELECT id as "id: uuid::Uuid", number as "number: i64", refund_time, total_amount, payment_method
+        SELECT id as "id: _", number as "number: _", refund_time, total_amount, payment_method as "payment_method: _"
         FROM refunds
         ORDER BY refund_time DESC
         "#,
     )
-        .fetch_all(&db)
-        .await?;
+    .fetch_all(&db)
+    .await?;
 
     refunds_worksheet.write_row(
         0,
@@ -127,7 +134,13 @@ pub(crate) async fn export_sales_report(
             1,
             refund.refund_time.format("%Y-%m-%d %H:%M:%S").to_string(),
         )?;
-        refunds_worksheet.write(i + 1, 2, refund.payment_method)?;
+
+        match refund.payment_method {
+            Some(PaymentMethod::Card) => refunds_worksheet.write(i + 1, 2, "Carta")?,
+            Some(PaymentMethod::Cash) => refunds_worksheet.write(i + 1, 2, "Contanti")?,
+            None => &refunds_worksheet,
+        };
+
         refunds_worksheet.write_with_format(i + 1, 3, refund.total_amount, &currency_format)?;
     }
 
