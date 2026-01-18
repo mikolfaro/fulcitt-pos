@@ -36,15 +36,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { invoke } from '@tauri-apps/api/core';
 import { useFluent } from 'fluent-vue';
 import { useCartStore } from '../../stores/cartStore';
 import { useMessagesStore } from '../../stores/messagesStore';
-import { AppMessage } from '../../lib';
-import { addEmitHelper } from 'typescript';
 
-const router = useRouter()
 const { $t } = useFluent()
 const messages = useMessagesStore()
 const cart = useCartStore()

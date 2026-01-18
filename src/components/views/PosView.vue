@@ -27,7 +27,7 @@
         </div>
       </div>
       <div v-else>
-        <CashInput @startCardPayment="startCardPayment" @startCashPayment="startCashPayment" />
+        <CashInput @startCardPayment="startCardPayment" @processCashPayment="processCashPayment" />
       </div>
 
 
@@ -48,55 +48,7 @@
     <div class="w-2/5 bg-base-100 rounded-box shadow-lg p-4 flex flex-col">
       <h2 class="text-xl font-bold mb-4">{{ $t('pos-cart-title') }}</h2>
       <div class="grow overflow-y-auto mb-4">
-        <table class="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>{{ $t('pos-cart-quantity') }}</th>
-              <th>{{ $t('pos-cart-product-name') }}</th>
-              <th>{{ $t('pos-cart-unit-price') }}</th>
-              <th>{{ $t('pos-cart-total-price') }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="cart.items.length === 0 && cart.refundItems.length === 0">
-              <td colspan="5" class="text-center">
-                {{ $t('pos-messages-empty-cart') }}
-              </td>
-            </tr>
-            <tr v-for="item in cart.items" :key="item.id">
-              <td>
-                <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
-                <span class="px-2">{{ item.quantity }}</span>
-                <button class="btn btn-xs btn-primary" @click="incrementQuantity(item)">+</button>
-              </td>
-              <td>{{ item.name }}</td>
-              <td>{{ formatCurrency(item.price) }}</td>
-              <td>{{ formatCurrency(item.price * item.quantity) }}</td>
-              <td>
-                <button class="btn btn-xs btn-error" @click="removeFromCart(item)">X</button>
-              </td>
-            </tr>
-
-            <tr v-for="item in cart.refundItems" :key="item.id" class="text-secondary">
-              <td>
-                <button class="btn btn-xs btn-primary" @click="decrementRefundQuantity(item)">-</button>
-                <span class="px-2">{{ item.quantity }}</span>
-                <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
-              </td>
-              <td>
-                {{ item.name }}
-                <span v-if="itemHasDeposit(item)">({{ "Rimborso cauzione" }})</span>
-                <span v-else>({{ "Storno" }})</span>
-              </td>
-              <td>{{ formatCurrency(-1.0 * item.price) }}</td>
-              <td>{{ formatCurrency(-1.0 * item.price * item.quantity) }}</td>
-              <td>
-                <button class="btn btn-xs btn-error" @click="removeRefundFromCart(item)">X</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <OrderRecap />
       </div>
       <div class="mt-auto pt-4 border-t border-base-300">
         <!-- div class="flex justify-between font-bold text-lg mb-2">
@@ -121,7 +73,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useFluent } from 'fluent-vue';
 
 import type { AppMessage } from '../../lib';
-import { CartItem, Product } from '../../lib';
+import { CartItem, PaymentType, Product } from '../../lib';
 import { listProducts } from '../../repositories';
 import { useCartStore } from '../../stores/cartStore';
 import { useMessagesStore } from '../../stores/messagesStore';
@@ -129,6 +81,7 @@ import ProductsList from '../ProductsList.vue';
 import CheckoutSelection from '../pos/CheckoutSelection.vue';
 import OrderRecap from '../pos/OrderRecap.vue';
 import CashInput from '../pos/CashInput.vue';
+import formatCurrency from '../../utils/formatCurrency';
 
 const availableProducts = ref<Product[]>([]);
 const refundableProducts = ref<Product[]>([]);
@@ -139,10 +92,6 @@ const messages = useMessagesStore()
 const isLoading = ref(true);
 const refundModeActive = ref<boolean>(false)
 const orderCreation = ref<boolean>(true)
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-}
 
 onMounted(async () => {
   try {
@@ -177,46 +126,20 @@ const fetchProducts = async () => {
   }
 };
 
-const itemHasDeposit = (item: CartItem) => {
-  return refundableProducts.value.find((p: Product) => {
-    return item.id === p.id
-  })?.has_deposit
-}
-
 const addToCart = (product: Product) => {
   if (refundModeActive.value) {
-    cart.addRefundItem(product, 1);
+    const item: CartItem = { id: product.id, name: product.name, price: product.price, quantity: 1, hasDeposit: product.has_deposit }
+
+    cart.addRefundItem(item, 1);
   } else {
     cart.addItem(product, 1);
   }
 };
 
-const incrementQuantity = (item: CartItem) => {
-  cart.addItem(item, 1)
-};
-
-const decrementQuantity = (item: CartItem) => {
-  cart.removeItem(item, 1)
-};
-
-const removeFromCart = (itemToRemove: CartItem) => {
-  cart.removeItem(itemToRemove)
-};
-
 const addToRefundCart = (product: Product) => {
-  cart.addRefundItem(product, 1);
-};
+  const item: CartItem = { id: product.id, name: product.name, price: product.price, quantity: 1, hasDeposit: product.has_deposit }
 
-const incrementRefundQuantity = (item: CartItem) => {
-  cart.addRefundItem(item, 1)
-};
-
-const decrementRefundQuantity = (item: CartItem) => {
-  cart.removeRefundItem(item, 1)
-};
-
-const removeRefundFromCart = (itemToRemove: CartItem) => {
-  cart.removeRefundItem(itemToRemove)
+  cart.addRefundItem(item, 1);
 };
 
 const printLastSale = async () => {
@@ -241,7 +164,7 @@ const groupedProducts = computed<Record<string, Product[]>>(() => {
 });
 
 const startCardPayment = async function () {
-  await processPayment()
+  await processPayment(PaymentType.Card)
 }
 
 const startCashPayment = async function () {
@@ -253,7 +176,11 @@ const cancelOrder = async function () {
   orderCreation.value = true
 }
 
-const processPayment = async function () {
+const processCashPayment = async function () {
+  await processPayment(PaymentType.Cash)
+}
+
+const processPayment = async function (paymentType: PaymentType) {
   if (cart.isEmpty) {
     messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
     return;
@@ -268,7 +195,7 @@ const processPayment = async function () {
       return { ...item, product_id: item.id }
     })
 
-    await invoke('process_transaction', { saleItems, refundItems })
+    await invoke('process_transaction', { saleItems, refundItems, paymentType })
 
     cart.clear()
     cart.unlock()
