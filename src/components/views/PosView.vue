@@ -26,7 +26,7 @@
             @addToCart="(p: Product) => addToRefundCart(p)" />
         </div>
       </div>
-      <div v-else>
+      <div v-else class="flex flex-col grow w-full bg-base-100 rounded-box shadow-lg p-4">
         <CashInput @startCardPayment="startCardPayment" @processCashPayment="processCashPayment" />
       </div>
 

@@ -16,14 +16,14 @@
     <span class="text-error">{{ formatCurrency(cart.total - amount) }}</span>
   </div>
 
-  <div class="grid grid-cols-3 gap-2">
-    <button v-for="digit in digits" :value="digit" class="btn" @click="type(digit)" :key="digit">
+  <div class="grow grid grid-cols-3 gap-2">
+    <button v-for="digit in digits" :value="digit" class="btn h-full text-2xl" @click="type(digit)" :key="digit">
       {{ digit }}
     </button>
 
-    <a class="btn" @click="type('.')">.</a>
-    <a class="btn" @click="type(0)">0</a>
-    <a class="btn" @click="undoType()">&lt;-</a>
+    <a class="btn h-full text-2xl" @click="type('.')">.</a>
+    <a class="btn h-full text-2xl" @click="type(0)">0</a>
+    <a class="btn h-full text-2xl" @click="undoType()">&lt;-</a>
   </div>
 
   <button class="btn btn-success w-full mt-4" @click="processPayment">
