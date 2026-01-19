@@ -63,7 +63,7 @@ async fn list_products(app_state: State<'_, AppState>) -> CommandResult<Vec<Prod
     let products = sqlx::query_as!(
         Product,
         r#"
-        SELECT id as "id: uuid::Uuid", name, category, price, is_deleted, has_deposit
+        SELECT id as "id: _", name, category, price, is_deleted, has_deposit
         FROM products
         WHERE is_deleted = 0
     "#
@@ -142,6 +142,7 @@ async fn process_transaction<R: Runtime>(
     printer_state: State<'_, NewPrinterState>,
     sale_items: Vec<CartItem>,
     refund_items: Vec<CartItem>,
+    payment_method: PaymentMethod,
 ) -> CommandResult<Transaction> {
     if sale_items.is_empty() && refund_items.is_empty() {
         return Err(CommandError::InvalidInput(
@@ -186,13 +187,14 @@ async fn process_transaction<R: Runtime>(
 
         let sale_id: Uuid = sqlx::query_scalar(
             r#"
-            INSERT INTO sales (id, number, sale_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
+            INSERT INTO sales (id, number, sale_time, total_amount, payment_method) VALUES (?, ?, ?, ?, ?) RETURNING id as "id: _";
             "#,
         )
         .bind(Uuid::new_v4())
         .bind(Some(next_sale_number))
         .bind(transaction_time)
         .bind(total_amount)
+        .bind(Some(payment_method))
         .fetch_one(&mut *tx)
         .await?;
 
@@ -208,7 +210,7 @@ async fn process_transaction<R: Runtime>(
             let product = sqlx::query_as!(
                 Product,
                 r#"
-                SELECT id as "id: uuid::Uuid", name, category, price, is_deleted, has_deposit
+                SELECT id as "id: _", name, category, price, is_deleted, has_deposit
                 FROM products
                 WHERE id = ?
                 "#,
@@ -277,13 +279,14 @@ async fn process_transaction<R: Runtime>(
 
         let refund_id: Uuid = sqlx::query_scalar(
             r#"
-            INSERT INTO refunds (id, number, refund_time, total_amount) VALUES (?, ?, ?, ?) RETURNING id as "id: uuid::Uuid";
+            INSERT INTO refunds (id, number, refund_time, total_amount, payment_method) VALUES (?, ?, ?, ?, ?) RETURNING id as "id: _";
             "#,
         )
         .bind(Uuid::new_v4())
         .bind(Some(next_refund_number))
         .bind(transaction_time)
         .bind(total_amount)
+        .bind(Some(PaymentMethod::Cash))
         .fetch_one(&mut *tx)
         .await?;
 
@@ -369,29 +372,6 @@ async fn process_transaction<R: Runtime>(
     })
 }
 
-#[tauri::command]
-async fn process_sale<R: Runtime>(
-    app: AppHandle<R>,
-    app_state: State<'_, AppState>,
-    printer_state: State<'_, NewPrinterState>,
-    items: Vec<CartItem>,
-) -> CommandResult<Uuid> {
-    // Wrapper for backward compatibility - calls process_transaction with empty refund_items
-    let transaction = process_transaction(
-        app,
-        app_state,
-        printer_state,
-        items,
-        vec![], // empty refund_items
-    )
-    .await?;
-
-    // Return the sale_uuid, or error if no sale was created
-    transaction.sale_uuid.ok_or(CommandError::InvalidInput(
-        "No sale was created".to_string(),
-    ))
-}
-
 #[derive(Serialize)]
 struct Recap {
     sales: Vec<AggregatedSaleItem>,
@@ -440,7 +420,7 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
     let sales = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
+        SELECT id as "id: _", number as "number: _", sale_time, total_amount, payment_method as "payment_method: _"
         FROM sales
         WHERE sale_time >= ?
     "#,
@@ -503,7 +483,7 @@ async fn print_last_sale<R: Runtime>(
     let last_sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", number as "number: i64", sale_time, total_amount, payment_method
+        SELECT id as "id: _", number as "number: _", sale_time, total_amount, payment_method as "payment_method: _"
         FROM sales
         ORDER BY sale_time DESC
         LIMIT 1"#
@@ -521,7 +501,7 @@ async fn print_last_sale<R: Runtime>(
                 sale_items.product_name AS 'name_at_sale',
                 sale_items.price_at_sale,
                 sale_items.quantity,
-                products.id AS 'product_id: uuid::Uuid',
+                products.id AS 'product_id: _',
                 products.category,
                 products.name,
                 products.price,
@@ -570,7 +550,7 @@ async fn print_sale<R: Runtime>(
     let sale = sqlx::query_as!(
         Sale,
         r#"
-        SELECT id as "id: uuid::Uuid", number, sale_time, total_amount, payment_method
+        SELECT id as "id: _", number, sale_time, total_amount, payment_method as "payment_method: _"
         FROM sales
         WHERE id = ?
         "#,
@@ -587,7 +567,7 @@ async fn print_sale<R: Runtime>(
                 sale_items.product_name AS "name_at_sale",
                 sale_items.price_at_sale,
                 sale_items.quantity,
-                products.id AS "product_id: uuid::Uuid",
+                products.id AS "product_id: _",
                 products.category,
                 products.name,
                 products.price,
@@ -863,7 +843,6 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             update_product,
             delete_product,
             clear_sales_data,
-            process_sale,
             process_transaction,
             get_transactions_recap,
             get_today_sales,

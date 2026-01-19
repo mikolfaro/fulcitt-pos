@@ -49,8 +49,8 @@ Network printer support can be added later for cross-platform compatibility with
 Features
 
 - [ ] Better zoom
-- [ ] Move cash input to the left
-- [ ] Add 'POS Payment' button
+- [X] Move cash input to the left
+- [X] Add 'POS Payment' button
 - [ ] Sort products by category and then by name
 
 - [W] Improve error messages

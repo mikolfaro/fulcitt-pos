@@ -50,8 +50,6 @@ export const useCartStore = defineStore('cart', {
       } else {
         this.refundItems.push({ ...newItem, quantity: 1 });
       }
-
-      console.log(this.refundItems)
     },
     removeRefundItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
       if (quantity) {
