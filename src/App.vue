@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-screen">
     <NavBar />
-    <main class="flex grow overflow-auto">
+    <main class="grow overflow-auto">
       <RouterView />
 
       <MessageDisplay />

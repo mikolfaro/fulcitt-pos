@@ -77,11 +77,11 @@ import { CartItem, PaymentMethod, Product } from "../../lib";
 import { listProducts } from "../../repositories";
 import { useCartStore } from "../../stores/cartStore";
 import { useMessagesStore } from "../../stores/messagesStore";
+import formatCurrency from "../../utils/formatCurrency";
 import ProductsList from "../ProductsList.vue";
+import CashInput from "../pos/CashInput.vue";
 import CheckoutSelection from "../pos/CheckoutSelection.vue";
 import OrderRecap from "../pos/OrderRecap.vue";
-import CashInput from "../pos/CashInput.vue";
-import formatCurrency from "../../utils/formatCurrency";
 
 const availableProducts = ref<Product[]>([]);
 const refundableProducts = ref<Product[]>([]);

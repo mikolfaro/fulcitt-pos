@@ -35,8 +35,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { useFluent } from "fluent-vue";
+import { ref } from "vue";
 import { useCartStore } from "../../stores/cartStore";
 import { useMessagesStore } from "../../stores/messagesStore";
 
