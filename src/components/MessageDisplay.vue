@@ -2,12 +2,12 @@
   <div class="fixed bottom-4 left-4 z-50 w-full max-w-md space-y-2">
     <div v-for="(message, index) in messages.messages" :key="index"
       :class="['alert alert-soft shadow-lg flex', getAlertType(message.type)]" role="alert">
-      <div class="flex-grow">
+      <div class="grow">
         <h3 class="font-bold" v-if="message.type !== 'Success'">{{ getTitle(message.type) }}</h3>
         <div class="text-xs">{{ message.message }}</div>
       </div>
       <div>
-        <button class="btn btn-sm btn-circle" @click="dismissMessage(Number(index))">
+        <button class="btn btn-sm btn-circle" @click="() => dismissMessage(Number(index))">
           ✕
         </button>
       </div>
