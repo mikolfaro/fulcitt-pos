@@ -3,6 +3,7 @@ name = "fulcitt-pos"
 version = "0.10.4"
 description = "Minimal POS used by Gruppo Fulcitt"
 authors = ["Mikol Faro <mikol.faro@proton.me>"]
+license = "AGPL-3.0-only"
 edition = "2021"
 rust-version = "1.82"
 
