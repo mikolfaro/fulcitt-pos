@@ -17,9 +17,11 @@
       </tr>
       <tr v-for="item in cart.items" :key="item.id">
         <td>
-          <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
-          <span class="px-2">{{ item.quantity }}</span>
-          <button class="btn btn-xs btn-primary" @click="incrementQuantity(item)">+</button>
+          <div class="flex items-center gap-1 whitespace-nowrap">
+            <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
+            <span class="px-1 min-w-[2rem] text-center">{{ item.quantity }}</span>
+            <button class="btn btn-xs btn-primary" @click="incrementQuantity(item)">+</button>
+          </div>
         </td>
         <td>{{ item.name }}</td>
         <td>{{ formatCurrency(item.price) }}</td>
@@ -31,14 +33,16 @@
 
       <tr v-for="item in cart.refundItems" :key="item.id" class="text-secondary">
         <td>
-          <button class="btn btn-xs btn-primary" @click="decrementRefundQuantity(item)">-</button>
-          <span class="px-2">{{ item.quantity }}</span>
-          <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
+          <div class="flex items-center gap-1 whitespace-nowrap">
+            <button class="btn btn-xs btn-primary" @click="decrementRefundQuantity(item)">-</button>
+            <span class="px-1 min-w-[2rem] text-center">{{ item.quantity }}</span>
+            <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
+          </div>
         </td>
         <td>
           {{ item.name }}
-          <span v-if="item.hasDeposit">{{ "Rimborso cauzione" }})</span>
-          <span v-else>({{ "Storno" }})</span>
+          <span v-if="item.hasDeposit">({{ $t("pos-recap-refund") }})</span>
+          <span v-else>({{ $t("pos-recap-cancellation") }})</span>
         </td>
         <td>{{ formatCurrency(-1.0 * item.price) }}</td>
         <td>{{ formatCurrency(-1.0 * item.price * item.quantity) }}</td>

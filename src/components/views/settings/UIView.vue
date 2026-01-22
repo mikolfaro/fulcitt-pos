@@ -40,9 +40,9 @@
             class="select select-bordered w-full"
             v-model="uiSettings.zoom"
           >
-            <option value="90">{{ $t('settings-ui-zoom-small') }}</option>
             <option value="100">{{ $t('settings-ui-zoom-normal') }}</option>
-            <option value="110">{{ $t('settings-ui-zoom-large') }}</option>
+            <option value="150">{{ $t('settings-ui-zoom-large') }}</option>
+            <option value="200">{{ $t('settings-ui-zoom-xlarge') }}</option>
           </select>
         </div>
       </div>

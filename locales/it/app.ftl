@@ -36,6 +36,8 @@ pos-recap-amount-payed = Pagato
 pos-recap-change = Resto
 pos-recap-subtotal = Subtotale
 pos-recap-total = Totale
+pos-recap-refund = Rimborso cauzione
+pos-recap-cancellation = Storno
 
 pos-reprint-tickets-button = Ristampa ultima vendita
 pos-start-payment-button = Pagamento
@@ -167,9 +169,9 @@ settings-ui-theme-light = Chiaro
 settings-ui-theme-system = Sistema
 
 settings-ui-zoom-label = Livello zoom
-settings-ui-zoom-small = Piccolo
-settings-ui-zoom-normal = Normale
-settings-ui-zoom-large = Grande
+settings-ui-zoom-normal = Normale (100%)
+settings-ui-zoom-large = Grande (150%)
+settings-ui-zoom-xlarge = Molto grande (200%)
 
 settings-ui-save-button = Salva
 settings-ui-messages-settings-saved = Impostazioni interfaccia salvate
