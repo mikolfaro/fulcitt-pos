@@ -22,51 +22,26 @@
               <tr v-for="product in existingProducts" :key="product.id" class="hover">
                 <template v-if="productToEdit.id == product.id">
                   <td>
-                    <input
-                      type="text"
-                      :placeholder="$t('settings-products-product-name-example')"
-                      class="input input-bordered w-full"
-                      form="editProduct"
-                      v-model.trim="productToEdit.name"
-                      required
-                    />
+                    <input type="text" :placeholder="$t('settings-products-product-name-example')"
+                      class="input input-bordered w-full" form="editProduct" v-model.trim="productToEdit.name"
+                      required />
                   </td>
                   <td>
-                    <input
-                      type="text"
-                      :placeholder="$t('settings-products-category-example')"
-                      class="input input-bordered w-full"
-                      form="editProduct"
-                      v-model.trim="productToEdit.category"
-                      required
-                    />
+                    <input type="text" :placeholder="$t('settings-products-category-example')"
+                      class="input input-bordered w-full" form="editProduct" v-model.trim="productToEdit.category"
+                      required />
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      :placeholder="$t('settings-products-price-example')"
-                      class="input input-bordered w-full"
-                      form="editProduct"
-                      v-model.number="productToEdit.price"
-                      required
-                    />
+                    <input type="number" step="0.01" min="0" :placeholder="$t('settings-products-price-example')"
+                      class="input input-bordered w-full" form="editProduct" v-model.number="productToEdit.price"
+                      required />
                   </td>
                   <td class="text-center">
-                    <input
-                      type="checkbox"
-                      class="checkbox checkbox-sm"
-                      form="editProduct"
-                      v-model="productToEdit.has_deposit"
-                    />
+                    <input type="checkbox" class="checkbox checkbox-sm" form="editProduct"
+                      v-model="productToEdit.has_deposit" />
                   </td>
                   <td class="flex justify-between">
-                    <button
-                      type="submit"
-                      class="btn btn-xs btn-outline btn-success mr-4"
-                      form="editProduct"
-                    >
+                    <button type="submit" class="btn btn-xs btn-outline btn-success mr-4" form="editProduct">
                       {{ $t('settings-products-save-product-button') }}
                     </button>
                     <button type="button" class="btn btn-xs btn-outline btn-error" @click="closeEdit()">
@@ -79,25 +54,14 @@
                   <td>{{ product.category }}</td>
                   <td class="text-right">{{ formatCurrency(product.price) }}</td>
                   <td class="text-center">
-                    <input
-                      type="checkbox"
-                      class="checkbox checkbox-sm"
-                      :checked="product.has_deposit"
-                      disabled
-                    />
+                    <input type="checkbox" class="checkbox checkbox-sm" :checked="product.has_deposit" disabled />
                   </td>
                   <td class="flex justify-between">
-                    <button
-                      class="btn btn-xs btn-outline btn-primary"
-                      @click="openEdit(product)"
-                    >
+                    <button class="btn btn-xs btn-outline btn-primary" @click="openEdit(product)">
                       {{ $t('settings-products-edit-product-button') }}
                     </button>
 
-                    <button
-                      class="btn btn-xs btn-outline btn-error"
-                      @click.prevent="doDeleteProduct(product)"
-                    >
+                    <button class="btn btn-xs btn-outline btn-error" @click.prevent="doDeleteProduct(product)">
                       {{ $t('settings-products-delete-product-button') }}
                     </button>
                   </td>
@@ -105,58 +69,30 @@
               </tr>
               <tr>
                 <td>
-                  <input
-                    type="text"
-                    :placeholder="$t('settings-products-product-name-example')"
-                    class="input input-bordered w-full"
-                    form="addProduct"
-                    v-model.trim="newProduct.name"
-                    required
-                  />
+                  <input type="text" :placeholder="$t('settings-products-product-name-example')"
+                    class="input input-bordered w-full" form="addProduct" v-model.trim="newProduct.name" required />
                 </td>
                 <td>
-                  <input
-                    type="text"
-                    :placeholder="$t('settings-products-category-example')"
-                    class="input input-bordered w-full"
-                    form="addProduct"
-                    v-model.trim="newProduct.category"
-                    required
-                  />
+                  <input type="text" :placeholder="$t('settings-products-category-example')"
+                    class="input input-bordered w-full" form="addProduct" v-model.trim="newProduct.category" required />
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    :placeholder="$t('settings-products-price-example')"
-                    class="input input-bordered w-full"
-                    form="addProduct"
-                    v-model.number="newProduct.price"
-                    required
-                  />
+                  <input type="number" step="0.01" min="0" :placeholder="$t('settings-products-price-example')"
+                    class="input input-bordered w-full" form="addProduct" v-model.number="newProduct.price" required />
                 </td>
                 <td class="text-center">
-                  <input
-                    type="checkbox"
-                    class="checkbox checkbox-sm"
-                    form="addProduct"
-                    v-model="newProduct.has_deposit"
-                  />
+                  <input type="checkbox" class="checkbox checkbox-sm" form="addProduct"
+                    v-model="newProduct.has_deposit" />
                 </td>
                 <td>
-                  <button
-                    type="submit"
-                    class="btn btn-xs btn-outline btn-success"
-                    form="addProduct"
-                  >
-                      {{ $t('settings-products-add-product-button') }}
+                  <button type="submit" class="btn btn-xs btn-outline btn-success" form="addProduct">
+                    {{ $t('settings-products-add-product-button') }}
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <form id="addProduct" @submit.prevent="addProduct" ref="addProductFormRef"></form>
+          <form id="addProduct" @submit.prevent="addProduct"></form>
           <form id="editProduct" @submit.prevent="doUpdateProduct"></form>
         </div>
       </div>
@@ -177,7 +113,6 @@ const isAdding = ref(false);
 const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
 
-const addProductFormRef = ref(null);
 const existingProducts = ref<Product[]>([]);
 
 const newProduct = reactive<{
@@ -185,7 +120,7 @@ const newProduct = reactive<{
   price: number | null,
   category: string,
   has_deposit: boolean
-}>({ name: '', category: '', price: null, has_deposit: false})
+}>({ name: '', category: '', price: null, has_deposit: false })
 
 const productToEdit = reactive<{
   id: number | null,
@@ -226,7 +161,7 @@ const addProduct = async () => {
     newProduct.category = '';
     newProduct.has_deposit = false;
   } catch (err: unknown) {
-      messages.addMessage(err as AppMessage)
+    messages.addMessage(err as AppMessage)
   } finally {
     isAdding.value = false;
   }
@@ -239,7 +174,7 @@ const fetchExistingProducts = async () => {
     existingProducts.value = products;
   } catch (err: unknown) {
     console.error("Failed to fetch products", err)
-    messages.addMessage({ type: 'DataLoading', message: `Errore durante il caricamento dei prodotti`});
+    messages.addMessage({ type: 'DataLoading', message: `Errore durante il caricamento dei prodotti` });
     existingProducts.value = [];
   } finally {
     isLoadingProducts.value = false;
@@ -247,7 +182,7 @@ const fetchExistingProducts = async () => {
 };
 
 const resetEditForm = () => {
-    Object.assign(productToEdit, { id: null, name: '', price: null, category: '', has_deposit: false });
+  Object.assign(productToEdit, { id: null, name: '', price: null, category: '', has_deposit: false });
 };
 
 const openEdit = (product: Product) => {
