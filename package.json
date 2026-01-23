@@ -18,26 +18,26 @@
   },
   "dependencies": {
     "@fluent/bundle": "^0.19.1",
-    "@tailwindcss/vite": "^4.1.17",
+    "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2.9.1",
-    "@tauri-apps/plugin-log": "~2.7.1",
-    "@tauri-apps/plugin-opener": "^2.5.2",
-    "@tauri-apps/plugin-store": "~2.4.1",
+    "@tauri-apps/plugin-log": "~2.8.0",
+    "@tauri-apps/plugin-opener": "^2.5.3",
+    "@tauri-apps/plugin-store": "~2.4.2",
     "fluent-vue": "^3.8.1",
     "maska": "^3.2.0",
     "pinia": "^3.0.4",
-    "tailwindcss": "^4.1.17",
-    "vue": "^3.5.25",
-    "vue-router": "^4.6.3"
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.27",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.9.5",
+    "@tauri-apps/cli": "^2.9.6",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-typescript": "^14.6.0",
-    "daisyui": "^5.5.8",
-    "eslint": "^9.39.1",
+    "daisyui": "^5.5.14",
+    "eslint": "^9.39.2",
     "typescript": "~5.9.3",
     "vite": "^6.4.1",
-    "vue-tsc": "^3.1.5"
+    "vue-tsc": "^3.2.3"
   }
 }
