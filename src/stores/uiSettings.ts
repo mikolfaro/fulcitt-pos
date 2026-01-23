@@ -2,7 +2,7 @@ import { reactive, watch } from 'vue'
 import { load as loadStore } from '@tauri-apps/plugin-store'
 
 type Theme = 'dark' | 'light' | 'system'
-type ZoomLevel = '90' | '100' | '110'
+type ZoomLevel = '100' | '150' | '200'
 
 interface UISettings {
   theme: Theme
@@ -29,8 +29,16 @@ const applyTheme = (theme: Theme) => {
 }
 
 const applyZoom = (zoom: ZoomLevel) => {
-  const body = document.body
-  body.style.zoom = `${zoom}%`
+  const html = document.documentElement
+  const zoomNum = parseInt(zoom)
+  const scaleFactor = zoomNum / 100
+
+  // Set base font-size for rem-based scaling
+  html.style.fontSize = `${zoom}%`
+
+  // Set CSS custom properties for fine-grained control
+  html.style.setProperty('--zoom-scale', scaleFactor.toString())
+  html.style.setProperty('--zoom-scale-inv', (1 / scaleFactor).toString())
 }
 
 const setupSystemThemeListener = () => {

@@ -29,13 +29,20 @@ pub(crate) struct CartItem {
     pub quantity: i64,
 }
 
+#[derive(Deserialize, Serialize, Debug, sqlx::Type, rust_xlsxwriter::XlsxSerialize)]
+#[sqlx(rename_all = "PascalCase")]
+pub(crate) enum PaymentMethod {
+    Card,
+    Cash,
+}
+
 #[derive(Debug, Deserialize, FromRow, Serialize)]
 pub(crate) struct Sale {
     pub id: Uuid,
     pub number: Option<i64>,
     pub sale_time: NaiveDateTime,
     pub total_amount: f64,
-    pub payment_method: Option<String>,
+    pub payment_method: Option<PaymentMethod>,
 }
 
 // #[derive(Debug, FromRow, Serialize)]
@@ -62,7 +69,7 @@ pub(crate) struct Refund {
     pub number: Option<i64>,
     pub refund_time: NaiveDateTime,
     pub total_amount: f64,
-    pub payment_method: Option<String>,
+    pub payment_method: Option<PaymentMethod>,
 }
 
 // #[derive(Debug, FromRow, Serialize)]

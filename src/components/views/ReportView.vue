@@ -70,7 +70,7 @@
             <td class="text-right">{{ sale.number || 'N/A' }}</td>
             <td>{{ formatTime(sale.sale_time) }}</td>
             <td class="text-right">{{ formatCurrency(sale.total_amount) }}</td>
-            <td>-</td>
+            <td>{{ $t(`reports-payment-method-${sale.payment_method.toLowerCase()}`) }}</td>
             <td>
               <button class="btn btn-xs btn-outline btn-primary" @click="printTicket(sale)">
                 {{ $t('reports-today-sales-reprint-tickets-button') }}

@@ -11,10 +11,16 @@ export interface CartItem {
   id: number,
   name: string,
   price: number,
-  quantity: number
+  quantity: number,
+  hasDeposit?: boolean
 }
 
 export interface AppMessage {
   type: string,
   message: string
+}
+
+export enum PaymentMethod {
+  Card = 'Card',
+  Cash = 'Cash'
 }

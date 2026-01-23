@@ -1,4 +1,9 @@
 @import "tailwindcss";
+
+/* html { */
+/*   font-size: 16px; */
+/* } */
+
 @plugin "daisyui" {
   themes: dark --default, light --preferslight;
 }

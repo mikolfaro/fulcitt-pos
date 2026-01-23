@@ -15,7 +15,7 @@ pos-cart-title = Ordine attuale
 pos-cart-toggle-refund-mode = Attiva storno
 pos-cart-total-price = Totale
 
-pos-cancel-payment-button = Annulla pagamento
+pos-reopen-cart-button = Riapri ordine
 pos-clear-cart-button = Cancella ordine
 pos-menu-title = POS
 
@@ -24,6 +24,7 @@ pos-messages-loading-products = Caricamento prodotti...
 pos-messages-cannot-process-transaction-with-no-items = Nessun prodotto nel carrello
 pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
+pos-messages-insufficient-amount = Importo pagato insufficiente
 
 pos-products-title = Prodotti
 pos-products-refunds-title = Rimborso cauzioni
@@ -35,9 +36,13 @@ pos-recap-amount-payed = Pagato
 pos-recap-change = Resto
 pos-recap-subtotal = Subtotale
 pos-recap-total = Totale
+pos-recap-refund = Rimborso cauzione
+pos-recap-cancellation = Storno
 
 pos-reprint-tickets-button = Ristampa ultima vendita
 pos-start-payment-button = Pagamento
+pos-start-payment-card-button = Carta
+pos-start-payment-cash-button = Contanti
 
 ## Reports
 
@@ -59,6 +64,9 @@ reports-export-xslx-invoices-details-tab-title = "Dettaglio"
 reports-messages-loading-data = Caricamento dati...
 reports-messages-no-data-available = Nessun dato sulle vendite disponibile
 reports-messages-export-xlsx-completed = Report esportato
+
+reports-payment-method-card = Carta
+reports-payment-method-cash = Contanti
 
 reports-sales-by-product-title = Prodotti venduti
 reports-sales-by-product-product-name = Prodotto
@@ -161,9 +169,9 @@ settings-ui-theme-light = Chiaro
 settings-ui-theme-system = Sistema
 
 settings-ui-zoom-label = Livello zoom
-settings-ui-zoom-small = Piccolo
-settings-ui-zoom-normal = Normale
-settings-ui-zoom-large = Grande
+settings-ui-zoom-normal = Normale (100%)
+settings-ui-zoom-large = Grande (150%)
+settings-ui-zoom-xlarge = Molto grande (200%)
 
 settings-ui-save-button = Salva
 settings-ui-messages-settings-saved = Impostazioni interfaccia salvate
