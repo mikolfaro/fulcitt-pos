@@ -19,7 +19,7 @@
         <td>
           <div class="flex items-center gap-1 whitespace-nowrap">
             <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
-            <span class="px-1 min-w-[2rem] text-center">{{ item.quantity }}</span>
+            <span class="px-1 text-center">{{ item.quantity }}</span>
             <button class="btn btn-xs btn-primary" @click="incrementQuantity(item)">+</button>
           </div>
         </td>
@@ -35,7 +35,7 @@
         <td>
           <div class="flex items-center gap-1 whitespace-nowrap">
             <button class="btn btn-xs btn-primary" @click="decrementRefundQuantity(item)">-</button>
-            <span class="px-1 min-w-[2rem] text-center">{{ item.quantity }}</span>
+            <span class="px-1 text-center">{{ item.quantity }}</span>
             <button class="btn btn-xs btn-primary" @click="incrementRefundQuantity(item)">+</button>
           </div>
         </td>

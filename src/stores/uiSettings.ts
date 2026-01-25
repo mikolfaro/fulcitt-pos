@@ -61,7 +61,7 @@ const setupWatchers = () => {
   })
 }
 
-export const useUiSettings = function () {
+export const useUiSettings = function() {
   const load = async () => {
     try {
       const settingsStore = await loadStore('store.json', {
