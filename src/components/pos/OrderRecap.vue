@@ -4,7 +4,7 @@
       <tr>
         <th>{{ $t('pos-cart-quantity') }}</th>
         <th>{{ $t('pos-cart-product-name') }}</th>
-        <th>{{ $t('pos-cart-unit-price') }}</th>
+        <th class="overflow-column">{{ $t('pos-cart-unit-price') }}</th>
         <th>{{ $t('pos-cart-total-price') }}</th>
         <th></th>
       </tr>
@@ -24,7 +24,7 @@
           </div>
         </td>
         <td>{{ item.name }}</td>
-        <td>{{ formatCurrency(item.price) }}</td>
+        <td class="overflow-column">{{ formatCurrency(item.price) }}</td>
         <td>{{ formatCurrency(item.price * item.quantity) }}</td>
         <td>
           <button class="btn btn-xs btn-error" @click="removeFromCart(item)">X</button>
@@ -44,7 +44,7 @@
           <span v-if="item.hasDeposit">({{ $t("pos-recap-refund") }})</span>
           <span v-else>({{ $t("pos-recap-cancellation") }})</span>
         </td>
-        <td>{{ formatCurrency(-1.0 * item.price) }}</td>
+        <td class="overflow-column">{{ formatCurrency(-1.0 * item.price) }}</td>
         <td>{{ formatCurrency(-1.0 * item.price * item.quantity) }}</td>
         <td>
           <button class="btn btn-xs btn-error" @click="removeRefundFromCart(item)">X</button>
@@ -86,3 +86,11 @@ const removeRefundFromCart = (itemToRemove: CartItem) => {
 };
 
 </script>
+
+<style scoped>
+@container style(--zoom-scale: 1.5) or style(--zoom-scale: 2) {
+  .overflow-column {
+    display: none;
+  }
+}
+</style>
