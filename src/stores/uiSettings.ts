@@ -30,15 +30,18 @@ const applyTheme = (theme: Theme) => {
 
 const applyZoom = (zoom: ZoomLevel) => {
   const html = document.documentElement
-  const zoomNum = parseInt(zoom)
-  const scaleFactor = zoomNum / 100
+  // const zoomNum = parseInt(zoom)
 
   // Set base font-size for rem-based scaling
   html.style.fontSize = `${zoom}%`
 
   // Set CSS custom properties for fine-grained control
-  html.style.setProperty('--zoom-scale', scaleFactor.toString())
-  html.style.setProperty('--zoom-scale-inv', (1 / scaleFactor).toString())
+  html.classList.forEach(function (className) {
+    if (className.startsWith('zoom-level-')) {
+      html.classList.remove(className)
+    }
+  })
+  html.classList.add('zoom-level-' + zoom)
 }
 
 const setupSystemThemeListener = () => {
@@ -61,7 +64,7 @@ const setupWatchers = () => {
   })
 }
 
-export const useUiSettings = function() {
+export const useUiSettings = function () {
   const load = async () => {
     try {
       const settingsStore = await loadStore('store.json', {
