@@ -4,6 +4,11 @@
 /*   font-size: 16px; */
 /* } */
 
+@theme {
+  /** Zoom should not change padding and margin */
+  --spacing: 4px;
+}
+
 @plugin "daisyui" {
   themes: dark --default, light --preferslight;
 }
