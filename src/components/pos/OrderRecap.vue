@@ -15,7 +15,7 @@
           {{ $t('pos-messages-empty-cart') }}
         </td>
       </tr>
-      <tr v-for="item in cart.items" :key="item.id">
+      <tr v-memo="[cart.items]" v-for="item in sortItems(cart.items)" :key="item.id">
         <td>
           <div class="flex items-center gap-1 whitespace-nowrap">
             <button class="btn btn-xs btn-primary" @click="decrementQuantity(item)">-</button>
@@ -31,7 +31,7 @@
         </td>
       </tr>
 
-      <tr v-for="item in cart.refundItems" :key="item.id" class="text-secondary">
+      <tr v-memo="[cart.refundItems]" v-for="item in cart.refundItems" :key="item.id" class="text-secondary">
         <td>
           <div class="flex items-center gap-1 whitespace-nowrap">
             <button class="btn btn-xs btn-primary" @click="decrementRefundQuantity(item)">-</button>
@@ -60,6 +60,10 @@ import { useCartStore } from '../../stores/cartStore';
 import formatCurrency from '../../utils/formatCurrency';
 
 const cart = useCartStore();
+const sortItems = (items: CartItem[]) => {
+  return items.sort((a, b) => a.category.localeCompare(b.category)) ||
+    items.sort((a, b) => a.name.localeCompare(b.name));
+}
 
 const incrementQuantity = (item: CartItem) => {
   cart.addItem(item, 1)
