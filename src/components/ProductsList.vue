@@ -3,9 +3,9 @@
     <button v-for="product in products" :aria-disabled="allowAddToCart" :key="product.id"
       class="card bg-base-300 shadow-md hover:shadow-lg hover:bg-base-200 transition-shadow duration-200 ease-in-out cursor-pointer"
       :class="{ 'text-secondary': refundModeActive }" @click="() => { allowAddToCart && addToCart(product) }">
-      <div class="card-body items-center justify-between text-center p-3">
+      <div class="flex card-body justify-between items-center p-3">
         <h3 class="card-title text-sm leading-tight">{{ product.name }}</h3>
-        <p class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</p>
+        <span class="text-md font-semibold mt-1">{{ formatCurrency(product.price) }}</span>
       </div>
     </button>
   </div>

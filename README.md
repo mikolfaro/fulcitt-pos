@@ -48,15 +48,15 @@ Network printer support can be added later for cross-platform compatibility with
 
 Features
 
-- [ ] Better zoom
+- [X] Better zoom
 - [X] Move cash input to the left
 - [X] Add 'POS Payment' button
-- [ ] Sort products by category and then by name
+- [X] Sort products by category and then by name
 
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
 - [ ] Integrate biome
-- [ ] Voiding and refunding support
+- [X] Voiding and refunding support
 - [ ] Network sync (p2p)
   - Add created_at/updated_at/device_id to Rust models
   - Remove UNIQUE constraint on products.name
