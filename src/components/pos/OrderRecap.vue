@@ -60,9 +60,15 @@ import { useCartStore } from '../../stores/cartStore';
 import formatCurrency from '../../utils/formatCurrency';
 
 const cart = useCartStore();
-const sortItems = (items: CartItem[]) => {
-  return items.sort((a, b) => a.category.localeCompare(b.category)) ||
-    items.sort((a, b) => a.name.localeCompare(b.name));
+
+type CartItemWithCategory = CartItem & { category?: string }
+const sortItems = (items: CartItemWithCategory[]) => {
+  return items.sort((a, b) => {
+    const aCategory = a.category ?? ""
+    const bCategory = b.category ?? ""
+
+    return aCategory.localeCompare(bCategory) || a.name.localeCompare(b.name)
+  });
 }
 
 const incrementQuantity = (item: CartItem) => {
