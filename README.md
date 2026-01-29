@@ -55,7 +55,7 @@ Features
 
 - [W] Improve error messages
 - [ ] Gestire disconnessione della stampante
-- [ ] Integrate biome
+- [X] Integrate biome
 - [X] Voiding and refunding support
 - [ ] Network sync (p2p)
   - Add created_at/updated_at/device_id to Rust models
