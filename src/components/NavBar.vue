@@ -17,8 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import { useFluent } from 'fluent-vue'
+import { useFluent } from "fluent-vue";
+import { RouterLink } from "vue-router";
 
-const { $t } = useFluent()
+const { $t } = useFluent();
 </script>

@@ -101,14 +101,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue"
-import { useFluent } from "fluent-vue"
-import { AppMessage, Product, UnsavedProduct } from "../../../lib"
-import { createProduct, deleteProduct, listProducts, updateProduct } from "../../../repositories"
-import { useMessagesStore } from "../../../stores/messagesStore"
+import { useFluent } from "fluent-vue";
+import { onMounted, reactive, ref } from "vue";
+import { AppMessage, Product, UnsavedProduct } from "../../../lib";
+import {
+  createProduct,
+  deleteProduct,
+  listProducts,
+  updateProduct,
+} from "../../../repositories";
+import { useMessagesStore } from "../../../stores/messagesStore";
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
+const { $t } = useFluent();
+const messages = useMessagesStore();
 const isAdding = ref(false);
 const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
@@ -116,35 +121,40 @@ const isLoadingProducts = ref(true);
 const existingProducts = ref<Product[]>([]);
 
 const newProduct = reactive<{
-  name: string,
-  price: number | null,
-  category: string,
-  has_deposit: boolean
-}>({ name: '', category: '', price: null, has_deposit: false })
+  name: string;
+  price: number | null;
+  category: string;
+  has_deposit: boolean;
+}>({ name: "", category: "", price: null, has_deposit: false });
 
 const productToEdit = reactive<{
-  id: number | null,
-  name: string,
-  price: number | null,
-  category: string,
-  has_deposit: boolean
-}>({ id: null, name: '', category: '', price: null, has_deposit: false });
+  id: number | null;
+  name: string;
+  price: number | null;
+  category: string;
+  has_deposit: boolean;
+}>({ id: null, name: "", category: "", price: null, has_deposit: false });
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-}
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+};
 
 onMounted(async () => {
   try {
     await fetchExistingProducts();
   } catch (err) {
-    messages.addMessage(err as AppMessage)
+    messages.addMessage(err as AppMessage);
   }
 });
 
 const addProduct = async () => {
   if (newProduct.price === null || newProduct.price < 0) {
-    messages.addInvalidInput($t("settings-products-messages-price-must-be-positive"))
+    messages.addInvalidInput(
+      $t("settings-products-messages-price-must-be-positive"),
+    );
     return;
   }
 
@@ -156,12 +166,12 @@ const addProduct = async () => {
     messages.addSuccess(`Product "${newProduct.name}" added successfully!`);
     await fetchExistingProducts();
 
-    newProduct.name = '';
+    newProduct.name = "";
     newProduct.price = null;
-    newProduct.category = '';
+    newProduct.category = "";
     newProduct.has_deposit = false;
   } catch (err: unknown) {
-    messages.addMessage(err as AppMessage)
+    messages.addMessage(err as AppMessage);
   } finally {
     isAdding.value = false;
   }
@@ -173,8 +183,11 @@ const fetchExistingProducts = async () => {
     const products = await listProducts();
     existingProducts.value = products;
   } catch (err: unknown) {
-    console.error("Failed to fetch products", err)
-    messages.addMessage({ type: 'DataLoading', message: `Errore durante il caricamento dei prodotti` });
+    console.error("Failed to fetch products", err);
+    messages.addMessage({
+      type: "DataLoading",
+      message: `Errore durante il caricamento dei prodotti`,
+    });
     existingProducts.value = [];
   } finally {
     isLoadingProducts.value = false;
@@ -182,22 +195,39 @@ const fetchExistingProducts = async () => {
 };
 
 const resetEditForm = () => {
-  Object.assign(productToEdit, { id: null, name: '', price: null, category: '', has_deposit: false });
+  Object.assign(productToEdit, {
+    id: null,
+    name: "",
+    price: null,
+    category: "",
+    has_deposit: false,
+  });
 };
 
 const openEdit = (product: Product) => {
   resetEditForm();
   Object.assign(productToEdit, product);
-}
+};
 
 const closeEdit = () => {
   resetEditForm();
-  Object.assign(productToEdit, { id: null, name: '', category: '', price: null, has_deposit: false })
+  Object.assign(productToEdit, {
+    id: null,
+    name: "",
+    category: "",
+    price: null,
+    has_deposit: false,
+  });
 };
 
 const doUpdateProduct = async () => {
-  if (!productToEdit.name || productToEdit.price === null || productToEdit.price < 0 || !productToEdit.category) {
-    messages.addInvalidInput($t("settings-products-messages-incorrect-fields"))
+  if (
+    !productToEdit.name ||
+    productToEdit.price === null ||
+    productToEdit.price < 0 ||
+    !productToEdit.category
+  ) {
+    messages.addInvalidInput($t("settings-products-messages-incorrect-fields"));
     return;
   }
   const product = productToEdit as Product;
@@ -206,26 +236,25 @@ const doUpdateProduct = async () => {
 
   try {
     await updateProduct(product);
-    messages.addSuccess($t('settings-products-messages-product-updated'));
+    messages.addSuccess($t("settings-products-messages-product-updated"));
     await fetchExistingProducts();
     closeEdit();
-
   } catch (err: unknown) {
     console.error(`Error updating product ID ${productToEdit.id}:`, err);
-    messages.addMessage(err as AppMessage)
+    messages.addMessage(err as AppMessage);
   } finally {
     isUpdating.value = false;
   }
-}
+};
 
 const doDeleteProduct = async (productToDelete: Product) => {
   try {
-    await deleteProduct(productToDelete)
-    messages.addSuccess($t('settings-products-messages-product-deleted'));
+    await deleteProduct(productToDelete);
+    messages.addSuccess($t("settings-products-messages-product-deleted"));
     await fetchExistingProducts();
   } catch (err: unknown) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
     messages.addMessage(err as AppMessage);
   }
-}
+};
 </script>

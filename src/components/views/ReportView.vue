@@ -98,118 +98,129 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core'
-import { ref, onMounted } from 'vue'
-import { useFluent } from 'fluent-vue'
-import { useMessagesStore } from '../../stores/messagesStore'
+import { invoke } from "@tauri-apps/api/core";
+import { useFluent } from "fluent-vue";
+import { onMounted, ref } from "vue";
+import { useMessagesStore } from "../../stores/messagesStore";
 
 interface ItemSale {
-  product_id: number,
-  product_name: string,
-  total_quantity_sold: number,
-  total_value_sold: number
+  product_id: number;
+  product_name: string;
+  total_quantity_sold: number;
+  total_value_sold: number;
 }
 
 interface Sale {
-  id: string,
-  number: number | null,
-  sale_time: Date,
-  total_amount: number,
-  payment_method: string
-
+  id: string;
+  number: number | null;
+  sale_time: Date;
+  total_amount: number;
+  payment_method: string;
 }
 
-const { $t } = useFluent()
-const messages = useMessagesStore()
-const loading = ref<boolean>(true)
-const productSalesData = ref<ItemSale[]>([])
-const refundsData = ref<ItemSale[]>([])
-const invoiceSalesData = ref<Sale[]>([])
+const { $t } = useFluent();
+const messages = useMessagesStore();
+const loading = ref<boolean>(true);
+const productSalesData = ref<ItemSale[]>([]);
+const refundsData = ref<ItemSale[]>([]);
+const invoiceSalesData = ref<Sale[]>([]);
 
-const currencyFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' })
+const currencyFormatter = new Intl.NumberFormat("it-IT", {
+  style: "currency",
+  currency: "EUR",
+});
 const formatCurrency = (value: number) => {
-  return currencyFormatter.format(value)
-}
+  return currencyFormatter.format(value);
+};
 
-const timeFormatter = new Intl.DateTimeFormat('it-IT', { timeStyle: 'short' })
+const timeFormatter = new Intl.DateTimeFormat("it-IT", { timeStyle: "short" });
 const formatTime = (value: Date) => {
-  return timeFormatter.format(value)
-}
+  return timeFormatter.format(value);
+};
 
 const printTicket = async (sale: Sale) => {
   try {
-    await invoke('print_sale', { saleId: sale.id })
+    await invoke("print_sale", { saleId: sale.id });
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
-}
+};
 
 const clearHistory = async () => {
   try {
-    await invoke('clear_sales_data')
+    await invoke("clear_sales_data");
 
-    productSalesData.value = []
-    invoiceSalesData.value = []
-    refundsData.value = []
+    productSalesData.value = [];
+    invoiceSalesData.value = [];
+    refundsData.value = [];
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
-}
+};
 
 const exportXlsx = async () => {
   try {
-    await invoke('export_sales')
-    messages.addSuccess($t('reports-messages-export-xlsx-completed'))
+    await invoke("export_sales");
+    messages.addSuccess($t("reports-messages-export-xlsx-completed"));
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
-}
+};
 
-interface WithProductName { product_name: string }
+interface WithProductName {
+  product_name: string;
+}
 const sortByProductName = (a: WithProductName, b: WithProductName) => {
   if (a.product_name < b.product_name) {
-    return -1
+    return -1;
   } else if (a.product_name > b.product_name) {
-    return 1
+    return 1;
   } else {
-    return 0
+    return 0;
   }
-}
+};
 
 onMounted(async function () {
   try {
-    const { sales, refunds } = await invoke<{ sales: ItemSale[], refunds: ItemSale[] }>('get_transactions_recap')
-    productSalesData.value = sales.sort(sortByProductName)
-    refundsData.value = refunds.sort(sortByProductName)
+    const { sales, refunds } = await invoke<{
+      sales: ItemSale[];
+      refunds: ItemSale[];
+    }>("get_transactions_recap");
+    productSalesData.value = sales.sort(sortByProductName);
+    refundsData.value = refunds.sort(sortByProductName);
 
-    loading.value = false
+    loading.value = false;
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 
   try {
-    type DeserializedSale = Omit<Sale, 'sale_time'> & { sale_time: string };
-    const data = await invoke<DeserializedSale[]>("get_today_sales")
+    type DeserializedSale = Omit<Sale, "sale_time"> & { sale_time: string };
+    const data = await invoke<DeserializedSale[]>("get_today_sales");
 
-    invoiceSalesData.value = data.map(function (sale) {
-      return { ...sale, sale_time: new Date(sale.sale_time) }
-    }).sort(function (a, b) {
-      // Sort by date DESC (most recent first)
-      if (a.sale_time.getTime() !== b.sale_time.getTime()) {
-        return b.sale_time.getTime() - a.sale_time.getTime()
-      }
-      // If dates are equal, sort by sale number DESC
-      const aNum = a.number ?? 0
-      const bNum = b.number ?? 0
-      return bNum - aNum
-    })
+    invoiceSalesData.value = data
+      .map(function (sale) {
+        return { ...sale, sale_time: new Date(sale.sale_time) };
+      })
+      .sort(function (a, b) {
+        // Sort by date DESC (most recent first)
+        if (a.sale_time.getTime() !== b.sale_time.getTime()) {
+          return b.sale_time.getTime() - a.sale_time.getTime();
+        }
+        // If dates are equal, sort by sale number DESC
+        const aNum = a.number ?? 0;
+        const bNum = b.number ?? 0;
+        return bNum - aNum;
+      });
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 
-  if (invoiceSalesData.value.length === 0 && productSalesData.value.length === 0) {
-    messages.addInvalidInput($t('reports-messages-no-data-available'))
+  if (
+    invoiceSalesData.value.length === 0 &&
+    productSalesData.value.length === 0
+  ) {
+    messages.addInvalidInput($t("reports-messages-no-data-available"));
   }
-})
-
+});
 </script>

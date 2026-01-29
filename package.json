@@ -13,8 +13,8 @@
     "tauri": "tauri",
     "tauri-build-windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
     "cargo": "cd src-tauri && cargo",
-    "lint": "eslint --ext .js,.ts,.vue src/",
-    "lint:fix": "eslint --ext .js,.ts,.vue src/ --fix"
+    "lint": "biome format ./src",
+    "lint:fix": "biome format --write ./src"
   },
   "dependencies": {
     "@fluent/bundle": "^0.19.1",
@@ -31,6 +31,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.7",
     "@tauri-apps/cli": "^2.9.6",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-typescript": "^14.6.0",

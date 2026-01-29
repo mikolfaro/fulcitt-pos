@@ -55,46 +55,45 @@
 </template>
 
 <script setup lang="ts">
-import { CartItem } from '../../lib';
-import { useCartStore } from '../../stores/cartStore';
-import formatCurrency from '../../utils/formatCurrency';
+import { CartItem } from "../../lib";
+import { useCartStore } from "../../stores/cartStore";
+import formatCurrency from "../../utils/formatCurrency";
 
 const cart = useCartStore();
 
-type CartItemWithCategory = CartItem & { category?: string }
+type CartItemWithCategory = CartItem & { category?: string };
 const sortItems = (items: CartItemWithCategory[]) => {
   return items.sort((a, b) => {
-    const aCategory = a.category ?? ""
-    const bCategory = b.category ?? ""
+    const aCategory = a.category ?? "";
+    const bCategory = b.category ?? "";
 
-    return aCategory.localeCompare(bCategory) || a.name.localeCompare(b.name)
+    return aCategory.localeCompare(bCategory) || a.name.localeCompare(b.name);
   });
-}
+};
 
 const incrementQuantity = (item: CartItem) => {
-  cart.addItem(item, 1)
+  cart.addItem(item, 1);
 };
 
 const decrementQuantity = (item: CartItem) => {
-  cart.removeItem(item, 1)
+  cart.removeItem(item, 1);
 };
 
 const removeFromCart = (itemToRemove: CartItem) => {
-  cart.removeItem(itemToRemove)
+  cart.removeItem(itemToRemove);
 };
 
 const incrementRefundQuantity = (item: CartItem) => {
-  cart.addRefundItem(item, 1)
+  cart.addRefundItem(item, 1);
 };
 
 const decrementRefundQuantity = (item: CartItem) => {
-  cart.removeRefundItem(item, 1)
+  cart.removeRefundItem(item, 1);
 };
 
 const removeRefundFromCart = (itemToRemove: CartItem) => {
-  cart.removeRefundItem(itemToRemove)
+  cart.removeRefundItem(itemToRemove);
 };
-
 </script>
 
 <style scoped>

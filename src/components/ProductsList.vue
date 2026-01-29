@@ -12,23 +12,26 @@
 </template>
 
 <script setup lang="ts">
-import { Product } from '../lib'
+import { Product } from "../lib";
 
 defineProps<{
-  products: Product[],
-  allowAddToCart: boolean,
-  refundModeActive: boolean
-}>()
+  products: Product[];
+  allowAddToCart: boolean;
+  refundModeActive: boolean;
+}>();
 
 const emit = defineEmits<{
-  (e: 'addToCart', product: Product): void
-}>()
+  (e: "addToCart", product: Product): void;
+}>();
 
 function addToCart(product: Product) {
-  emit('addToCart', product)
+  emit("addToCart", product);
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
 }
 </script>

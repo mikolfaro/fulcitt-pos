@@ -1,0 +1,33 @@
+<template>
+  <div class="mt-2">
+    <button class="btn btn-success w-full" @click="startPayment()">
+      {{ $t("pos-start-payment-button") }}
+    </button>
+    <button class="btn btn-outline btn-error w-full mt-2" @click="cart.clear()">
+      {{ $t('pos-clear-cart-button') }}</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useFluent } from "fluent-vue";
+import { useRouter } from "vue-router";
+import { useCartStore } from "../../../stores/cartStore";
+import { useMessagesStore } from "../../../stores/messagesStore";
+
+const { $t } = useFluent();
+const router = useRouter();
+const cart = useCartStore();
+const messages = useMessagesStore();
+
+function startPayment() {
+  if (!cart.isEmpty) {
+    cart.lock();
+
+    router.push("/checkout");
+  } else {
+    messages.addInvalidInput(
+      $t("pos-messages-cannot-process-sale-with-no-items"),
+    );
+  }
+}
+</script>

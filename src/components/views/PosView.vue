@@ -68,37 +68,37 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core';
-import { ref, computed, onMounted } from 'vue';
-import { useFluent } from 'fluent-vue';
+import { invoke } from "@tauri-apps/api/core";
+import { useFluent } from "fluent-vue";
+import { computed, onMounted, ref } from "vue";
 
-import type { AppMessage } from '../../lib';
-import { CartItem, PaymentMethod, Product } from '../../lib';
-import { listProducts } from '../../repositories';
-import { useCartStore } from '../../stores/cartStore';
-import { useMessagesStore } from '../../stores/messagesStore';
-import ProductsList from '../ProductsList.vue';
-import CheckoutSelection from '../pos/CheckoutSelection.vue';
-import OrderRecap from '../pos/OrderRecap.vue';
-import CashInput from '../pos/CashInput.vue';
-import formatCurrency from '../../utils/formatCurrency';
+import type { AppMessage } from "../../lib";
+import { CartItem, PaymentMethod, Product } from "../../lib";
+import { listProducts } from "../../repositories";
+import { useCartStore } from "../../stores/cartStore";
+import { useMessagesStore } from "../../stores/messagesStore";
+import formatCurrency from "../../utils/formatCurrency";
+import ProductsList from "../ProductsList.vue";
+import CashInput from "../pos/CashInput.vue";
+import CheckoutSelection from "../pos/CheckoutSelection.vue";
+import OrderRecap from "../pos/OrderRecap.vue";
 
 const availableProducts = ref<Product[]>([]);
 const refundableProducts = ref<Product[]>([]);
 
 const { $t } = useFluent();
 const cart = useCartStore();
-const messages = useMessagesStore()
+const messages = useMessagesStore();
 const isLoading = ref(true);
-const refundModeActive = ref<boolean>(false)
-const orderCreation = ref<boolean>(true)
+const refundModeActive = ref<boolean>(false);
+const orderCreation = ref<boolean>(true);
 
 onMounted(async () => {
   try {
     await fetchProducts();
   } catch (err) {
     console.error("Database initialization/loading failed:", err);
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   } finally {
     isLoading.value = false;
   }
@@ -110,25 +110,33 @@ const fetchProducts = async () => {
     const products = await listProducts();
     products.sort((a: Product, b: Product) => {
       if (a.name < b.name) {
-        return -1
+        return -1;
       } else if (a.name > b.name) {
-        return 1
+        return 1;
       } else {
-        return 0
+        return 0;
       }
-    })
+    });
 
     availableProducts.value = products;
-    refundableProducts.value = products.filter((product) => product.has_deposit)
+    refundableProducts.value = products.filter(
+      (product) => product.has_deposit,
+    );
   } catch (err) {
     console.error("Error fetching products:", err);
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
 };
 
 const addToCart = (product: Product) => {
   if (refundModeActive.value) {
-    const item: CartItem = { id: product.id, name: product.name, price: product.price, quantity: 1, hasDeposit: product.has_deposit }
+    const item: CartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      hasDeposit: product.has_deposit,
+    };
 
     cart.addRefundItem(item, 1);
   } else {
@@ -137,74 +145,89 @@ const addToCart = (product: Product) => {
 };
 
 const addToRefundCart = (product: Product) => {
-  const item: CartItem = { id: product.id, name: product.name, price: product.price, quantity: 1, hasDeposit: product.has_deposit }
+  const item: CartItem = {
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    quantity: 1,
+    hasDeposit: product.has_deposit,
+  };
 
   cart.addRefundItem(item, 1);
 };
 
 const printLastSale = async () => {
   try {
-    await invoke('print_last_sale')
+    await invoke("print_last_sale");
   } catch (err) {
-    messages.addUnknownError(err)
+    messages.addUnknownError(err);
   }
-}
+};
 
 const groupedProducts = computed<Record<string, Product[]>>(() => {
-  const sortedProducts = availableProducts.value
+  const sortedProducts = availableProducts.value;
 
-  return sortedProducts.reduce((groups: Record<string, Product[]>, product: Product) => {
-    const category = product.category || 'Uncategorized'; // Default category if none provided
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(product);
-    return groups;
-  }, {});
+  return sortedProducts.reduce(
+    (groups: Record<string, Product[]>, product: Product) => {
+      const category = product.category || "Uncategorized"; // Default category if none provided
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(product);
+      return groups;
+    },
+    {},
+  );
 });
 
 const startCardPayment = async function () {
-  await processPayment(PaymentMethod.Card)
-}
+  await processPayment(PaymentMethod.Card);
+};
 
 const startCashPayment = async function () {
-  orderCreation.value = false
-}
+  orderCreation.value = false;
+};
 
 const cancelOrder = async function () {
-  cart.clear()
-  orderCreation.value = true
-}
+  cart.clear();
+  orderCreation.value = true;
+};
 
 const processCashPayment = async function () {
-  await processPayment(PaymentMethod.Cash)
-}
+  await processPayment(PaymentMethod.Cash);
+};
 
 const processPayment = async function (paymentMethod: PaymentMethod) {
   if (cart.isEmpty) {
-    messages.addInvalidInput($t('pos-messages-cannot-process-sale-with-no-items'))
+    messages.addInvalidInput(
+      $t("pos-messages-cannot-process-sale-with-no-items"),
+    );
     return;
   }
 
   try {
     const saleItems = cart.items.map((item) => {
-      return { ...item, product_id: item.id }
-    })
+      return { ...item, product_id: item.id };
+    });
 
     const refundItems = cart.refundItems.map((item) => {
-      return { ...item, product_id: item.id }
-    })
+      return { ...item, product_id: item.id };
+    });
 
-    await invoke('process_transaction', { saleItems, refundItems, paymentMethod })
+    await invoke("process_transaction", {
+      saleItems,
+      refundItems,
+      paymentMethod,
+    });
 
-    cart.clear()
-    cart.unlock()
+    cart.clear();
+    cart.unlock();
 
-    orderCreation.value = true
+    orderCreation.value = true;
   } catch (err) {
-    messages.addMessage(err as AppMessage)
+    messages.addMessage(err as AppMessage);
   }
-}
+};
 </script>
 
 <style scoped>

@@ -15,13 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import { useFluent } from 'fluent-vue'
+import { useFluent } from "fluent-vue";
 
-const { $t } = useFluent()
+const { $t } = useFluent();
 
 const emit = defineEmits<{
-  (e: 'startCardPayment'): void
-  (e: 'startCashPayment'): void
-  (e: 'cancelOrder'): void
-}>()
+  (e: "startCardPayment"): void;
+  (e: "startCashPayment"): void;
+  (e: "cancelOrder"): void;
+}>();
 </script>
