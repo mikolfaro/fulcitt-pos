@@ -3,15 +3,18 @@ import { CartItem, Product } from "../lib";
 
 export const useCartStore = defineStore("cart", {
   state: () => ({
-    items: [] as CartItem[],
-    refundItems: [] as CartItem[],
+    items: {} as Record<string, CartItem>,
+    refundItems: {} as Record<string, CartItem>,
     isLocked: false,
   }),
   getters: {
     subTotal(state) {
       return (
-        state.items.reduce((sum, item) => sum + item.price * item.quantity, 0) -
-        state.refundItems.reduce(
+        Object.values(state.items).reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        ) -
+        Object.values(state.refundItems).reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         )
@@ -19,79 +22,63 @@ export const useCartStore = defineStore("cart", {
     },
     total(state) {
       return (
-        state.items.reduce((sum, item) => sum + item.price * item.quantity, 0) -
-        state.refundItems.reduce(
+        Object.values(state.items).reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        ) -
+        Object.values(state.refundItems).reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         )
       );
     },
     isEmpty(state) {
-      return state.items.length === 0 && state.refundItems.length === 0;
+      return (
+        Object.values(state.items).length === 0 &&
+        Object.values(state.refundItems).length === 0
+      );
     },
   },
   actions: {
     addItem(newItem: Product | CartItem, quantity: number) {
-      const existingItem = this.items.find((item) => item.id === newItem.id);
-      if (existingItem) {
-        existingItem.quantity += quantity;
+      if (this.items[newItem.id]) {
+        this.items[newItem.id].quantity += quantity;
       } else {
-        this.items.push({ ...newItem, quantity: 1 });
+        this.items[newItem.id] = { ...newItem, quantity };
       }
     },
     removeItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
-      if (quantity) {
-        const existingItem = this.items.find(
-          (item) => item.id === itemToBeRemoved.id,
-        );
-        if (existingItem) {
-          if (existingItem.quantity > quantity) {
-            existingItem.quantity -= quantity;
-          } else {
-            this.items = this.items.filter(
-              (item) => item.id !== itemToBeRemoved.id,
-            );
-          }
+      const qty = quantity ?? 1;
+
+      if (this.items[itemToBeRemoved.id]) {
+        if (this.items[itemToBeRemoved.id].quantity > qty) {
+          this.items[itemToBeRemoved.id].quantity -= qty;
+        } else {
+          delete this.items[itemToBeRemoved.id];
         }
-      } else {
-        this.items = this.items.filter(
-          (item) => item.id !== itemToBeRemoved.id,
-        );
       }
     },
     addRefundItem(newItem: Product | CartItem, quantity: number) {
-      const existingRefundItem = this.refundItems.find(
-        (item) => item.id === newItem.id,
-      );
-      if (existingRefundItem) {
-        existingRefundItem.quantity += quantity;
+      if (this.refundItems[newItem.id]) {
+        this.refundItems[newItem.id].quantity += quantity;
       } else {
-        this.refundItems.push({ ...newItem, quantity: 1 });
+        this.refundItems[newItem.id] = { ...newItem, quantity };
       }
     },
     removeRefundItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
-      if (quantity) {
-        const existingRefundItem = this.refundItems.find(
-          (item) => item.id === itemToBeRemoved.id,
-        );
-        if (existingRefundItem) {
-          if (existingRefundItem.quantity > quantity) {
-            existingRefundItem.quantity -= quantity;
-          } else {
-            this.refundItems = this.refundItems.filter(
-              (item) => item.id !== itemToBeRemoved.id,
-            );
-          }
+      const qty = quantity ?? 1;
+
+      if (this.refundItems[itemToBeRemoved.id]) {
+        if (this.refundItems[itemToBeRemoved.id].quantity > qty) {
+          this.refundItems[itemToBeRemoved.id].quantity -= qty;
+        } else {
+          delete this.refundItems[itemToBeRemoved.id];
         }
-      } else {
-        this.refundItems = this.refundItems.filter(
-          (item) => item.id !== itemToBeRemoved.id,
-        );
       }
     },
     clear() {
-      this.items = [];
-      this.refundItems = [];
+      this.items = {};
+      this.refundItems = {};
     },
     lock() {
       this.isLocked = true;

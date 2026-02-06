@@ -22,6 +22,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 chrono = { version = "0.4.41", features = ["serde"] }
 dotenvy = "0.15.7"
+encoding_rs = "0.8.35"
 escpos = { version = "0.17.0", features = ["native_usb", "usb"] }
 fluent-bundle = "0.16.0"
 log = "0.4.27"
@@ -38,7 +39,6 @@ tauri-plugin-opener = "2"
 tauri-plugin-store = "2"
 thiserror = "2.0.12"
 tokio = { version = "1.48.0", features = ["sync"] }
-encoding_rs = "0.8.35"
 
 [dev-dependencies]
 tauri = { version = "2", features = ["test"] }

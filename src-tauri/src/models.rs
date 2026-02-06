@@ -29,14 +29,16 @@ pub(crate) struct CartItem {
     pub quantity: i64,
 }
 
-#[derive(Deserialize, Serialize, Debug, sqlx::Type, rust_xlsxwriter::XlsxSerialize)]
+#[derive(
+    Clone, Copy, Deserialize, Serialize, Debug, sqlx::Type, rust_xlsxwriter::XlsxSerialize,
+)]
 #[sqlx(rename_all = "PascalCase")]
 pub(crate) enum PaymentMethod {
     Card,
     Cash,
 }
 
-#[derive(Debug, Deserialize, FromRow, Serialize)]
+#[derive(Clone, Debug, Deserialize, FromRow, Serialize)]
 pub(crate) struct Sale {
     pub id: Uuid,
     pub number: Option<i64>,
@@ -45,15 +47,15 @@ pub(crate) struct Sale {
     pub payment_method: Option<PaymentMethod>,
 }
 
-// #[derive(Debug, FromRow, Serialize)]
-// pub(crate) struct SaleItem {
-//     pub id: Uuid,
-//     pub sale_id: Uuid,
-//     pub product_id: Uuid,
-//     pub product_name: String,
-//     pub quantity: i64,
-//     pub price_at_sale: f64,
-// }
+#[derive(Clone, Debug, Deserialize, FromRow, Serialize)]
+pub(crate) struct SaleItem {
+    pub id: Uuid,
+    pub sale_id: Uuid,
+    pub product_id: Uuid,
+    pub product_name: String,
+    pub quantity: i64,
+    pub price_at_sale: f64,
+}
 
 #[derive(Debug, FromRow, Serialize)]
 pub(crate) struct AggregatedSaleItem {
@@ -63,7 +65,7 @@ pub(crate) struct AggregatedSaleItem {
     pub total_value_sold: f64,
 }
 
-#[derive(Debug, Deserialize, FromRow, Serialize)]
+#[derive(Clone, Debug, Deserialize, FromRow, Serialize)]
 pub(crate) struct Refund {
     pub id: Uuid,
     pub number: Option<i64>,
@@ -72,48 +74,12 @@ pub(crate) struct Refund {
     pub payment_method: Option<PaymentMethod>,
 }
 
-// #[derive(Debug, FromRow, Serialize)]
-// pub(crate) struct RefundItem {
-//     pub id: Uuid,
-//     pub refund_id: Uuid,
-//     pub product_id: Uuid,
-//     pub product_name: String,
-//     pub quantity: i64,
-//     pub price_at_refund: f64,
-// }
-
-#[derive(Debug)]
-pub(crate) struct CartItemWithProduct {
-    pub quantity: i64,
-    pub name_at_sale: String,
-    pub price_at_sale: f64,
-
+#[derive(Clone, Debug, Deserialize, FromRow, Serialize)]
+pub(crate) struct RefundItem {
+    pub id: Uuid,
+    pub refund_id: Uuid,
     pub product_id: Uuid,
-    pub name: String,
-    pub category: String,
-    pub is_product_deleted: bool,
-    pub price: f64,
-    pub has_deposit: bool,
-}
-
-impl From<CartItemWithProduct> for (CartItem, Product) {
-    fn from(value: CartItemWithProduct) -> Self {
-        let item = CartItem {
-            name: value.name_at_sale,
-            price: value.price_at_sale,
-            product_id: value.product_id,
-            quantity: value.quantity,
-        };
-
-        let product = Product {
-            id: value.product_id,
-            name: value.name,
-            category: value.category,
-            is_deleted: value.is_product_deleted,
-            price: value.price,
-            has_deposit: value.has_deposit,
-        };
-
-        (item, product)
-    }
+    pub product_name: String,
+    pub quantity: i64,
+    pub price_at_refund: f64,
 }

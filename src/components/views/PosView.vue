@@ -206,11 +206,11 @@ const processPayment = async function (paymentMethod: PaymentMethod) {
   }
 
   try {
-    const saleItems = cart.items.map((item) => {
+    const saleItems = Object.values(cart.items).map((item) => {
       return { ...item, product_id: item.id };
     });
 
-    const refundItems = cart.refundItems.map((item) => {
+    const refundItems = Object.values(cart.refundItems).map((item) => {
       return { ...item, product_id: item.id };
     });
 

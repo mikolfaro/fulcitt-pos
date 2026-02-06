@@ -4,7 +4,7 @@ use escpos::utils::{JustifyMode, PageCode};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::{CartItem, CommandResult, PrinterWrapper, Product, Sale};
+use crate::{CommandResult, PrinterWrapper, Product, Sale, SaleItem};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum FontSize {
@@ -46,7 +46,7 @@ pub(crate) fn print_tickets(
     printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
-    items: &[(CartItem, Product)],
+    items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
     info!("Printing tickets for sale {}", sale.id);
 
@@ -65,13 +65,13 @@ fn print_split_tickets(
     printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
-    items: &[(CartItem, Product)],
+    items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
     for item in items {
         for i in 0..item.0.quantity {
             info!(
                 "Printing ticket for product {:?} ({} of {})",
-                item.0.name,
+                item.0.product_name,
                 i + 1,
                 item.0.quantity
             );
@@ -98,9 +98,9 @@ fn print_grouped_tickets(
     printer: &mut PrinterWrapper,
     layout: &PrintingLayout,
     sale: &Sale,
-    items: &[(CartItem, Product)],
+    items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
-    let mut groups: HashMap<String, Vec<CartItem>> = HashMap::new();
+    let mut groups: HashMap<String, Vec<SaleItem>> = HashMap::new();
     for item in items.iter() {
         if let Some(sale_items) = groups.get_mut(&item.1.category) {
             sale_items.push(item.0.clone());
@@ -149,14 +149,14 @@ fn print_header(
 fn print_body(
     printer: &mut PrinterWrapper,
     layout: &SectionLayout,
-    item: &CartItem,
+    item: &SaleItem,
 ) -> CommandResult<()> {
     if !layout.enabled {
         return Ok(());
     }
 
     with_layout(printer, layout, |p| {
-        p.writeln(&item.name.to_string())?;
+        p.writeln(&item.product_name.to_string())?;
 
         Ok(())
     })?
@@ -173,7 +173,7 @@ fn print_body(
         p.page_code(PageCode::PC858)?;
         p.custom(&[0xD5])?;
 
-        let price = format!("{:.2}", item.price).replace(".", ",");
+        let price = format!("{:.2}", item.price_at_sale).replace(".", ",");
         p.writeln(price.as_ref())?;
 
         Ok(())
