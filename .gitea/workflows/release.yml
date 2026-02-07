@@ -142,17 +142,14 @@ jobs:
           src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
           src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe
 
-    - name: Prepare Codeberg release
-      run: |
-        mkdir -p dist/release
-        cp src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage dist/release/
-        cp src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe dist/release/
 
     - name: Create Codeberg release
-      uses: https://code.forgejo.org/actions/forgejo-release@v2.9.1
+      uses: https://gitea.com/actions/gitea-release-action@v1
       with:
-        direction: upload
-        url: https://codeberg.org/
-        repo: ${{ github.repository_owner }}/${{ github.event.repository.name }}
-        tag: ${{ env.TAG_NAME }}
-        release-dir: dist/release
+        api_url: https://codeberg.org
+        token: ${{ secrets.CODEBERG_TOKEN }}
+        name: "Fulcitt POS ${{ env.TAG_NAME }}"
+        tag: "${{ env.TAG_NAME }}"
+        files: |-
+          src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
+          src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe
