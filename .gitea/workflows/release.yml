@@ -146,10 +146,8 @@ jobs:
     - name: Create Codeberg release
       uses: https://gitea.com/actions/gitea-release-action@v1
       with:
-        api_url: https://codeberg.org
+        server_url: https://codeberg.org
         token: ${{ secrets.CODEBERG_TOKEN }}
-        name: "Fulcitt POS ${{ env.TAG_NAME }}"
-        tag: "${{ env.TAG_NAME }}"
         files: |-
           src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
           src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe
