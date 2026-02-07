@@ -141,3 +141,13 @@ jobs:
         files: |-
           src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
           src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe
+
+
+    - name: Create Codeberg release
+      uses: https://gitea.com/actions/gitea-release-action@v1
+      with:
+        server_url: https://codeberg.org
+        token: ${{ secrets.CODEBERG_TOKEN }}
+        files: |-
+          src-tauri/target/release/bundle/appimage/fulcitt-pos_*.AppImage
+          src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/fulcitt-pos_*.exe
