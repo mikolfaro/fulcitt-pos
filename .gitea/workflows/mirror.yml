@@ -1,0 +1,38 @@
+name: Mirror to Codeberg
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    tags:
+      - 'v*'
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror to Codeberg
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          # Configure git
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.gitea"
+          
+          # Add Codeberg remote with token authentication
+          git remote add codeberg https://oauth2:${CODEBERG_TOKEN}@codeberg.org/${{ github.repository_owner }}/${{ github.event.repository.name }}.git
+          
+          # Push the current ref
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "Pushing tag ${{ github.ref_name }} to Codeberg..."
+            git push codeberg ${{ github.ref_name }}
+          else
+            echo "Pushing branch ${{ github.ref_name }} to Codeberg..."
+            git push codeberg ${{ github.ref_name }}
+          fi
