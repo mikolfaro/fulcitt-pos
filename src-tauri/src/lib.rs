@@ -279,6 +279,49 @@ async fn get_today_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sa
 }
 
 #[tauri::command]
+async fn get_sales_by_date_range(
+    start_date: String,
+    end_date: String,
+    app_state: State<'_, AppState>,
+) -> CommandResult<Vec<Sale>> {
+    info!("Getting sales from {} to {}", start_date, end_date);
+
+    let sales = sqlx::query_as!(
+        Sale,
+        r#"
+        SELECT id as "id: _", number as "number: _", sale_time, total_amount, payment_method as "payment_method: _"
+        FROM sales
+        WHERE date(sale_time) >= date(?) AND date(sale_time) <= date(?)
+        ORDER BY sale_time DESC
+    "#,
+        start_date,
+        end_date
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    Ok(sales)
+}
+
+#[tauri::command]
+async fn get_all_sales(app_state: State<'_, AppState>) -> CommandResult<Vec<Sale>> {
+    info!("Getting all sales");
+
+    let sales = sqlx::query_as!(
+        Sale,
+        r#"
+        SELECT id as "id: _", number as "number: _", sale_time, total_amount, payment_method as "payment_method: _"
+        FROM sales
+        ORDER BY sale_time DESC
+    "#
+    )
+    .fetch_all(&app_state.db)
+    .await?;
+
+    Ok(sales)
+}
+
+#[tauri::command]
 async fn clear_sales_data(app_state: State<'_, AppState>) -> CommandResult<()> {
     info!("Clearing sales data");
 
@@ -650,6 +693,8 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             process_transaction,
             get_transactions_recap,
             get_today_sales,
+            get_sales_by_date_range,
+            get_all_sales,
             export_sales,
             print_last_sale,
             print_sale,

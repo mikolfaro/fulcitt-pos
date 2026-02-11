@@ -85,6 +85,43 @@ reports-refunds-product-name = Prodotto
 reports-refunds-quantity-refunded = Quantità
 reports-refunds-value-refunded = Importo rimborsato
 
+reports-date-filter-title = Filtra per data
+reports-date-start-label = Data inizio
+reports-date-end-label = Data fine
+reports-date-today = Oggi
+reports-date-last-7-days = Ultimi 7 giorni
+reports-date-this-month = Questo mese
+reports-date-all-time = Tutto il periodo
+
+reports-stat-total-sales = Vendite totali nette
+reports-stat-transactions-count = {$count ->
+  [one] 1 transazione
+  *[other] { $count } transazioni
+}
+reports-stat-items-sold = Articoli venduti
+reports-stat-products-count = { $count } prodotti diversi
+reports-stat-avg-transaction = Media per transazione
+reports-stat-per-sale = per vendita
+reports-stat-total-refunds = Rimborsi totali
+reports-stat-refunds-count = {$count ->
+  [one] 1 articolo
+  *[other] { $count } articoli
+}
+reports-stat-cash-payments = Pagamenti in contanti
+reports-stat-cash-count = {$count ->
+  [one] 1 transazione
+  *[other] { $count } transazioni
+}
+reports-stat-card-payments = Pagamenti con carta
+reports-stat-card-count = {$count ->
+  [one] 1 transazione
+  *[other] { $count } transazioni
+}
+
+reports-no-data = Nessun dato disponibile
+reports-total = Totale
+reports-messages-data-cleared = Dati cancellati con successo
+
 ## Settings
 
 settings-menu-title = Impostazioni
