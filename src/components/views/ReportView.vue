@@ -49,7 +49,13 @@
               <p class="text-sm opacity-80">{{ $t('reports-stat-total-sales') }}</p>
               <p class="text-3xl font-bold">{{ formatCurrency(totalAmountSold - totalRefundsAmount) }}</p>
             </div>
-            <div class="text-4xl opacity-50">€</div>
+            <div class="text-4xl opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-14 h-14">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M14.25 7.756a4.5 4.5 0 1 0 0 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </div>
           </div>
           <p class="text-sm mt-2">{{ $t('reports-stat-transactions-count', { count: invoiceSalesData.length }) }}</p>
         </div>
@@ -63,7 +69,13 @@
               <p class="text-sm opacity-80">{{ $t('reports-stat-cash-payments') }}</p>
               <p class="text-3xl font-bold">{{ formatCurrency(cashTotal) }}</p>
             </div>
-            <div class="text-4xl opacity-50">💵</div>
+            <div class="text-4xl opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-12 h-12">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+              </svg>
+            </div>
           </div>
           <p class="text-sm mt-2">{{ $t('reports-stat-cash-count', { count: cashCount }) }}</p>
         </div>
@@ -77,7 +89,14 @@
               <p class="text-sm opacity-80">{{ $t('reports-stat-card-payments') }}</p>
               <p class="text-3xl font-bold">{{ formatCurrency(cardTotal) }}</p>
             </div>
-            <div class="text-4xl opacity-50">💳</div>
+
+            <div class="text-4xl opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-14 h-14">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+              </svg>
+            </div>
           </div>
           <p class="text-sm mt-2">{{ $t('reports-stat-card-count', { count: cardCount }) }}</p>
         </div>
@@ -91,7 +110,13 @@
               <p class="text-sm opacity-80">{{ $t('reports-stat-total-refunds') }}</p>
               <p class="text-3xl font-bold">{{ formatCurrency(totalRefundsAmount) }}</p>
             </div>
-            <div class="text-4xl opacity-50">↩️</div>
+            <div class="text-4xl opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-14 h-14">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 9.75h4.875a2.625 2.625 0 0 1 0 5.25H12M8.25 9.75 10.5 7.5M8.25 9.75 10.5 12m9-7.243V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185Z" />
+              </svg>
+            </div>
           </div>
           <p class="text-sm mt-2">{{ $t('reports-stat-refunds-count', { count: totalRefundsCount }) }}</p>
         </div>
