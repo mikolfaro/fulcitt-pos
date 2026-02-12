@@ -271,7 +271,7 @@ const totalAmountSold = computed(() => {
   return invoiceSalesData.value.reduce(
     (sum, sale) => sum + sale.total_amount,
     0,
-  )
+  );
 });
 
 const totalItemsSold = computed(() => {

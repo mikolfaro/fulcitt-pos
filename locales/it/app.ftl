@@ -98,10 +98,6 @@ reports-stat-transactions-count = {$count ->
   [one] 1 transazione
   *[other] { $count } transazioni
 }
-reports-stat-items-sold = Articoli venduti
-reports-stat-products-count = { $count } prodotti diversi
-reports-stat-avg-transaction = Media per transazione
-reports-stat-per-sale = per vendita
 reports-stat-total-refunds = Rimborsi totali
 reports-stat-refunds-count = {$count ->
   [one] 1 articolo
