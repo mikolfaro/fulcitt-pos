@@ -225,31 +225,42 @@ struct Recap {
 }
 
 #[tauri::command]
-async fn get_transactions_recap(app_state: State<'_, AppState>) -> CommandResult<Recap> {
-    let sales = sqlx::query_as::<_, AggregatedSaleItem>(
+async fn get_transactions_recap_by_date_range(
+    start_date: String,
+    end_date: String,
+    app_state: State<'_, AppState>,
+) -> CommandResult<Recap> {
+    let sales = sqlx::query_as!(
+        AggregatedSaleItem,
         r#"
-            SELECT id,
-                product_id,
+            SELECT product_id as "product_id: _",
                 product_name,
                 SUM(quantity) AS total_quantity_sold,
                 SUM(quantity * price_at_sale) AS total_value_sold
-            FROM sale_items
+            FROM sale_items JOIN sales ON sale_items.sale_id = sales.id
+            WHERE date(sales.sale_time) >= date(?) AND date(sales.sale_time) <= date(?)
             GROUP BY product_id;
         "#,
+        start_date,
+        end_date,
     )
     .fetch_all(&app_state.db)
     .await?;
 
-    let refunds = sqlx::query_as::<_, AggregatedSaleItem>(
+    let refunds = sqlx::query_as!(
+        AggregatedSaleItem,
         r#"
-            SELECT id,
-                product_id,
+            SELECT
+                product_id as "product_id: _",
                 product_name,
                 SUM(quantity) AS total_quantity_sold,
                 SUM(quantity * price_at_refund) AS total_value_sold
-            FROM refund_items
+            FROM refund_items JOIN refunds ON refund_items.refund_id = refunds.id
+            WHERE date(refunds.refund_time) >= date(?) AND date(refunds.refund_time) <= date(?)
             GROUP BY product_id;
         "#,
+        start_date,
+        end_date
     )
     .fetch_all(&app_state.db)
     .await?;
@@ -691,7 +702,7 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             delete_product,
             clear_sales_data,
             process_transaction,
-            get_transactions_recap,
+            get_transactions_recap_by_date_range,
             get_today_sales,
             get_sales_by_date_range,
             get_all_sales,

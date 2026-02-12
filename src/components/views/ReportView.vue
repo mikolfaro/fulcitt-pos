@@ -428,7 +428,10 @@ const loadData = async () => {
     const { sales, refunds } = await invoke<{
       sales: ItemSale[];
       refunds: ItemSale[];
-    }>("get_transactions_recap");
+    }>("get_transactions_recap_by_date_range", {
+      startDate: startDate.value,
+      endDate: endDate.value,
+    });
     productSalesData.value = sales.sort(sortByProductName);
     refundsData.value = refunds.sort(sortByProductName);
   } catch (err) {
@@ -468,13 +471,6 @@ const loadData = async () => {
   }
 
   loading.value = false;
-
-  if (
-    invoiceSalesData.value.length === 0 &&
-    productSalesData.value.length === 0
-  ) {
-    messages.addInvalidInput($t("reports-messages-no-data-available"));
-  }
 };
 
 onMounted(() => {
