@@ -75,3 +75,11 @@ Features
 Known bugs
 
 - [ ] Disconnect/reconnect USB printer may break connection
+
+## Network Printer Reliability (TODOs)
+
+The network driver disconnects every ~10 minutes due to idle TCP connection timeout. Fixes needed:
+
+- [ ] Add lazy reconnection on print - validate connection before printing, recreate driver if dead
+- [ ] Add connection validation method - test connection by sending ESC/POS query/status command
+- [ ] Add periodic keepalive - background task to periodically ping printer to maintain connection
