@@ -215,7 +215,12 @@ async fn process_sale_post_commit<R: Runtime>(
         PrintingLayout::default()
     };
 
-    print_tickets(&mut managed.wrapper, &layout, &sale, &sale_items_for_printing)?;
+    print_tickets(
+        &mut managed.wrapper,
+        &layout,
+        &sale,
+        &sale_items_for_printing,
+    )?;
 
     Ok(Some(sale))
 }
@@ -672,7 +677,9 @@ fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<ManagedPrinter> {
                     .expect("Failed to get app_data_dir");
                 print_path.push("printer_output.txt");
 
-                create_file_printer(&print_path).map(ManagedPrinter::file).ok()
+                create_file_printer(&print_path)
+                    .map(ManagedPrinter::file)
+                    .ok()
             }
             (PrinterType::Usb, None, _) => {
                 warn!("Found USB printer type in config but no printer ID");
