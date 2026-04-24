@@ -99,8 +99,60 @@ pub struct AvailablePrinter {
     pub product: Option<String>,
 }
 
+/// Configuration needed to reconnect to a network printer
+#[derive(Debug, Clone)]
+pub struct NetworkPrinterConfig {
+    pub ip: String,
+    pub port: u16,
+}
+
+/// Printer wrapper with optional reconnection support.
+///
+/// Network printers store their IP/port and re-establish a fresh TCP connection
+/// before every print job. On Windows, idle TCP connections are silently dropped
+/// by the OS and intermediate network devices, so reusing a stored connection is
+/// unreliable. Creating a fresh connection per job (< 1 ms on LAN) avoids this
+/// entirely without noticeable latency.
+pub struct ManagedPrinter {
+    pub wrapper: PrinterWrapper,
+    pub network_config: Option<NetworkPrinterConfig>,
+}
+
+impl ManagedPrinter {
+    pub fn file(wrapper: PrinterWrapper) -> Self {
+        Self {
+            wrapper,
+            network_config: None,
+        }
+    }
+
+    pub fn usb(wrapper: PrinterWrapper) -> Self {
+        Self {
+            wrapper,
+            network_config: None,
+        }
+    }
+
+    pub fn network(ip: String, port: u16) -> CommandResult<Self> {
+        let wrapper = create_network_printer(ip.clone(), port)?;
+        Ok(Self {
+            wrapper,
+            network_config: Some(NetworkPrinterConfig { ip, port }),
+        })
+    }
+
+    /// For network printers, drop the existing (possibly stale) TCP connection
+    /// and open a fresh one. No-op for file/USB printers.
+    pub fn refresh_connection(&mut self) -> CommandResult<()> {
+        if let Some(cfg) = &self.network_config {
+            self.wrapper = create_network_printer(cfg.ip.clone(), cfg.port)?;
+        }
+        Ok(())
+    }
+}
+
 /// Thread-safe printer state for use in Tauri
-pub type NewPrinterState = Mutex<Option<PrinterWrapper>>;
+pub type NewPrinterState = Mutex<Option<ManagedPrinter>>;
 
 /// Create a file printer that writes to the specified path
 /// Use this for testing/debugging - output will be written to the file
@@ -131,7 +183,7 @@ pub fn create_usb_printer(vendor_id: u16, product_id: u16) -> CommandResult<Prin
 /// Create a network printer with the specificed IP address
 pub fn create_network_printer(ip_address: String, port: u16) -> CommandResult<PrinterWrapper> {
     info!("Setting up network printer {:?}", ip_address);
-    let driver = NetworkDriver::open(&ip_address, port, Some(Duration::from_secs(1)))?;
+    let driver = NetworkDriver::open(&ip_address, port, Some(Duration::from_secs(5)))?;
     let protocol = Protocol::new(Encoder::new(encoding_rs::UTF_8));
     let printer = Printer::new(driver, protocol, None);
     Ok(PrinterWrapper::Network(printer))

@@ -144,7 +144,7 @@ async fn process_transaction<R: Runtime>(
 ) -> CommandResult<Transaction> {
     if sale_items.is_empty() && refund_items.is_empty() {
         return Err(CommandError::InvalidInput(
-            "pos-messages-cannot-process-transaction-with-no-items".to_string(),
+            "pos-messages-cannot-process-sale-with-no-items".to_string(),
         ));
     }
 
@@ -201,9 +201,11 @@ async fn process_sale_post_commit<R: Runtime>(
     }
 
     let mut mutex_guard = printer_state.lock().await;
-    let printer = mutex_guard
+    let managed = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
+
+    managed.refresh_connection()?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -213,7 +215,12 @@ async fn process_sale_post_commit<R: Runtime>(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, &sale, &sale_items_for_printing)?;
+    print_tickets(
+        &mut managed.wrapper,
+        &layout,
+        &sale,
+        &sale_items_for_printing,
+    )?;
 
     Ok(Some(sale))
 }
@@ -398,9 +405,11 @@ async fn print_last_sale<R: Runtime>(
         get_sale_items_with_products(app_state.db.clone(), last_sale.id).await?;
 
     let mut mutex_guard = printer_state.lock().await;
-    let printer = mutex_guard
+    let managed = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
+
+    managed.refresh_connection()?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -410,7 +419,7 @@ async fn print_last_sale<R: Runtime>(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, &last_sale, &items)?;
+    print_tickets(&mut managed.wrapper, &layout, &last_sale, &items)?;
 
     Ok(())
 }
@@ -441,9 +450,11 @@ async fn print_sale<R: Runtime>(
         get_sale_items_with_products(app_state.db.clone(), sale.id).await?;
 
     let mut mutex_guard = printer_state.lock().await;
-    let printer = mutex_guard
+    let managed = mutex_guard
         .as_mut()
         .ok_or(CommandError::PrinterNotConfigured)?;
+
+    managed.refresh_connection()?;
 
     let store = app.get_store("store.json").unwrap();
     let some_store = store.get("ticket-layout");
@@ -453,7 +464,7 @@ async fn print_sale<R: Runtime>(
         PrintingLayout::default()
     };
 
-    print_tickets(printer, &layout, &sale, &items)?;
+    print_tickets(&mut managed.wrapper, &layout, &sale, &items)?;
 
     Ok(())
 }
@@ -503,7 +514,7 @@ async fn save_printer_selection<R: Runtime>(
         printer_type, printer_id, printer_address
     );
 
-    let new_printer = match (&printer_type, &printer_id, &printer_address) {
+    let new_managed = match (&printer_type, &printer_id, &printer_address) {
         (PrinterType::None, _, _) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::File, _, _) => {
             // Create printer output file in app data directory
@@ -513,20 +524,20 @@ async fn save_printer_selection<R: Runtime>(
                 .expect("Failed to get app_data_dir");
             print_path.push("printer_output.txt");
             info!("Writing printer output to: {:?}", print_path);
-            create_file_printer(&print_path)
+            create_file_printer(&print_path).map(ManagedPrinter::file)
         }
         (PrinterType::Network, _, None) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::Network, _, Some(printer_address)) => {
-            create_network_printer(printer_address.ip.to_string(), printer_address.port)
+            ManagedPrinter::network(printer_address.ip.to_string(), printer_address.port)
         }
         (PrinterType::Usb, None, _) => Err(CommandError::PrinterNotConfigured),
         (PrinterType::Usb, Some(printer_id), _) => {
-            create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+            create_usb_printer(printer_id.vendor_id, printer_id.product_id).map(ManagedPrinter::usb)
         }
     }?;
 
     let mut mutex_guard = printer_state.lock().await;
-    *mutex_guard = Some(new_printer);
+    *mutex_guard = Some(new_managed);
 
     let store = app
         .get_store("store.json")
@@ -629,7 +640,7 @@ pub async fn setup_db(path: &Path) -> Db {
     db
 }
 
-fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<PrinterWrapper> {
+fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<ManagedPrinter> {
     app.get_store("store.json").and_then(|store| {
         debug!("Trying to restore saved configs");
 
@@ -666,21 +677,25 @@ fn setup_printer<R: Runtime>(app: &tauri::App<R>) -> Option<PrinterWrapper> {
                     .expect("Failed to get app_data_dir");
                 print_path.push("printer_output.txt");
 
-                create_file_printer(&print_path).ok()
+                create_file_printer(&print_path)
+                    .map(ManagedPrinter::file)
+                    .ok()
             }
             (PrinterType::Usb, None, _) => {
                 warn!("Found USB printer type in config but no printer ID");
                 None
             }
             (PrinterType::Usb, Some(printer_id), _) => {
-                create_usb_printer(printer_id.vendor_id, printer_id.product_id).ok()
+                create_usb_printer(printer_id.vendor_id, printer_id.product_id)
+                    .map(ManagedPrinter::usb)
+                    .ok()
             }
             (PrinterType::Network, _, None) => {
                 warn!("Found network printer type in config but no printer IP");
                 None
             }
             (PrinterType::Network, _, Some(printer_address)) => {
-                create_network_printer(printer_address.ip, printer_address.port).ok()
+                ManagedPrinter::network(printer_address.ip, printer_address.port).ok()
             }
         }
     })
