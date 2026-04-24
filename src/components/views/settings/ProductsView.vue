@@ -180,7 +180,7 @@ const fetchExistingProducts = async () => {
   isLoadingProducts.value = true;
   try {
     const products = await listProducts();
-    existingProducts.value = products;
+    existingProducts.value = products.sort((a, b) => a.category.localeCompare(b.category, "it") || a.name.localeCompare(b.name, "it"));
   } catch (err: unknown) {
     console.error("Failed to fetch products", err);
     messages.addMessage({
