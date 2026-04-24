@@ -163,7 +163,6 @@ const addProduct = async () => {
   try {
     const product = newProduct as UnsavedProduct;
     await createProduct(product);
-    messages.addSuccess(`Product "${newProduct.name}" added successfully!`);
     await fetchExistingProducts();
 
     newProduct.name = "";

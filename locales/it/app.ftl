@@ -21,7 +21,7 @@ pos-menu-title = POS
 
 pos-messages-empty-cart = Nessun prodotto
 pos-messages-loading-products = Caricamento prodotti...
-pos-messages-cannot-process-transaction-with-no-items = Nessun prodotto nel carrello
+pos-messages-cannot-process-sale-with-no-items = Nessun prodotto nel carrello
 pos-messages-invalid-price-for-product = Prezzo non valido {$price} per prodotto {$product}
 pos-messages-invalid-quantity-for-product = Quantità non valida {$quantity} per prodotto {$product}
 pos-messages-insufficient-amount = Importo pagato insufficiente
@@ -182,7 +182,7 @@ settings-products-menu-title = Prodotti
 settings-products-messages-incorrect-fields = Verifica i campi inseriti
 settings-products-messages-loading-existing-products = Caricamento prodotti esistenti...
 settings-products-messages-product-deleted = Prodotto eliminato
-settings-products-messages-product-deleted = Prodotto aggiornato
+settings-products-messages-product-updated = Prodotto aggiornato
 settings-products-messages-price-must-be-positive = Il prezzo deve essere zero o più
 settings-products-price = Prezzo
 settings-products-price-example = 4,00 €
