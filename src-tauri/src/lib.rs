@@ -144,7 +144,7 @@ async fn process_transaction<R: Runtime>(
 ) -> CommandResult<Transaction> {
     if sale_items.is_empty() && refund_items.is_empty() {
         return Err(CommandError::InvalidInput(
-            "pos-messages-cannot-process-transaction-with-no-items".to_string(),
+            "pos-messages-cannot-process-sale-with-no-items".to_string(),
         ));
     }
 

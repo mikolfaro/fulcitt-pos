@@ -174,7 +174,6 @@ fn print_body(
     };
 
     with_layout(printer, &price_layout, |p| {
-        p.page_code(PageCode::PC858)?;
         p.custom(&[0xD5])?;
 
         let price = format!("{:.2}", item.price_at_sale).replace(".", ",");
