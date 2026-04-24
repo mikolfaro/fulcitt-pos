@@ -67,6 +67,8 @@ fn print_split_tickets(
     sale: &Sale,
     items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
+    printer.page_code(PageCode::PC858)?;
+
     for item in items {
         for i in 0..item.0.quantity {
             info!(
@@ -108,6 +110,8 @@ fn print_grouped_tickets(
             groups.insert(item.1.category.clone(), vec![item.0.clone()]);
         }
     }
+
+    printer.page_code(PageCode::PC858)?;
 
     for (category, items) in groups {
         info!("Printing ticket for group {:?}", category);
@@ -164,8 +168,8 @@ fn print_body(
 
     let mut price_layout = layout.clone();
     price_layout.font_size = match price_layout.font_size {
-        FontSize::Large => FontSize::Normal,
-        FontSize::Normal => FontSize::Small,
+        FontSize::Large => FontSize::Large,
+        FontSize::Normal => FontSize::Normal,
         FontSize::Small => FontSize::Small,
     };
 
