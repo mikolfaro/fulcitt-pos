@@ -49,6 +49,7 @@ pub(crate) fn print_tickets(
     items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
     info!("Printing tickets for sale {}", sale.id);
+    printer.open_cash_drawer()?;
 
     if layout.group_tickets_by_category {
         print_grouped_tickets(printer, layout, sale, items)?;
@@ -67,6 +68,8 @@ fn print_split_tickets(
     sale: &Sale,
     items: &[(SaleItem, Product)],
 ) -> CommandResult<()> {
+    printer.open_cash_drawer()?;
+
     printer.page_code(PageCode::PC858)?;
 
     for item in items {
