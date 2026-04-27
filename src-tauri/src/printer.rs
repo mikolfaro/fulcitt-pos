@@ -86,6 +86,15 @@ impl PrinterWrapper {
 
     delegate_method!(page_code, code: PageCode);
     delegate_method!(custom, cmd: &[u8]);
+    delegate_method!(print);
+
+    pub fn open_cash_drawer(&mut self) -> CommandResult<()> {
+        // Full ESC/POS cash drawer command: ESC p m t1 t2
+        // The escpos crate's cash_drawer() omits t1/t2, leaving the printer
+        // waiting for them and causing the command to fire only every other call.
+        self.custom(&[0x1B, 0x70, 0x00, 0x19, 0xFA])?;
+        self.print()
+    }
 }
 
 /// USB device information for printer enumeration

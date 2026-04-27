@@ -170,6 +170,7 @@ settings-printer-network-printer-address-label = Indirizzo IP
 settings-printer-network-printer-port-label = Porta
 settings-printer-test-printer-title = Test stampante
 settings-printer-usb-device-selection = Selezione device USB
+settings-printer-open-cash-drawer-button = Apri cassetto
 
 settings-products-actions = #
 settings-products-add-product-button = Aggiungi
