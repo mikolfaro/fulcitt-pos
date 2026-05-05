@@ -5,25 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7] - 2026-05-05
+### Changed
+- Update readme
+
 ## [1.1.5]
 ### Added
 - Fix connection issues with network printer
 - Fix encoding bug in network printer
 
-## [1.1.4] - 20205-02-12
+## [1.1.4] - 2026-02-12
 ### Added
 - Reports data can be filtereed by date
 - Reports data shows totals
 
-## [1.1.2] - 2025-02-10
+## [1.1.2] - 2026-02-10
 ### Added
 - Show total amount in report section
 
-## [1.1.1] - 2025-02-07
+## [1.1.1] - 2026-02-07
 ### Added
 - Add some refactoring to prepare for iroh sync merge
 
-## [1.1.0] - 2025-01-28
+## [1.1.0] - 2026-01-28
 ### Fixed
 - Sort products in order recap
 - Better zoom logic

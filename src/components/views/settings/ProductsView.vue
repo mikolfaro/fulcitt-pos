@@ -253,7 +253,6 @@ const doUpdateProduct = async () => {
 const doDeleteProduct = async (productToDelete: Product) => {
   try {
     await deleteProduct(productToDelete);
-    messages.addSuccess($t("settings-products-messages-product-deleted"));
     await fetchExistingProducts();
   } catch (err: unknown) {
     console.error(`Error deleting product ID ${productToDelete.id}:`, err);
