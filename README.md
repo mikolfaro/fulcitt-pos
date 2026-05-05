@@ -2,6 +2,10 @@
 
 ## Printer Setup
 
+### Network Printer Support
+
+Network printer has cross-platform compatibility without driver issues. ESC/POS printers typically default to `192.168.1.x` IP addresses, which may require network configuration to match your local network subnet. Network printing avoids USB permission and driver complications on both Linux and Windows.
+
 ### Linux USB Printer Setup
 
 To use USB printers on Linux, you need to set up udev rules to grant permission to access the USB device:
@@ -40,10 +44,6 @@ Windows requires driver installation for direct USB access:
 
 **Note**: This is a one-time setup per machine. The printer will only work with this application after installing WinUSB.
 
-### Network Printer Support (Future)
-
-Network printer support can be added later for cross-platform compatibility without driver issues. ESC/POS printers typically default to `192.168.1.x` IP addresses, which may require network configuration to match your local network subnet. Network printing avoids USB permission and driver complications on both Linux and Windows.
-
 ## TODO
 
 Features
@@ -52,16 +52,14 @@ Features
 - [X] Move cash input to the left
 - [X] Add 'POS Payment' button
 - [X] Sort products by category and then by name
-
-- [W] Improve error messages
-- [ ] Gestire disconnessione della stampante
+- [X] Improve error messages
+- [X] Handle printer reconnect (network)
 - [X] Integrate biome
 - [X] Voiding and refunding support
 - [ ] Network sync (p2p)
   - Add created_at/updated_at/device_id to Rust models
   - Remove UNIQUE constraint on products.name
   - Add device_id columns to all tables
-
 - [X] Improve invoice layout
 - [X] Allow printing selection
 - [X] Clear sales history
@@ -71,15 +69,3 @@ Features
 - [X] Linux (AppImage) automated build
 - [X] Windows automated build
 - [X] Product deposit (pay/refund mechanic)
-
-Known bugs
-
-- [ ] Disconnect/reconnect USB printer may break connection
-
-## Network Printer Reliability (TODOs)
-
-The network driver disconnects every ~10 minutes due to idle TCP connection timeout. Fixes needed:
-
-- [ ] Add lazy reconnection on print - validate connection before printing, recreate driver if dead
-- [ ] Add connection validation method - test connection by sending ESC/POS query/status command
-- [ ] Add periodic keepalive - background task to periodically ping printer to maintain connection
