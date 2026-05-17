@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Open cash drawer on checkout
 
+## [1.1.8] - 2026-05-17
+### Fixed
+- Remove mandatory input of amount payed in cash input
+
 ## [1.1.7] - 2026-05-05
 ### Changed
 - Update readme
