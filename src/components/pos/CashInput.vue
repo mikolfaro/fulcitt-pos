@@ -38,10 +38,8 @@
 import { useFluent } from "fluent-vue";
 import { ref } from "vue";
 import { useCartStore } from "../../stores/cartStore";
-import { useMessagesStore } from "../../stores/messagesStore";
 
 const { $t } = useFluent();
-const messages = useMessagesStore();
 const cart = useCartStore();
 const digits = [7, 8, 9, 4, 5, 6, 1, 2, 3];
 const typedAmount = ref<string>("");
@@ -75,14 +73,7 @@ function undoType() {
 }
 
 function processPayment() {
-  if (amount.value < cart.total) {
-    messages.addMessage({
-      type: "InvalidInput",
-      message: $t("pos-messages-insufficient-amount"),
-    });
-  } else {
-    emit("processCashPayment", amount.value);
-  }
+  emit("processCashPayment", cart.total);
 }
 
 function reopenCart() {
