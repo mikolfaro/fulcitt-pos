@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Open cash drawer on checkout
+### Fixed
+- Remove button in order recap should remove all items of the same product instead of just one
 
 ## [1.1.9] - 2026-05-17
 ### Added
