@@ -32,9 +32,14 @@
 
 
       <div v-if="orderCreation" class="flex flex-row justify-between">
-        <button class="btn btn-primary" @click="printLastSale()">
-          {{ $t('pos-reprint-tickets-button') }}
-        </button>
+        <div class="flex flex-row gap-2">
+          <button class="btn btn-primary" @click="printLastSale()">
+            {{ $t('pos-reprint-tickets-button') }}
+          </button>
+          <button class="btn btn-primary" @click="openCashDrawer()">
+            {{ $t('settings-printer-open-cash-drawer-button') }}
+          </button>
+        </div>
 
         <fieldset class="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-2">
           <label class="label">
@@ -159,6 +164,14 @@ const addToRefundCart = (product: Product) => {
 const printLastSale = async () => {
   try {
     await invoke("print_last_sale");
+  } catch (err) {
+    messages.addUnknownError(err);
+  }
+};
+
+const openCashDrawer = async () => {
+  try {
+    await invoke("open_cash_drawer");
   } catch (err) {
     messages.addUnknownError(err);
   }
