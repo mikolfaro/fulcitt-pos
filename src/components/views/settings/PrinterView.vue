@@ -115,6 +115,9 @@
           <button class="btn btn-primary" @click="triggerPrint">
             {{ $t('settings-printer-test-print-button') }}
           </button>
+          <button class="btn btn-secondary" @click="triggerOpenCashDrawer">
+            {{ $t('settings-printer-open-cash-drawer-button') }}
+          </button>
         </div>
       </div>
     </div>
@@ -225,6 +228,20 @@ async function triggerPrint() {
       messages.addMessage(error as AppMessage);
     }
   }
+}
+
+async function triggerOpenCashDrawer() {
+  try {
+    await invoke("open_cash_drawer");
+  } catch (error) {
+    if (typeof error === "string") {
+      messages.addUnknownError(error);
+    } else {
+      messages.addMessage(error as AppMessage);
+    }
+  }
+
+  messages.addMessage({ type: "success", message: "settings-printer-messages-opening-app-folder" });
 }
 
 async function save() {

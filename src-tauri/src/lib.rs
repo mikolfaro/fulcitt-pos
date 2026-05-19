@@ -556,6 +556,21 @@ async fn save_printer_selection<R: Runtime>(
 }
 
 #[tauri::command]
+async fn open_cash_drawer(
+    printer_state: State<'_, NewPrinterState>,
+) -> CommandResult<()> {
+    let mut mutex_guard = printer_state.lock().await;
+    let managed = mutex_guard
+        .as_mut()
+        .ok_or(CommandError::PrinterNotConfigured)?;
+
+    managed.refresh_connection()?;
+    managed.wrapper.open_cash_drawer()?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn list_usb_devices() -> CommandResult<Vec<AvailablePrinter>> {
     // TODO use `list_available_printers` instead
     list_available_usb_devices()
@@ -729,6 +744,7 @@ pub fn create_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::App<R
             save_printer_selection,
             list_usb_devices,
             test_printer,
+            open_cash_drawer,
         ])
         .setup(|app| {
             app.store("store.json")?;

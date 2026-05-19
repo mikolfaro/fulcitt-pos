@@ -48,11 +48,9 @@ export const useCartStore = defineStore("cart", {
       }
     },
     removeItem(itemToBeRemoved: Product | CartItem, quantity?: number) {
-      const qty = quantity ?? 1;
-
       if (this.items[itemToBeRemoved.id]) {
-        if (this.items[itemToBeRemoved.id].quantity > qty) {
-          this.items[itemToBeRemoved.id].quantity -= qty;
+        if (quantity && this.items[itemToBeRemoved.id].quantity > quantity) {
+          this.items[itemToBeRemoved.id].quantity -= quantity;
         } else {
           delete this.items[itemToBeRemoved.id];
         }
