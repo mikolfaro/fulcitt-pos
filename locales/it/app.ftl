@@ -173,6 +173,9 @@ settings-printer-usb-device-selection = Selezione device USB
 settings-printer-open-cash-drawer-button = Apri cassetto
 
 settings-products-actions = #
+settings-products-shortcut = Tasto
+settings-products-shortcut-placeholder = —
+settings-products-shortcut-conflict = Tasto già usato da un altro prodotto
 settings-products-add-product-button = Aggiungi
 settings-products-cancel-edit-button = Annulla
 settings-products-category = Categoria

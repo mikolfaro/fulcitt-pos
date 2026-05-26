@@ -85,6 +85,7 @@ import { CartItem, PaymentMethod, Product } from "../../lib";
 import { listProducts } from "../../repositories";
 import { useCartStore } from "../../stores/cartStore";
 import { useMessagesStore } from "../../stores/messagesStore";
+import { useProductShortcutsStore } from "../../stores/productShortcuts";
 import formatCurrency from "../../utils/formatCurrency";
 import ProductsList from "../ProductsList.vue";
 import CashInput from "../pos/CashInput.vue";
@@ -97,6 +98,7 @@ const refundableProducts = ref<Product[]>([]);
 const { $t } = useFluent();
 const cart = useCartStore();
 const messages = useMessagesStore();
+const productShortcuts = useProductShortcutsStore();
 const isLoading = ref(true);
 const refundModeActive = ref<boolean>(false);
 const orderCreation = ref<boolean>(true);
@@ -129,27 +131,49 @@ const handleKeyDown = (e: KeyboardEvent) => {
     return;
   }
 
+  // F-key / Escape actions
   switch (e.key) {
     case POS_SHORTCUTS.CARD_PAYMENT:
       e.preventDefault();
       if (orderCreation.value) startCardPayment();
-      break;
+      return;
     case POS_SHORTCUTS.CASH_PAYMENT:
       e.preventDefault();
       if (orderCreation.value) startCashPayment();
-      break;
+      return;
     case POS_SHORTCUTS.CANCEL_ORDER:
       e.preventDefault();
       if (orderCreation.value) cancelOrder();
-      break;
+      return;
     case POS_SHORTCUTS.REPRINT:
       e.preventDefault();
       printLastSale();
-      break;
+      return;
     case POS_SHORTCUTS.OPEN_DRAWER:
       e.preventDefault();
       openCashDrawer();
-      break;
+      return;
+  }
+
+  // Product quick-add: single letter/digit, no modifier keys, only in order creation mode
+  if (
+    orderCreation.value &&
+    !cart.isLocked &&
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !e.metaKey
+  ) {
+    const productId = productShortcuts.productIdForKey(e.key);
+    if (productId) {
+      const product = availableProducts.value.find(
+        (p) => String(p.id) === productId,
+      );
+      if (product) {
+        e.preventDefault();
+        addToCart(product);
+      }
+    }
   }
 };
 
