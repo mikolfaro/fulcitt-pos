@@ -35,11 +35,11 @@
         <div class="flex flex-row gap-2">
           <button class="btn btn-primary" @click="printLastSale()">
             {{ $t('pos-reprint-tickets-button') }}
-            <kbd class="kbd kbd-sm opacity-60">{{ POS_SHORTCUTS.REPRINT }}</kbd>
+            <kbd class="kbd kbd-sm opacity-60 text-primary">{{ POS_SHORTCUTS.REPRINT }}</kbd>
           </button>
           <button class="btn btn-primary" @click="openCashDrawer()">
             {{ $t('settings-printer-open-cash-drawer-button') }}
-            <kbd class="kbd kbd-sm opacity-60">{{ POS_SHORTCUTS.OPEN_DRAWER }}</kbd>
+            <kbd class="kbd kbd-sm opacity-60 text-primary">{{ POS_SHORTCUTS.OPEN_DRAWER }}</kbd>
           </button>
         </div>
 
