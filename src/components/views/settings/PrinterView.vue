@@ -241,7 +241,10 @@ async function triggerOpenCashDrawer() {
     }
   }
 
-  messages.addMessage({ type: "success", message: "settings-printer-messages-opening-app-folder" });
+  messages.addMessage({
+    type: "success",
+    message: "settings-printer-messages-opening-app-folder",
+  });
 }
 
 async function save() {
