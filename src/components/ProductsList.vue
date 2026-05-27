@@ -8,7 +8,7 @@
         <div class="flex items-center gap-1 mt-1">
           <span class="text-md font-semibold">{{ formatCurrency(product.price) }}</span>
           <kbd v-if="shortcuts.keyForProduct(product.id)" class="kbd kbd-xs opacity-60">
-            {{ shortcuts.keyForProduct(product.id).toUpperCase() }}
+            {{ shortcuts.keyForProduct(product.id)?.toUpperCase() }}
           </kbd>
         </div>
       </div>
