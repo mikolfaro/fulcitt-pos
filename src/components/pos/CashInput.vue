@@ -28,15 +28,18 @@
 
   <button class="btn btn-success w-full mt-4" @click="processPayment">
     {{ $t('pos-process-payment-button') }}
+    <kbd class="kbd kbd-sm opacity-60">{{ CASH_INPUT_SHORTCUTS.CONFIRM }}</kbd>
   </button>
   <button class="btn btn-outline btn-error w-full mt-2" @click="reopenCart">
     {{ $t('pos-reopen-cart-button') }}
+    <kbd class="kbd kbd-sm opacity-60">{{ CASH_INPUT_SHORTCUTS.REOPEN }}</kbd>
   </button>
 </template>
 
 <script setup lang="ts">
 import { useFluent } from "fluent-vue";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
+import { CASH_INPUT_SHORTCUTS } from "../../config/shortcuts";
 import { useCartStore } from "../../stores/cartStore";
 
 const { $t } = useFluent();
@@ -79,4 +82,33 @@ function processPayment() {
 function reopenCart() {
   emit("reopenCart");
 }
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Ignore when typing in an actual input element
+  const target = e.target as HTMLElement;
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+  if (
+    e.key === CASH_INPUT_SHORTCUTS.CONFIRM ||
+    e.key === CASH_INPUT_SHORTCUTS.CONFIRM_ALT
+  ) {
+    e.preventDefault();
+    processPayment();
+  } else if (e.key === CASH_INPUT_SHORTCUTS.REOPEN) {
+    e.preventDefault();
+    reopenCart();
+  } else if (e.key === CASH_INPUT_SHORTCUTS.BACKSPACE) {
+    e.preventDefault();
+    undoType();
+  } else if (/^\d$/.test(e.key)) {
+    e.preventDefault();
+    type(e.key);
+  } else if (e.key === ".") {
+    e.preventDefault();
+    type(".");
+  }
+};
+
+onMounted(() => window.addEventListener("keydown", handleKeyDown));
+onUnmounted(() => window.removeEventListener("keydown", handleKeyDown));
 </script>

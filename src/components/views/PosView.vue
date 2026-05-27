@@ -27,7 +27,7 @@
         </div>
       </div>
       <div v-else class="flex flex-col grow w-full bg-base-100 rounded-box shadow-lg p-4">
-        <CashInput @startCardPayment="startCardPayment" @processCashPayment="processCashPayment" />
+        <CashInput @processCashPayment="processCashPayment" @reopenCart="reopenCart" />
       </div>
 
 
@@ -35,9 +35,11 @@
         <div class="flex flex-row gap-2">
           <button class="btn btn-primary" @click="printLastSale()">
             {{ $t('pos-reprint-tickets-button') }}
+            <kbd class="kbd kbd-sm opacity-60 text-primary">{{ POS_SHORTCUTS.REPRINT }}</kbd>
           </button>
           <button class="btn btn-primary" @click="openCashDrawer()">
             {{ $t('settings-printer-open-cash-drawer-button') }}
+            <kbd class="kbd kbd-sm opacity-60 text-primary">{{ POS_SHORTCUTS.OPEN_DRAWER }}</kbd>
           </button>
         </div>
 
@@ -75,13 +77,15 @@
 <script setup lang="ts">
 import { invoke } from "@tauri-apps/api/core";
 import { useFluent } from "fluent-vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { POS_SHORTCUTS } from "../../config/shortcuts";
 
 import type { AppMessage } from "../../lib";
 import { CartItem, PaymentMethod, Product } from "../../lib";
 import { listProducts } from "../../repositories";
 import { useCartStore } from "../../stores/cartStore";
 import { useMessagesStore } from "../../stores/messagesStore";
+import { useProductShortcutsStore } from "../../stores/productShortcuts";
 import formatCurrency from "../../utils/formatCurrency";
 import ProductsList from "../ProductsList.vue";
 import CashInput from "../pos/CashInput.vue";
@@ -94,6 +98,7 @@ const refundableProducts = ref<Product[]>([]);
 const { $t } = useFluent();
 const cart = useCartStore();
 const messages = useMessagesStore();
+const productShortcuts = useProductShortcutsStore();
 const isLoading = ref(true);
 const refundModeActive = ref<boolean>(false);
 const orderCreation = ref<boolean>(true);
@@ -107,7 +112,70 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
+
+  window.addEventListener("keydown", handleKeyDown);
 });
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeyDown);
+});
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Ignore shortcuts when user is typing in an input/textarea
+  const target = e.target as HTMLElement;
+  if (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.isContentEditable
+  ) {
+    return;
+  }
+
+  // F-key / Escape actions
+  switch (e.key) {
+    case POS_SHORTCUTS.CARD_PAYMENT:
+      e.preventDefault();
+      if (orderCreation.value) startCardPayment();
+      return;
+    case POS_SHORTCUTS.CASH_PAYMENT:
+      e.preventDefault();
+      if (orderCreation.value) startCashPayment();
+      return;
+    case POS_SHORTCUTS.CANCEL_ORDER:
+      e.preventDefault();
+      if (orderCreation.value) cancelOrder();
+      return;
+    case POS_SHORTCUTS.REPRINT:
+      e.preventDefault();
+      printLastSale();
+      return;
+    case POS_SHORTCUTS.OPEN_DRAWER:
+      e.preventDefault();
+      openCashDrawer();
+      return;
+  }
+
+  // Product quick-add: single letter/digit, no modifier keys, only in order creation mode
+  if (
+    orderCreation.value &&
+    !cart.isLocked &&
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !e.metaKey
+  ) {
+    const productId = productShortcuts.productIdForKey(e.key);
+    if (productId) {
+      const product = availableProducts.value.find(
+        (p) => String(p.id) === productId,
+      );
+      if (product) {
+        e.preventDefault();
+        addToCart(product);
+      }
+    }
+  }
+};
 
 // --- Methods ---
 const fetchProducts = async () => {
@@ -203,6 +271,11 @@ const startCashPayment = async function () {
 
 const cancelOrder = async function () {
   cart.clear();
+  orderCreation.value = true;
+};
+
+// Go back to product selection without clearing the cart
+const reopenCart = function () {
   orderCreation.value = true;
 };
 
