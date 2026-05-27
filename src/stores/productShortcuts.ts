@@ -22,7 +22,10 @@ export const useProductShortcutsStore = defineStore("productShortcuts", {
 
   actions: {
     async load() {
-      const store = await loadStore("store.json", { autoSave: false, defaults: {} });
+      const store = await loadStore("store.json", {
+        autoSave: false,
+        defaults: {},
+      });
       const saved = await store.get<Record<string, string>>(STORE_KEY);
       if (saved) this.shortcuts = saved;
     },
@@ -48,7 +51,10 @@ export const useProductShortcutsStore = defineStore("productShortcuts", {
     },
 
     async _persist() {
-      const store = await loadStore("store.json", { autoSave: false, defaults: {} });
+      const store = await loadStore("store.json", {
+        autoSave: false,
+        defaults: {},
+      });
       await store.set(STORE_KEY, this.shortcuts);
       await store.save();
     },
