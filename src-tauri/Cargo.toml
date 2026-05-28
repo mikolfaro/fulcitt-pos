@@ -1,6 +1,6 @@
 [package]
 name = "fulcitt-pos"
-version = "1.1.0"
+version = "1.2.0"
 description = "Minimal POS used by Gruppo Fulcitt"
 authors = ["Mikol Faro <mikol.faro@proton.me>"]
 license = "AGPL-3.0-only"
