@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-05-28
 ### Added
 - Add suppoort for keyboard shortcuts
+- New icons
 
 ## [1.1.10] - 2026-05-19
 ### Added
