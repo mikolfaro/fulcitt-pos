@@ -556,9 +556,7 @@ async fn save_printer_selection<R: Runtime>(
 }
 
 #[tauri::command]
-async fn open_cash_drawer(
-    printer_state: State<'_, NewPrinterState>,
-) -> CommandResult<()> {
+async fn open_cash_drawer(printer_state: State<'_, NewPrinterState>) -> CommandResult<()> {
     let mut mutex_guard = printer_state.lock().await;
     let managed = mutex_guard
         .as_mut()

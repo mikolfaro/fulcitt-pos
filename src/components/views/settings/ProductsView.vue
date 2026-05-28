@@ -15,6 +15,7 @@
                 <th>{{ $t('settings-products-category') }}</th>
                 <th class="text-right">{{ $t('settings-products-price') }}</th>
                 <th class="text-center">Cauzione</th>
+                <th class="text-center">{{ $t('settings-products-shortcut') }}</th>
                 <th>{{ $t('settings-products-actions') }}</th>
               </tr>
             </thead>
@@ -40,6 +41,16 @@
                     <input type="checkbox" class="checkbox checkbox-sm" form="editProduct"
                       v-model="productToEdit.has_deposit" />
                   </td>
+                  <td class="text-center">
+                    <input type="text" maxlength="1"
+                      class="input input-bordered input-sm w-12 text-center font-mono uppercase"
+                      :class="{ 'input-error': shortcutConflict(product.id, productShortcutDraft) }"
+                      :value="productShortcutDraft"
+                      @focus="productShortcutDraft = shortcuts.keyForProduct(product.id) ?? ''"
+                      @input="onShortcutInput"
+                      @blur="saveShortcut(product.id)"
+                      :placeholder="$t('settings-products-shortcut-placeholder')" />
+                  </td>
                   <td class="flex justify-between">
                     <button type="submit" class="btn btn-xs btn-outline btn-success mr-4" form="editProduct">
                       {{ $t('settings-products-save-product-button') }}
@@ -55,6 +66,15 @@
                   <td class="text-right">{{ formatCurrency(product.price) }}</td>
                   <td class="text-center">
                     <input type="checkbox" class="checkbox checkbox-sm" :checked="product.has_deposit" disabled />
+                  </td>
+                  <td class="text-center">
+                    <input type="text" maxlength="1"
+                      class="input input-bordered input-sm w-12 text-center font-mono uppercase"
+                      :class="{ 'input-error': shortcutConflict(product.id, shortcuts.keyForProduct(product.id) ?? '') }"
+                      :value="shortcuts.keyForProduct(product.id) ?? ''"
+                      @input="(e) => onShortcutInputDirect(product.id, e)"
+                      @blur="(e) => saveShortcutDirect(product.id, (e.target as HTMLInputElement).value)"
+                      :placeholder="$t('settings-products-shortcut-placeholder')" />
                   </td>
                   <td class="flex justify-between">
                     <button class="btn btn-xs btn-outline btn-primary" @click="openEdit(product)">
@@ -84,6 +104,7 @@
                   <input type="checkbox" class="checkbox checkbox-sm" form="addProduct"
                     v-model="newProduct.has_deposit" />
                 </td>
+                <td></td>
                 <td>
                   <button type="submit" class="btn btn-xs btn-outline btn-success" form="addProduct">
                     {{ $t('settings-products-add-product-button') }}
@@ -111,9 +132,52 @@ import {
   updateProduct,
 } from "../../../repositories";
 import { useMessagesStore } from "../../../stores/messagesStore";
+import { useProductShortcutsStore } from "../../../stores/productShortcuts";
 
 const { $t } = useFluent();
 const messages = useMessagesStore();
+const shortcuts = useProductShortcutsStore();
+
+// Draft value for the shortcut input while in edit-row mode
+const productShortcutDraft = ref("");
+
+const onShortcutInput = (e: Event) => {
+  productShortcutDraft.value = (e.target as HTMLInputElement).value;
+};
+
+const saveShortcut = async (productId: number) => {
+  const key = productShortcutDraft.value.trim();
+  if (key) {
+    await shortcuts.setShortcut(productId, key);
+  } else {
+    await shortcuts.removeShortcut(productId);
+  }
+};
+
+// For view-mode rows (shortcut is editable independently of product edit)
+const onShortcutInputDirect = (_productId: number, e: Event) => {
+  // Just let the input be controlled natively; save on blur
+  (e.target as HTMLInputElement).value = (e.target as HTMLInputElement).value
+    .slice(0, 1)
+    .toLowerCase();
+};
+
+const saveShortcutDirect = async (productId: number, value: string) => {
+  const key = value.trim().toLowerCase();
+  if (key) {
+    await shortcuts.setShortcut(productId, key);
+  } else {
+    await shortcuts.removeShortcut(productId);
+  }
+};
+
+/** Returns true if the given key is already used by a different product */
+const shortcutConflict = (productId: number, key: string): boolean => {
+  if (!key) return false;
+  const owner = shortcuts.productIdForKey(key);
+  return !!owner && owner !== String(productId);
+};
+
 const isAdding = ref(false);
 const isUpdating = ref(false);
 const isLoadingProducts = ref(true);
@@ -210,6 +274,7 @@ const resetEditForm = () => {
 const openEdit = (product: Product) => {
   resetEditForm();
   Object.assign(productToEdit, product);
+  productShortcutDraft.value = shortcuts.keyForProduct(product.id) ?? "";
 };
 
 const closeEdit = () => {
