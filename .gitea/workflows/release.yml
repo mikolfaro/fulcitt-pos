@@ -66,6 +66,7 @@ jobs:
       run: bun install
 
     - name: Install backend tools
+      working-directory: src-tauri
       run: cargo install --locked cargo-xwin
 
     - name: Run TypeScript check
