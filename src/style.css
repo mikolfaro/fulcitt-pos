@@ -10,3 +10,26 @@
     dark --default,
     light --preferslight;
 }
+
+/* Settings tabs route transition (was in SettingsView.vue) */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.tab.tab-active {
+  border-bottom-color: transparent !important;
+  background-color: oklch(var(--b1) / var(--tw-bg-opacity, 1));
+}
+
+/* Hide OrderRecap's unit price column when zoomed in (was scoped in OrderRecap.vue) */
+@container style(--zoom-scale: 1.5) or style(--zoom-scale: 2) {
+  .overflow-column {
+    display: none;
+  }
+}
