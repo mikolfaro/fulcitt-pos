@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "sqlx": "cd src-tauri && sqlx",
     "sqlx:make_migration": "cd src-tauri && sqlx migrate add",
@@ -20,9 +20,9 @@
     "@fluent/bundle": "^0.19.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2.12.0",
-    "@tauri-apps/plugin-log": "~2.9.2",
+    "@tauri-apps/plugin-log": "~2.10.0",
     "@tauri-apps/plugin-opener": "^2.6.0",
-    "@tauri-apps/plugin-store": "~2.4.5",
+    "@tauri-apps/plugin-store": "~2.5.0",
     "fluent-vue": "^3.8.2",
     "maska": "^3.2.1",
     "pinia": "^4.0.3",
@@ -33,13 +33,12 @@
   "devDependencies": {
     "@biomejs/biome": "~2.5.14",
     "@tauri-apps/cli": "^2.12.0",
-    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vue/devtools-api": "^8.2.1",
     "@vue/eslint-config-typescript": "^14.9.0",
     "daisyui": "^5.7.46",
     "eslint": "^10.11.0",
-    "typescript": "~6.0.3",
-    "vite": "^8.3.1",
-    "vue-tsc": "^3.3.11"
+    "typescript": "~7.0.2",
+    "vite": "^8.3.1"
   }
 }

@@ -7,7 +7,7 @@ import { createPinia } from "pinia";
 import { createApp } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 import it from "../locales/it/app.ftl?raw";
-import App from "./App.vue";
+import App from "./App";
 import routes from "./routes";
 
 function forwardConsole(
