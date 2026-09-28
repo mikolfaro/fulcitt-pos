@@ -1,0 +1,147 @@
+import { useFluent } from "fluent-vue";
+import { defineComponent } from "vue";
+import type { CartItem } from "../../lib";
+import { useCartStore } from "../../stores/cartStore";
+import formatCurrency from "../../utils/formatCurrency";
+
+type CartItemWithCategory = CartItem & { category?: string };
+
+export default defineComponent({
+  name: "OrderRecap",
+  setup() {
+    const { $t } = useFluent();
+    const cart = useCartStore();
+
+    const sortItems = (items: CartItemWithCategory[]) => {
+      return items.sort((a, b) => {
+        const aCategory = a.category ?? "";
+        const bCategory = b.category ?? "";
+
+        return (
+          aCategory.localeCompare(bCategory) || a.name.localeCompare(b.name)
+        );
+      });
+    };
+
+    const incrementQuantity = (item: CartItem) => {
+      cart.addItem(item, 1);
+    };
+
+    const decrementQuantity = (item: CartItem) => {
+      cart.removeItem(item, 1);
+    };
+
+    const removeFromCart = (itemToRemove: CartItem) => {
+      cart.removeItem(itemToRemove);
+    };
+
+    const incrementRefundQuantity = (item: CartItem) => {
+      cart.addRefundItem(item, 1);
+    };
+
+    const decrementRefundQuantity = (item: CartItem) => {
+      cart.removeRefundItem(item, 1);
+    };
+
+    const removeRefundFromCart = (itemToRemove: CartItem) => {
+      cart.removeRefundItem(itemToRemove);
+    };
+
+    return () => (
+      <table class="table table-zebra w-full">
+        <thead>
+          <tr>
+            <th>{$t("pos-cart-quantity")}</th>
+            <th>{$t("pos-cart-product-name")}</th>
+            <th class="overflow-column">{$t("pos-cart-unit-price")}</th>
+            <th>{$t("pos-cart-total-price")}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {cart.isEmpty && (
+            <tr>
+              <td colspan="5" class="text-center">
+                {$t("pos-messages-empty-cart")}
+              </td>
+            </tr>
+          )}
+          {sortItems(Object.values(cart.items)).map((item) => (
+            <tr key={item.id}>
+              <td>
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                  <button
+                    class="btn btn-xs btn-primary"
+                    onClick={() => decrementQuantity(item)}
+                  >
+                    -
+                  </button>
+                  <span class="px-1 text-center">{item.quantity}</span>
+                  <button
+                    class="btn btn-xs btn-primary"
+                    onClick={() => incrementQuantity(item)}
+                  >
+                    +
+                  </button>
+                </div>
+              </td>
+              <td>{item.name}</td>
+              <td class="overflow-column">{formatCurrency(item.price)}</td>
+              <td>{formatCurrency(item.price * item.quantity)}</td>
+              <td>
+                <button
+                  class="btn btn-xs btn-error"
+                  onClick={() => removeFromCart(item)}
+                >
+                  X
+                </button>
+              </td>
+            </tr>
+          ))}
+
+          {sortItems(Object.values(cart.refundItems)).map((item) => (
+            <tr key={item.id} class="text-secondary">
+              <td>
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                  <button
+                    class="btn btn-xs btn-primary"
+                    onClick={() => decrementRefundQuantity(item)}
+                  >
+                    -
+                  </button>
+                  <span class="px-1 text-center">{item.quantity}</span>
+                  <button
+                    class="btn btn-xs btn-primary"
+                    onClick={() => incrementRefundQuantity(item)}
+                  >
+                    +
+                  </button>
+                </div>
+              </td>
+              <td>
+                {item.name}{" "}
+                {item.hasDeposit ? (
+                  <span>({$t("pos-recap-refund")})</span>
+                ) : (
+                  <span>({$t("pos-recap-cancellation")})</span>
+                )}
+              </td>
+              <td class="overflow-column">
+                {formatCurrency(-1.0 * item.price)}
+              </td>
+              <td>{formatCurrency(-1.0 * item.price * item.quantity)}</td>
+              <td>
+                <button
+                  class="btn btn-xs btn-error"
+                  onClick={() => removeRefundFromCart(item)}
+                >
+                  X
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  },
+});

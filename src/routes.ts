@@ -1,10 +1,10 @@
-import PosView from "./components/views/PosView.vue";
-import ReportView from "./components/views/ReportView.vue";
-import SettingsView from "./components/views/SettingsView.vue";
-import LayoutView from "./components/views/settings/LayoutView.vue";
-import PrinterView from "./components/views/settings/PrinterView.vue";
-import ProductSettingsView from "./components/views/settings/ProductsView.vue";
-import UIView from "./components/views/settings/UIView.vue";
+import PosView from "./components/views/PosView";
+import ReportView from "./components/views/ReportView";
+import SettingsView from "./components/views/SettingsView";
+import LayoutView from "./components/views/settings/LayoutView";
+import PrinterView from "./components/views/settings/PrinterView";
+import ProductSettingsView from "./components/views/settings/ProductsView";
+import UIView from "./components/views/settings/UIView";
 
 export default [
   {
