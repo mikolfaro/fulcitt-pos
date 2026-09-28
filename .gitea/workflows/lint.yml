@@ -67,7 +67,7 @@ jobs:
       with:
         cache: true
         components: clippy, rustfmt
-        rust-src-dir: src-tauri
+        cache-workspaces: src-tauri
 
     - name: Run Rust formatting check
       run: |
