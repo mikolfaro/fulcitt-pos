@@ -1,6 +1,7 @@
 import PosView from "./components/views/PosView";
 import ReportView from "./components/views/ReportView";
 import SettingsView from "./components/views/SettingsView";
+import CategoriesView from "./components/views/settings/CategoriesView";
 import LayoutView from "./components/views/settings/LayoutView";
 import PrinterView from "./components/views/settings/PrinterView";
 import ProductSettingsView from "./components/views/settings/ProductsView";
@@ -22,6 +23,10 @@ export default [
       {
         path: "",
         component: ProductSettingsView,
+      },
+      {
+        path: "categories",
+        component: CategoriesView,
       },
       {
         path: "layout",

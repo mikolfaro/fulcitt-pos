@@ -19,6 +19,10 @@ export default defineComponent({
 
     const subRoutes = [
       { name: $t("settings-products-menu-title"), to: "/settings" },
+      {
+        name: $t("settings-categories-menu-title"),
+        to: "/settings/categories",
+      },
       { name: $t("settings-layout-menu-title"), to: "/settings/layout" },
       { name: $t("settings-printer-menu-title"), to: "/settings/printer" },
       { name: $t("settings-ui-menu-title"), to: "/settings/ui" },

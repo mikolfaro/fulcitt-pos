@@ -122,6 +122,14 @@ reports-messages-data-cleared = Dati cancellati con successo
 
 settings-menu-title = Impostazioni
 
+settings-categories-menu-title = Categorie
+settings-categories-title = Ordine categorie
+settings-categories-description = Ordine in cui le categorie appaiono nella schermata di vendita
+settings-categories-empty = Nessuna categoria. Aggiungi prima dei prodotti.
+settings-categories-move-up = Sposta su
+settings-categories-move-down = Sposta giù
+settings-categories-messages-order-saved = Ordine categorie salvato
+
 settings-layout-font-size-label = Dimensione caratteri
 settings-layout-font-size-large = Grande
 settings-layout-font-size-normal = Normale
