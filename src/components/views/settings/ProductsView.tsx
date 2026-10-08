@@ -397,13 +397,19 @@ export default defineComponent({
                     </tr>
                   </thead>
                   <tbody>
-                    {existingProducts.value.map((product) => (
-                      <tr key={product.id} class="hover">
-                        {productToEdit.id == product.id
-                          ? editRow(product)
-                          : viewRow(product)}
-                      </tr>
-                    ))}
+                    {existingProducts.value.map((product) => {
+                      const isEditing = productToEdit.id == product.id;
+                      // Key per mode: reusing the "Edit" button DOM node as the
+                      // "Save" submit button would submit the form on the same click
+                      return (
+                        <tr
+                          key={`${product.id}-${isEditing ? "edit" : "view"}`}
+                          class="hover"
+                        >
+                          {isEditing ? editRow(product) : viewRow(product)}
+                        </tr>
+                      );
+                    })}
                     <tr>
                       <td>
                         <input
