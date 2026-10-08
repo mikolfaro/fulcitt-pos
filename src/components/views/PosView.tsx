@@ -6,10 +6,12 @@ import type { AppMessage, CartItem, Product } from "../../lib";
 import { PaymentMethod } from "../../lib";
 import { listProducts } from "../../repositories";
 import { useCartStore } from "../../stores/cartStore";
+import { useCategoryOrderStore } from "../../stores/categoryOrder";
 import { useMessagesStore } from "../../stores/messagesStore";
 import { useProductShortcutsStore } from "../../stores/productShortcuts";
 import formatCurrency from "../../utils/formatCurrency";
 import { targetChecked } from "../../utils/inputs";
+import { UNCATEGORIZED } from "../../utils/orderCategories";
 import ProductsList from "../ProductsList";
 import CashInput from "../pos/CashInput";
 import CheckoutSelection from "../pos/CheckoutSelection";
@@ -25,6 +27,7 @@ export default defineComponent({
     const cart = useCartStore();
     const messages = useMessagesStore();
     const productShortcuts = useProductShortcutsStore();
+    const categoryOrder = useCategoryOrderStore();
     const isLoading = ref(true);
     const refundModeActive = ref<boolean>(false);
     const orderCreation = ref<boolean>(true);
@@ -171,20 +174,19 @@ export default defineComponent({
       }
     };
 
-    const groupedProducts = computed<Record<string, Product[]>>(() => {
-      const sortedProducts = availableProducts.value;
+    const groupedProducts = computed<[string, Product[]][]>(() => {
+      const groups: Record<string, Product[]> = {};
+      for (const product of availableProducts.value) {
+        const category = product.category || UNCATEGORIZED;
+        if (!groups[category]) {
+          groups[category] = [];
+        }
+        groups[category].push(product);
+      }
 
-      return sortedProducts.reduce(
-        (groups: Record<string, Product[]>, product: Product) => {
-          const category = product.category || "Uncategorized"; // Default category if none provided
-          if (!groups[category]) {
-            groups[category] = [];
-          }
-          groups[category].push(product);
-          return groups;
-        },
-        {},
-      );
+      return categoryOrder
+        .sortCategories(Object.keys(groups))
+        .map((category) => [category, groups[category]]);
     });
 
     const startCardPayment = async function () {
@@ -258,7 +260,7 @@ export default defineComponent({
                   <h2 class="text-xl font-bold mb-4">
                     {$t("pos-products-title")}
                   </h2>
-                  {Object.entries(groupedProducts.value).map(
+                  {groupedProducts.value.map(
                     ([category, productsInCategory]) => (
                       <div key={category} class="mb-6">
                         <h3 class="text-lg font-semibold mb-3 sticky top-0 bg-base-100 py-1">
