@@ -19,26 +19,26 @@
   "dependencies": {
     "@fluent/bundle": "^0.19.1",
     "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/api": "^2.12.0",
-    "@tauri-apps/plugin-log": "~2.10.0",
-    "@tauri-apps/plugin-opener": "^2.6.0",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-log": "~2.10.1",
+    "@tauri-apps/plugin-opener": "^2.7.2",
     "@tauri-apps/plugin-store": "~2.5.0",
     "fluent-vue": "^3.8.2",
-    "maska": "^3.2.1",
-    "pinia": "^4.0.3",
+    "maska": "^3.2.2",
+    "pinia": "^4.1.0",
     "tailwindcss": "^4.3.3",
-    "vue": "^3.5.43",
-    "vue-router": "^5.3.1"
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "~2.5.14",
-    "@tauri-apps/cli": "^2.12.0",
+    "@biomejs/biome": "~2.5.15",
+    "@tauri-apps/cli": "^2.12.3",
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vue/devtools-api": "^8.2.1",
     "@vue/eslint-config-typescript": "^14.9.0",
-    "daisyui": "^5.7.46",
-    "eslint": "^10.11.0",
+    "daisyui": "^5.7.50",
+    "eslint": "^10.13.0",
     "typescript": "~7.0.2",
-    "vite": "^8.3.1"
+    "vite": "^8.3.4"
   }
 }
