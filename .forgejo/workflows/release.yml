@@ -16,7 +16,7 @@ env:
 
 jobs:
   build-release:
-    runs-on: ubuntu-latest
+    runs-on: rust-24
 
     steps:
     - name: Checkout repository

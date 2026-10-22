@@ -10,7 +10,7 @@ on:
 
 jobs:
   mirror:
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-24, rust-24]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,10 +24,10 @@ jobs:
           # Configure git
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.gitea"
-          
+
           # Add Codeberg remote with token authentication
           git remote add codeberg https://oauth2:${CODEBERG_TOKEN}@codeberg.org/${{ github.repository_owner }}/${{ github.event.repository.name }}.git
-          
+
           # Push the current ref
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "Pushing tag ${{ github.ref_name }} to Codeberg..."
