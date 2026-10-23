@@ -13,7 +13,7 @@ env:
 
 jobs:
   frontend-checks:
-    runs-on: [ubuntu-24, rust-24]
+    runs-on: ubuntu-24
 
     steps:
     - name: Checkout repository
@@ -44,7 +44,7 @@ jobs:
       run: bun run lint
 
   backend-checks:
-    runs-on: rust-24
+    runs-on: ubuntu-24
 
     steps:
     - name: Checkout repository
