@@ -10,7 +10,7 @@ on:
 
 jobs:
   frontend-audit:
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-24, rust-24]
 
     steps:
     - name: Checkout repository
@@ -38,7 +38,7 @@ jobs:
       run: bun audit
 
   backend-audit:
-    runs-on: ubuntu-latest
+    runs-on: rust-24
 
     steps:
     - name: Checkout repository
